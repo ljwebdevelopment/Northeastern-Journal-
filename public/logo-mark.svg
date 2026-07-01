@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="Northeastern Journal monogram">
+  <rect x="12" y="10" width="76" height="8" fill="#8B1E1E"/>
+  <rect x="12" y="82" width="76" height="8" fill="#8B1E1E"/>
+  <text
+    x="50"
+    y="72"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="58"
+    font-weight="700"
+    fill="#8B1E1E"
+    text-anchor="middle"
+    letter-spacing="-4"
+  >NJ</text>
+</svg>

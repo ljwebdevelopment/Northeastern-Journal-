@@ -1,0 +1,156 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Classic Northeastern Journal palette: masthead red + warm newsprint */
+  --background: #faf8f5;
+  --foreground: #1e1e1e;
+  --surface: #ffffff;
+  --surface-muted: #f2ede6;
+  --border: #e6ddd2;
+  --muted: #666666;
+  --brand: #8b1e1e; /* primary masthead red */
+  --brand-foreground: #ffffff;
+  --accent: #a52a2a; /* secondary red */
+  --accent-foreground: #ffffff;
+  --ring: #8b1e1e;
+  --shadow-color: 20 12% 20%;
+}
+
+.dark {
+  --background: #17110f;
+  --foreground: #f2ece4;
+  --surface: #201815;
+  --surface-muted: #291f1b;
+  --border: #3a2b26;
+  --muted: #a89c93;
+  --brand: #e2554f;
+  --brand-foreground: #17110f;
+  --accent: #d97a56;
+  --accent-foreground: #17110f;
+  --ring: #e2554f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+
+  --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --container-content: 72rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background: var(--color-brand);
+    color: var(--color-brand-foreground);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .content-container {
+    max-width: var(--container-content);
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 1024px) {
+    .content-container {
+      padding-inline: 2rem;
+    }
+  }
+  .kicker {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--color-accent);
+  }
+  /* Same styling as .kicker, but legible on photos and dark/red bands. */
+  .kicker-inverted {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: rgb(255 255 255 / 0.9);
+  }
+  .rule-red {
+    position: relative;
+  }
+  .rule-red::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.5rem;
+    height: 3px;
+    width: 2.5rem;
+    background: var(--color-brand);
+    border-radius: 999px;
+  }
+  .card-shadow {
+    box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 8px 24px -12px hsl(var(--shadow-color) / 0.18);
+  }
+  .card-shadow-lg {
+    box-shadow: 0 4px 10px hsl(var(--shadow-color) / 0.08), 0 24px 48px -16px hsl(var(--shadow-color) / 0.28);
+  }
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker 32s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticker {
+    animation: none;
+  }
+}

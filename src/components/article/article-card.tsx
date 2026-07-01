@@ -7,6 +7,16 @@ import { formatDate, cn } from "@/lib/utils";
 const categoryName = (slug: string) =>
   categories.find((c) => c.slug === slug)?.name ?? slug;
 
+/** Small internal-only marker so editors can spot showcase content at a glance. */
+function DemoBadge() {
+  if (process.env.NODE_ENV === "production") return null;
+  return (
+    <span className="absolute left-3 top-3 z-10 rounded-full bg-foreground/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
+      Demo
+    </span>
+  );
+}
+
 export function ArticleCard({
   article,
   variant = "default",
@@ -20,23 +30,24 @@ export function ArticleCard({
 
   if (variant === "compact") {
     return (
-      <article className="flex gap-3 py-3">
+      <article className="group flex gap-4 py-3.5">
         <Link
           href={href}
-          className="relative h-16 w-20 shrink-0 overflow-hidden rounded-md bg-surface-muted"
+          className="relative h-16 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-surface-muted"
         >
+          {article.isDemo && <DemoBadge />}
           <Image
             src={article.image}
             alt={article.imageAlt}
             fill
             sizes="80px"
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </Link>
         <div className="min-w-0">
           <p className="kicker">{categoryName(article.category)}</p>
           <h3 className="mt-1 line-clamp-2 font-serif text-sm font-semibold leading-snug">
-            <Link href={href} className="hover:text-accent">
+            <Link href={href} className="transition-colors hover:text-brand">
               {article.title}
             </Link>
           </h3>
@@ -47,32 +58,33 @@ export function ArticleCard({
 
   if (variant === "horizontal") {
     return (
-      <article className="group grid grid-cols-[9rem_1fr] gap-4 sm:grid-cols-[12rem_1fr]">
+      <article className="group grid grid-cols-[9rem_1fr] gap-5 sm:grid-cols-[12rem_1fr]">
         <Link
           href={href}
-          className="relative aspect-[4/3] overflow-hidden rounded-lg bg-surface-muted"
+          className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-surface-muted card-shadow"
         >
+          {article.isDemo && <DemoBadge />}
           <Image
             src={article.image}
             alt={article.imageAlt}
             fill
             sizes="200px"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
         </Link>
         <div className="flex flex-col justify-center">
           <p className="kicker">{categoryName(article.category)}</p>
-          <h3 className="mt-1 font-serif text-lg font-bold leading-snug">
-            <Link href={href} className="hover:text-accent">
+          <h3 className="mt-1.5 font-serif text-lg font-bold leading-snug">
+            <Link href={href} className="transition-colors hover:text-brand">
               {article.title}
             </Link>
           </h3>
-          <p className="mt-1 line-clamp-2 text-sm text-muted">
+          <p className="mt-1.5 line-clamp-2 text-sm text-muted">
             {article.excerpt}
           </p>
           <time
             dateTime={article.publishedAt}
-            className="mt-2 text-xs text-muted"
+            className="mt-2.5 text-xs text-muted"
           >
             {formatDate(article.publishedAt)}
           </time>
@@ -83,27 +95,28 @@ export function ArticleCard({
 
   if (variant === "hero") {
     return (
-      <article className="group relative overflow-hidden rounded-2xl">
-        <Link href={href} className="relative block aspect-[16/10] w-full">
+      <article className="group relative overflow-hidden rounded-2xl border border-border card-shadow-lg">
+        <Link href={href} className="relative block aspect-[16/10] w-full sm:aspect-[16/9]">
+          {article.isDemo && <DemoBadge />}
           <Image
             src={article.image}
             alt={article.imageAlt}
             fill
             sizes="(min-width: 1024px) 66vw, 100vw"
             priority={priority}
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
         </Link>
-        <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-          <p className="kicker text-white/90">{categoryName(article.category)}</p>
-          <h1 className="mt-2 max-w-2xl text-balance font-serif text-2xl font-bold leading-tight text-white sm:text-4xl">
+        <div className="absolute inset-x-0 bottom-0 p-6 sm:p-10">
+          <p className="kicker-inverted">{categoryName(article.category)}</p>
+          <h1 className="mt-3 max-w-2xl text-balance font-serif text-3xl font-bold leading-[1.05] text-white sm:text-5xl">
             <Link href={href}>{article.title}</Link>
           </h1>
-          <p className="mt-3 hidden max-w-xl text-sm text-white/80 sm:block">
+          <p className="mt-4 hidden max-w-xl text-base text-white/85 sm:block">
             {article.excerpt}
           </p>
-          <time dateTime={article.publishedAt} className="mt-3 block text-xs text-white/70">
+          <time dateTime={article.publishedAt} className="mt-4 block text-xs font-medium uppercase tracking-wide text-white/70">
             {formatDate(article.publishedAt)}
           </time>
         </div>
@@ -115,24 +128,25 @@ export function ArticleCard({
     <article className={cn("group flex flex-col")}>
       <Link
         href={href}
-        className="relative block aspect-[4/3] overflow-hidden rounded-lg bg-surface-muted"
+        className="relative block aspect-[4/3] overflow-hidden rounded-xl border border-border bg-surface-muted card-shadow transition-shadow duration-300 group-hover:shadow-xl"
       >
+        {article.isDemo && <DemoBadge />}
         <Image
           src={article.image}
           alt={article.imageAlt}
           fill
           sizes="(min-width: 1024px) 25vw, 50vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
         />
       </Link>
-      <p className="kicker mt-3">{categoryName(article.category)}</p>
-      <h3 className="mt-1 font-serif text-lg font-bold leading-snug">
-        <Link href={href} className="hover:text-accent">
+      <p className="kicker mt-4">{categoryName(article.category)}</p>
+      <h3 className="mt-1.5 font-serif text-lg font-bold leading-snug transition-colors">
+        <Link href={href} className="hover:text-brand">
           {article.title}
         </Link>
       </h3>
       <p className="mt-2 line-clamp-2 text-sm text-muted">{article.excerpt}</p>
-      <time dateTime={article.publishedAt} className="mt-2 text-xs text-muted">
+      <time dateTime={article.publishedAt} className="mt-2.5 text-xs text-muted">
         {formatDate(article.publishedAt)}
       </time>
     </article>

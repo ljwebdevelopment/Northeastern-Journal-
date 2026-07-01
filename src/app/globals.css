@@ -3,32 +3,33 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Editorial, civic-minded palette: ink navy + parchment + heritage gold */
-  --background: #fbfaf7;
-  --foreground: #1a1d29;
+  /* Classic Northeastern Journal palette: masthead red + warm newsprint */
+  --background: #faf8f5;
+  --foreground: #1e1e1e;
   --surface: #ffffff;
-  --surface-muted: #f3f1ea;
-  --border: #e4e1d6;
-  --muted: #6b6f7b;
-  --brand: #1a2f4b; /* masthead navy */
+  --surface-muted: #f2ede6;
+  --border: #e6ddd2;
+  --muted: #666666;
+  --brand: #8b1e1e; /* primary masthead red */
   --brand-foreground: #ffffff;
-  --accent: #a3672b; /* heritage gold/copper */
+  --accent: #a52a2a; /* secondary red */
   --accent-foreground: #ffffff;
-  --ring: #1a2f4b;
+  --ring: #8b1e1e;
+  --shadow-color: 20 12% 20%;
 }
 
 .dark {
-  --background: #0f1218;
-  --foreground: #eeece4;
-  --surface: #171a22;
-  --surface-muted: #1c2028;
-  --border: #2a2e38;
-  --muted: #9a9da8;
-  --brand: #cbd6e8;
-  --brand-foreground: #0f1218;
-  --accent: #d99a52;
-  --accent-foreground: #0f1218;
-  --ring: #cbd6e8;
+  --background: #17110f;
+  --foreground: #f2ece4;
+  --surface: #201815;
+  --surface-muted: #291f1b;
+  --border: #3a2b26;
+  --muted: #a89c93;
+  --brand: #e2554f;
+  --brand-foreground: #17110f;
+  --accent: #d97a56;
+  --accent-foreground: #17110f;
+  --ring: #e2554f;
 }
 
 @theme inline {
@@ -67,8 +68,8 @@
     letter-spacing: -0.01em;
   }
   ::selection {
-    background: var(--color-accent);
-    color: var(--color-accent-foreground);
+    background: var(--color-brand);
+    color: var(--color-brand-foreground);
   }
   :focus-visible {
     outline: 2px solid var(--color-ring);
@@ -98,6 +99,34 @@
     font-size: 0.75rem;
     color: var(--color-accent);
   }
+  /* Same styling as .kicker, but legible on photos and dark/red bands. */
+  .kicker-inverted {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: rgb(255 255 255 / 0.9);
+  }
+  .rule-red {
+    position: relative;
+  }
+  .rule-red::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.5rem;
+    height: 3px;
+    width: 2.5rem;
+    background: var(--color-brand);
+    border-radius: 999px;
+  }
+  .card-shadow {
+    box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 8px 24px -12px hsl(var(--shadow-color) / 0.18);
+  }
+  .card-shadow-lg {
+    box-shadow: 0 4px 10px hsl(var(--shadow-color) / 0.08), 0 24px 48px -16px hsl(var(--shadow-color) / 0.28);
+  }
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -118,4 +147,10 @@
 }
 .animate-ticker {
   animation: ticker 32s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticker {
+    animation: none;
+  }
 }

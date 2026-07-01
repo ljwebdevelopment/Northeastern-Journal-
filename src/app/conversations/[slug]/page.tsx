@@ -5,7 +5,7 @@ import { getAuthorBySlug, getConversationBySlug, getConversations } from "@/lib/
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
 
 export async function generateStaticParams() {
   const conversations = await getConversations();
@@ -47,17 +47,11 @@ export default async function ConversationPage({
   const speakers = await Promise.all(
     conversation.participants.map((slug) => getAuthorBySlug(slug))
   );
-  const speakerName = (slug: string) =>
-    speakers.find((s) => s?.slug === slug)?.name ?? slug;
+  const speaker = (slug: string) => speakers.find((s) => s?.slug === slug);
+  const isTwoWay = conversation.participants.length === 2;
 
   return (
-    <article className="content-container py-10">
-      <Breadcrumbs
-        items={[
-          { name: "Conversations", href: "/conversations" },
-          { name: conversation.title, href: `/conversations/${conversation.slug}` },
-        ]}
-      />
+    <article>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -71,28 +65,80 @@ export default async function ConversationPage({
         }}
       />
 
-      <header className="mx-auto max-w-2xl text-center">
-        <p className="kicker">{formatLabel[conversation.format]}</p>
-        <h1 className="mt-3 text-balance font-serif text-3xl font-bold sm:text-4xl">
-          {conversation.title}
-        </h1>
-        <p className="mt-3 text-sm text-muted">
-          {speakers.filter(Boolean).map((s) => s!.name).join(" & ")} &middot;{" "}
-          <time dateTime={conversation.publishedAt}>{formatDate(conversation.publishedAt)}</time>
-        </p>
-      </header>
-
-      <div className="relative mx-auto mt-8 aspect-[16/9] max-w-3xl overflow-hidden rounded-2xl bg-surface-muted">
-        <Image src={conversation.image} alt={conversation.title} fill sizes="768px" className="object-cover" />
+      {/* Magazine-style masthead */}
+      <div className="relative overflow-hidden">
+        <div className="relative aspect-[16/9] w-full sm:aspect-[21/9]">
+          <Image
+            src={conversation.image}
+            alt={conversation.title}
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+        </div>
+        <div className="content-container absolute inset-x-0 bottom-0 pb-8 sm:pb-14">
+          <span className="inline-flex items-center rounded-full bg-brand px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-foreground">
+            {formatLabel[conversation.format]}
+          </span>
+          <h1 className="mt-4 max-w-3xl text-balance font-serif text-3xl font-bold leading-[1.05] text-white sm:text-5xl">
+            {conversation.title}
+          </h1>
+          <p className="mt-3 text-sm font-medium text-white/80">
+            {speakers.filter(Boolean).map((s) => s!.name).join(" & ")} &middot;{" "}
+            <time dateTime={conversation.publishedAt}>{formatDate(conversation.publishedAt)}</time>
+          </p>
+        </div>
       </div>
 
-      <div className="mx-auto mt-10 max-w-2xl space-y-6">
-        {conversation.body.map((turn, i) => (
-          <div key={i} className="rounded-xl border border-border bg-surface p-5">
-            <p className="kicker">{speakerName(turn.speaker)}</p>
-            <p className="mt-2 text-base leading-relaxed text-foreground/90">{turn.text}</p>
-          </div>
-        ))}
+      <div className="content-container">
+        <div className="pt-6">
+          <Breadcrumbs
+            items={[
+              { name: "Conversations", href: "/conversations" },
+              { name: conversation.title, href: `/conversations/${conversation.slug}` },
+            ]}
+          />
+        </div>
+
+        <p className="mx-auto max-w-2xl pb-4 text-center text-lg text-muted">
+          {conversation.excerpt}
+        </p>
+
+        {/* Turn-by-turn exchange */}
+        <div className="mx-auto max-w-3xl space-y-6 py-10">
+          {conversation.body.map((turn, i) => {
+            const s = speaker(turn.speaker);
+            const alignRight = isTwoWay && i % 2 === 1;
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "flex gap-4",
+                  alignRight ? "flex-row-reverse text-right" : "flex-row text-left"
+                )}
+              >
+                {s?.photo && (
+                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-border sm:h-14 sm:w-14">
+                    <Image src={s.photo} alt={s.name} fill sizes="56px" className="object-cover" />
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    "max-w-xl rounded-2xl border border-border bg-surface p-5 card-shadow sm:p-6",
+                    alignRight ? "rounded-tr-sm" : "rounded-tl-sm"
+                  )}
+                >
+                  <p className="kicker">{s?.name ?? turn.speaker}</p>
+                  <p className="mt-2 text-balance font-serif text-lg leading-relaxed text-foreground/90 sm:text-xl">
+                    {turn.text}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </article>
   );

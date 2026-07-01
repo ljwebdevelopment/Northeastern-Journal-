@@ -68,15 +68,21 @@ export default async function HomePage() {
       <BreakingTicker articles={breaking} />
 
       {/* Hero */}
-      <section className="content-container py-8 lg:py-10">
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <section className="content-container py-10 lg:py-14">
+        <p className="kicker rule-red mb-6">Today&apos;s Edition</p>
+        <div className="grid gap-8 lg:grid-cols-[2fr_1fr] lg:gap-10">
           <ArticleCard article={hero} variant="hero" priority />
-          <div className="flex flex-col divide-y divide-border">
-            {heroSecondary.map((a) => (
-              <div key={a.slug} className="py-3 first:pt-0">
-                <ArticleCard article={a} variant="compact" />
-              </div>
-            ))}
+          <div className="flex flex-col">
+            <h2 className="mb-1 font-serif text-lg font-bold text-foreground">
+              More Top Stories
+            </h2>
+            <div className="flex flex-col divide-y divide-border">
+              {heroSecondary.map((a) => (
+                <div key={a.slug} className="py-3.5 first:pt-3">
+                  <ArticleCard article={a} variant="compact" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -263,7 +269,11 @@ export default async function HomePage() {
         />
         <div className="grid gap-8 lg:grid-cols-2">
           {conversations.slice(0, 4).map((c) => (
-            <ConversationCard key={c.slug} conversation={c} />
+            <ConversationCard
+              key={c.slug}
+              conversation={c}
+              participantNames={c.participants.map(authorName).filter((n): n is string => Boolean(n))}
+            />
           ))}
         </div>
       </section>

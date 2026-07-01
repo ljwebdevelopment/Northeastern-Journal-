@@ -173,6 +173,7 @@ export const articles: Article[] = seeds.map((s) => ({
   mostRead: s.mostRead,
   breaking: s.breaking,
   region: s.region,
+  isDemo: true,
 }));
 
 export const books: Book[] = [

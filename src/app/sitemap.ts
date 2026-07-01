@@ -9,6 +9,7 @@ import {
   getNewsletterIssues,
   getVideos,
 } from "@/lib/content/api";
+import { demoContentConfig } from "@/lib/content/demo-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [articles, authors, categories, books, videos, conversations, issues] = await Promise.all([
@@ -46,13 +47,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.6,
     })),
-    ...articles.map((a) => ({
-      url: `${siteConfig.url}/article/${a.category}/${a.slug}`,
-      lastModified: a.updatedAt ?? a.publishedAt,
-      changeFrequency: "monthly" as const,
-      priority: 0.8,
-      images: [a.image],
-    })),
+    ...articles
+      .filter((a) => !a.isDemo || demoContentConfig.indexable)
+      .map((a) => ({
+        url: `${siteConfig.url}/article/${a.category}/${a.slug}`,
+        lastModified: a.updatedAt ?? a.publishedAt,
+        changeFrequency: "monthly" as const,
+        priority: 0.8,
+        images: [a.image],
+      })),
     ...books.map((b) => ({
       url: `${siteConfig.url}/books/${b.slug}`,
       changeFrequency: "monthly" as const,

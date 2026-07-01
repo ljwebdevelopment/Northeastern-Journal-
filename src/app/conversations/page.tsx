@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getConversations } from "@/lib/content/api";
+import { getAuthors, getConversations } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
@@ -13,7 +13,10 @@ export const metadata: Metadata = {
 };
 
 export default async function ConversationsPage() {
-  const conversations = await getConversations();
+  const [conversations, authors] = await Promise.all([getConversations(), getAuthors()]);
+  const [featured, ...rest] = conversations;
+  const namesFor = (slugs: string[]) =>
+    slugs.map((s) => authors.find((a) => a.slug === s)?.name).filter((n): n is string => Boolean(n));
 
   return (
     <div className="content-container py-10">
@@ -45,9 +48,15 @@ export default async function ConversationsPage() {
         </p>
       </header>
 
-      <section className="mt-14 grid gap-10 lg:grid-cols-2">
-        {conversations.map((c) => (
-          <ConversationCard key={c.slug} conversation={c} />
+      {featured && (
+        <section className="mt-12">
+          <ConversationCard conversation={featured} featured participantNames={namesFor(featured.participants)} />
+        </section>
+      )}
+
+      <section className="mt-10 grid gap-8 sm:grid-cols-2">
+        {rest.map((c) => (
+          <ConversationCard key={c.slug} conversation={c} participantNames={namesFor(c.participants)} />
         ))}
       </section>
     </div>

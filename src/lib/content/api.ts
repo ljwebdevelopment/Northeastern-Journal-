@@ -13,6 +13,7 @@ import {
   newsletterIssues as allNewsletterIssues,
   videos as allVideos,
 } from "./data";
+import { resolveContent } from "./demo-config";
 import type {
   Article,
   Author,
@@ -27,6 +28,9 @@ import type {
 const byDateDesc = <T extends { publishedAt: string }>(items: T[]) =>
   [...items].sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt));
 
+/** Same as `byDateDesc`, but first lets real articles supersede demo ones. */
+const resolved = (items: Article[]) => byDateDesc(resolveContent(items));
+
 export async function getCategories(): Promise<Category[]> {
   return allCategories;
 }
@@ -36,7 +40,7 @@ export async function getCategory(slug: string): Promise<Category | undefined> {
 }
 
 export async function getArticles(): Promise<Article[]> {
-  return byDateDesc(allArticles);
+  return resolved(allArticles);
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | undefined> {
@@ -44,31 +48,31 @@ export async function getArticleBySlug(slug: string): Promise<Article | undefine
 }
 
 export async function getArticlesByCategory(category: CategorySlug): Promise<Article[]> {
-  return byDateDesc(allArticles.filter((a) => a.category === category));
+  return resolved(allArticles.filter((a) => a.category === category));
 }
 
 export async function getArticlesByAuthor(authorSlug: string): Promise<Article[]> {
-  return byDateDesc(allArticles.filter((a) => a.authorSlug === authorSlug));
+  return resolved(allArticles.filter((a) => a.authorSlug === authorSlug));
 }
 
 export async function getArticlesByRegion(region: "local" | "national" | "world"): Promise<Article[]> {
-  return byDateDesc(allArticles.filter((a) => a.region === region));
+  return resolved(allArticles.filter((a) => a.region === region));
 }
 
 export async function getFeaturedArticles(): Promise<Article[]> {
-  return byDateDesc(allArticles.filter((a) => a.featured));
+  return resolved(allArticles.filter((a) => a.featured));
 }
 
 export async function getTrendingArticles(): Promise<Article[]> {
-  return byDateDesc(allArticles.filter((a) => a.trending));
+  return resolved(allArticles.filter((a) => a.trending));
 }
 
 export async function getMostReadArticles(): Promise<Article[]> {
-  return byDateDesc(allArticles.filter((a) => a.mostRead));
+  return resolved(allArticles.filter((a) => a.mostRead));
 }
 
 export async function getBreakingArticles(): Promise<Article[]> {
-  return byDateDesc(allArticles.filter((a) => a.breaking));
+  return resolved(allArticles.filter((a) => a.breaking));
 }
 
 export async function getOpinionArticles(): Promise<Article[]> {
@@ -76,7 +80,7 @@ export async function getOpinionArticles(): Promise<Article[]> {
 }
 
 export async function getRelatedArticles(article: Article, limit = 3): Promise<Article[]> {
-  return byDateDesc(
+  return resolved(
     allArticles.filter(
       (a) => a.slug !== article.slug && (a.category === article.category || a.authorSlug === article.authorSlug)
     )
@@ -86,7 +90,7 @@ export async function getRelatedArticles(article: Article, limit = 3): Promise<A
 export async function searchArticles(query: string): Promise<Article[]> {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  return byDateDesc(
+  return resolved(
     allArticles.filter(
       (a) =>
         a.title.toLowerCase().includes(q) ||

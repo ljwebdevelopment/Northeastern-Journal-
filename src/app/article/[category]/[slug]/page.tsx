@@ -14,6 +14,7 @@ import { articleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { formatDate, readingTime } from "@/lib/utils";
+import { demoContentConfig } from "@/lib/content/demo-config";
 
 export async function generateStaticParams() {
   const articles = await getArticles();
@@ -29,10 +30,12 @@ export async function generateMetadata({
   const article = await getArticleBySlug(slug);
   if (!article) return {};
   const url = `${siteConfig.url}/article/${article.category}/${article.slug}`;
+  const noindex = Boolean(article.isDemo) && !demoContentConfig.indexable;
   return {
     title: article.title,
     description: article.excerpt,
     alternates: { canonical: url },
+    robots: noindex ? { index: false, follow: true } : undefined,
     openGraph: {
       type: "article",
       title: article.title,

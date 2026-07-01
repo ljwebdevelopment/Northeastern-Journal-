@@ -66,6 +66,14 @@ export interface Article {
   mostRead?: boolean;
   breaking?: boolean;
   region?: "local" | "national" | "world";
+  /**
+   * True for placeholder/showcase articles seeded before the CMS is
+   * connected. Demo articles are automatically superseded by real
+   * (non-demo) articles once any exist in the same context, and can be
+   * hidden from indexing entirely via `demoContentConfig`. See
+   * `lib/content/demo-config.ts`.
+   */
+  isDemo?: boolean;
 }
 
 export interface Book {

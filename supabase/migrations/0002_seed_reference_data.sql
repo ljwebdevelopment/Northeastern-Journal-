@@ -55,6 +55,13 @@ on conflict (slug) do update
       email = excluded.email;
 
 -- Connect each founder's login to their byline the moment they first sign in.
+--
+-- INSERT only. `author_id` decides whose name appears on an article, so it is
+-- one of the columns protect_profile_privileges() pins on UPDATE — otherwise a
+-- contributor could point their profile at someone else's byline. Postgres
+-- fires BEFORE triggers in name order, so profiles_link_author would run first
+-- and profiles_protect_privileges would simply revert it. Linking at signup is
+-- the only case that matters; afterwards an admin sets it.
 create or replace function public.link_profile_to_author()
 returns trigger
 language plpgsql
@@ -75,7 +82,7 @@ end;
 $$;
 
 drop trigger if exists profiles_link_author on public.profiles;
-create trigger profiles_link_author before insert or update on public.profiles
+create trigger profiles_link_author before insert on public.profiles
   for each row execute function public.link_profile_to_author();
 
 -- Default settings, editable from /admin/settings.

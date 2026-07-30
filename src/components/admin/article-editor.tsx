@@ -91,6 +91,14 @@ export function ArticleEditor({
   const [scheduledFor, setScheduledFor] = useState(
     article.scheduledFor ? toLocalInput(article.scheduledFor) : ""
   );
+  // Absolute instant for the datetime-local value, resolved in the browser's
+  // timezone. `new Date("2026-08-01T14:30")` is local time here, which is what
+  // the editor means; the server cannot infer that on its own.
+  const scheduledForIso = useMemo(() => {
+    if (!scheduledFor) return "";
+    const parsed = new Date(scheduledFor);
+    return Number.isNaN(+parsed) ? "" : parsed.toISOString();
+  }, [scheduledFor]);
   const [intent, setIntent] = useState("save");
   const [markdownMode, setMarkdownMode] = useState(false);
   const [markdown, setMarkdown] = useState(article.bodyMarkdown);
@@ -422,7 +430,10 @@ export function ArticleEditor({
               />
             </Field>
 
-            <Field label="Schedule for later">
+            <Field
+              label="Schedule for later"
+              hint={scheduledForIso ? `Publishes ${new Date(scheduledForIso).toLocaleString()} your time.` : undefined}
+            >
               <input
                 type="datetime-local"
                 name="scheduled_for"
@@ -431,6 +442,12 @@ export function ArticleEditor({
                 className={inputClass}
               />
             </Field>
+            {/*
+              `datetime-local` submits no timezone, so the server would read it
+              as UTC and publish hours early. Send the absolute instant, resolved
+              in the editor's own timezone, and let the server prefer it.
+            */}
+            <input type="hidden" name="scheduled_for_iso" value={scheduledForIso} />
             {state.errors?.scheduled_for && (
               <p className="text-xs text-brand">{state.errors.scheduled_for}</p>
             )}

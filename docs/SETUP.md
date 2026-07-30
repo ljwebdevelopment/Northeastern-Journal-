@@ -61,19 +61,31 @@ allowed to sign in.
 
 ## 2. Create the database tables
 
-This is the step that creates every table, security rule, and trigger. It is
-two SQL files, run in order.
+This is the step that creates every table, security rule, and trigger.
+
+Run **every file in `supabase/migrations/`, in numerical order**. Today that is:
+
+| File | What it does |
+|---|---|
+| `0001_initial_schema.sql` | Tables, RLS policies, triggers, storage bucket, grants |
+| `0002_seed_reference_data.sql` | Sections, founding bylines, default settings |
+| `0003_harden_profile_privileges.sql` | Blocks self-promotion to admin |
+| `0004_grant_table_privileges.sql` | Grants API roles access to the tables |
+
+For each one:
 
 1. In the Supabase dashboard, click **SQL Editor** in the left sidebar.
 2. Click **New query**.
-3. Open `supabase/migrations/0001_initial_schema.sql` from this repository.
-   Copy the **entire** file.
+3. Copy the **entire** contents of the file.
 4. Paste it into the SQL Editor and click **Run** (or press Ctrl+Enter).
 5. You should see `Success. No rows returned`. That is what success looks
    like — it created things rather than fetching them.
-6. Click **New query** again.
-7. Copy the entire contents of `supabase/migrations/0002_seed_reference_data.sql`,
-   paste, and **Run**.
+
+> **0003 and 0004 are already included in 0001 for a fresh project.** They
+> exist separately so a database created before those fixes can be patched
+> without a rebuild. Running them anyway is harmless — every statement is
+> idempotent. If you're setting up for the first time, run all four and don't
+> think about it.
 
 **What just happened:** you created tables for articles, authors, categories,
 tags, subscribers, media, and settings; enabled Row Level Security on all of
@@ -501,6 +513,23 @@ Check Resend → **Logs**. If sends are being rejected, the domain isn't verifie
 Check Vercel → **Cron Jobs** for the job, and **Logs** for its runs. A 401 means
 `CRON_SECRET` differs between Vercel's cron config and the environment
 variable — redeploy after setting it.
+
+**Everything 401s with "permission denied for table ..."**
+The API roles have no table-level GRANT. Row Level Security controls which
+*rows* a role sees; it does not grant access to the table itself, and tables
+created from the SQL Editor don't always inherit Supabase's default
+privileges. Run `supabase/migrations/0004_grant_table_privileges.sql`. The
+public site keeps working while this is broken — it falls back to the
+placeholder archive and logs `[content] failed to load articles: permission
+denied` in the Vercel function logs.
+
+**A reader was able to make themselves an admin**
+Run `supabase/migrations/0003_harden_profile_privileges.sql`, then audit:
+```sql
+select email, role from public.profiles where role in ('admin', 'editor');
+```
+Only the two founding addresses should be listed. Reset anyone else with
+`update public.profiles set role = 'reader' where email = '...';`
 
 **Images fail to upload**
 Confirm the `media` bucket exists and is public (step 5), and that you're

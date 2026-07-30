@@ -99,8 +99,34 @@ export async function saveArticle(
   const slug = await ensureUniqueSlug(supabase, requestedSlug || "untitled", id || null);
 
   // --- Status ---------------------------------------------------------------
-  const scheduledRaw = str(formData, "scheduled_for");
+  /*
+   * Scheduling times.
+   *
+   * A `datetime-local` input submits "2026-08-01T14:30" with no timezone, and
+   * `new Date()` on the server would read that as 14:30 *server* time — UTC on
+   * Vercel. An editor in Oklahoma scheduling 2pm would publish at 9am their
+   * time. So the browser also submits `scheduled_for_iso`, an absolute
+   * timestamp it computed in the reader's own timezone, and that wins.
+   *
+   * The bare field remains the fallback for a no-JS submit, where interpreting
+   * it as server time is the only option available.
+   */
+  const scheduledIso = str(formData, "scheduled_for_iso");
+  const scheduledRaw = scheduledIso || str(formData, "scheduled_for");
   const scheduledFor = scheduledRaw ? new Date(scheduledRaw) : null;
+  const scheduleFieldPresent = formData.has("scheduled_for");
+
+  // The current status matters when the intent is a plain "save": we must not
+  // strand a scheduled article by wiping its date out from under it.
+  let existingStatus: ArticleStatus | null = null;
+  if (id) {
+    const { data: existing } = await supabase
+      .from("articles")
+      .select("status")
+      .eq("id", id)
+      .maybeSingle();
+    existingStatus = existing?.status ?? null;
+  }
 
   let status: ArticleStatus | null = null;
   switch (intent) {
@@ -171,8 +197,32 @@ export async function saveArticle(
   };
 
   if (status) payload.status = status;
-  payload.scheduled_for =
-    status === "scheduled" ? (scheduledFor?.toISOString() ?? null) : null;
+
+  /*
+   * `scheduled_for` is only meaningful while status is 'scheduled', but it
+   * must not be cleared by an unrelated edit. Hitting Save on a scheduled
+   * article used to null the date while leaving the status alone, which
+   * stranded it forever — publish_due_articles() only matches rows with a
+   * non-null due time.
+   */
+  if (status === "scheduled") {
+    payload.scheduled_for = scheduledFor!.toISOString();
+  } else if (status) {
+    // An explicit move to draft / published / archived retires the schedule.
+    payload.scheduled_for = null;
+  } else if (existingStatus === "scheduled") {
+    if (scheduledFor && !Number.isNaN(+scheduledFor)) {
+      // Plain save on a scheduled article: honour any edit to the time.
+      payload.scheduled_for = scheduledFor.toISOString();
+    } else if (scheduleFieldPresent) {
+      // The editor cleared the date. Rather than leave it scheduled with no
+      // date — invisible and unpublishable — put it back in drafts.
+      payload.status = "draft";
+      payload.scheduled_for = null;
+    }
+  } else if (scheduleFieldPresent && !scheduledFor) {
+    payload.scheduled_for = null;
+  }
 
   // Publishing an article that was previously live keeps its original date;
   // the DB trigger stamps published_at the first time only.

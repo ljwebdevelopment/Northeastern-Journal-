@@ -400,6 +400,47 @@ drop trigger if exists articles_publish_guard on public.articles;
 create trigger articles_publish_guard before insert or update on public.articles
   for each row execute function public.enforce_publish_permission();
 
+-- Privilege escalation guard.
+--
+-- Users may edit their own profile (display name, avatar), and RLS allows that
+-- with `id = auth.uid()`. But RLS operates on rows, not columns — without this
+-- trigger, any signed-in reader could run
+--
+--     update profiles set role = 'admin' where id = auth.uid();
+--
+-- and, because auth_role() reads profiles.role, immediately satisfy every
+-- admin policy in the database. Role and byline assignment are therefore
+-- immutable except to an administrator.
+create or replace function public.protect_profile_privileges()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- No auth.uid(): the service role, or a SECURITY DEFINER trigger such as
+  -- handle_new_user running during signup. Both are trusted.
+  if auth.uid() is null then
+    return new;
+  end if;
+
+  if public.is_admin() then
+    return new;
+  end if;
+
+  -- Everyone else: silently keep the privileged columns as they were, rather
+  -- than raising. A user editing their display name shouldn't get an error
+  -- because the form also round-tripped a role field.
+  new.role      := old.role;
+  new.author_id := old.author_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_protect_privileges on public.profiles;
+create trigger profiles_protect_privileges before update on public.profiles
+  for each row execute function public.protect_profile_privileges();
+
 -- ---------------------------------------------------------------------------
 -- 9. Row Level Security
 -- ---------------------------------------------------------------------------
@@ -421,6 +462,9 @@ drop policy if exists "own profile readable" on public.profiles;
 create policy "own profile readable" on public.profiles
   for select to authenticated using (id = auth.uid() or public.is_staff());
 
+-- Users can edit their own profile, but `role` and `author_id` are pinned by
+-- the profiles_protect_privileges trigger above — RLS can gate rows, not
+-- columns, so the trigger is what stops self-promotion to admin.
 drop policy if exists "own profile updatable" on public.profiles;
 create policy "own profile updatable" on public.profiles
   for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
@@ -615,4 +659,54 @@ begin
 end;
 $$;
 
+-- Readers and signed-in users must never trigger a publishing run; only the
+-- cron, which authenticates as the service role.
 revoke all on function public.publish_due_articles() from public, anon, authenticated;
+grant execute on function public.publish_due_articles() to service_role;
+
+-- ---------------------------------------------------------------------------
+-- 12. Table privileges
+-- ---------------------------------------------------------------------------
+-- Row Level Security decides *which rows* a role may touch, but Postgres still
+-- requires a table-level GRANT before the role may touch the table at all.
+-- Supabase's default privileges usually cover tables created through the
+-- dashboard; tables created from the SQL Editor may not inherit them, in which
+-- case every query fails with "permission denied for table ...". Granting
+-- explicitly makes this deterministic.
+--
+-- These grants are deliberately wide for `authenticated` — RLS is the real
+-- gate, and that is the standard Supabase model. `anon` is the exception: it
+-- is granted read access only to genuinely public content, and nothing at all
+-- on profiles, the allowlist, subscribers, or the send log.
+
+grant usage on schema public to anon, authenticated, service_role;
+
+-- Public content, readable by anyone.
+grant select on
+  public.articles,
+  public.authors,
+  public.categories,
+  public.tags,
+  public.article_tags,
+  public.media,
+  public.settings
+to anon;
+
+-- Signed-in users. RLS narrows every one of these to what their role allows.
+grant select, insert, update, delete on
+  public.articles,
+  public.authors,
+  public.categories,
+  public.tags,
+  public.article_tags,
+  public.media,
+  public.settings,
+  public.profiles,
+  public.admin_allowlist,
+  public.subscribers,
+  public.email_sends
+to authenticated;
+
+-- The service role bypasses RLS entirely and is used only by server code.
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;

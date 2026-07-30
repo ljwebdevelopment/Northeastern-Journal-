@@ -20,7 +20,7 @@ export const categories: Category[] = [
   { slug: "history", name: "History", description: "The long memory of a place and its people." },
   { slug: "opinion", name: "Opinion", description: "Argued perspectives from our contributors." },
   { slug: "editorial", name: "Editorial", description: "The Journal's institutional voice." },
-  { slug: "family-perspectives", name: "Family Perspectives", description: "Generational viewpoints from the Journal family." },
+  { slug: "generations", name: "Generations", description: "Viewpoints across age and era, from longtime residents to first-time voters." },
   { slug: "interviews", name: "Interviews", description: "Conversations with the people making news." },
   { slug: "books", name: "Books", description: "Reviews, excerpts, and reading recommendations." },
   { slug: "local-news", name: "Local News", description: "Reporting from our home communities." },
@@ -36,7 +36,7 @@ export const authors: Author[] = [
     name: "Cherokee Nana",
     role: "Founding Columnist",
     photo: img("cherokee-nana", 800, 800),
-    bio: "The Journal's founding voice, writing on family, faith, and civic life for three generations of readers.",
+    bio: "A founding columnist, writing on community, faith, and civic life for three generations of readers.",
     longBio:
       "Cherokee Nana has written for the Journal since its earliest days, chronicling the life of the community through decades of change. Her column blends personal memory with civic observation, and her Sunday letters remain the publication's most-read feature. This biography is placeholder text prepared for the rebuild and does not reproduce any existing published material.",
     social: {
@@ -45,7 +45,7 @@ export const authors: Author[] = [
       twitter: "https://twitter.com/example",
       facebook: "https://facebook.com/example",
     },
-    relatedTopics: ["family-perspectives", "faith", "history", "community"],
+    relatedTopics: ["generations", "faith", "history", "community"],
   },
   {
     slug: "miles-carter",
@@ -89,7 +89,7 @@ export const authors: Author[] = [
     longBio:
       "Delphine Osei has covered education for regional outlets for eight years before joining the Journal. Placeholder biography for the rebuild.",
     social: { twitter: "https://twitter.com/example" },
-    relatedTopics: ["education", "community", "family-perspectives"],
+    relatedTopics: ["education", "community", "generations"],
   },
   {
     slug: "victor-lindqvist",
@@ -132,7 +132,7 @@ const seeds: Seed[] = [
   { slug: "mill-town-centennial-oral-histories", title: "Mill Town Centennial: Oral Histories Collected", excerpt: "A community archive project is recording the memories of longtime residents before they're lost.", category: "history", authorSlug: "cherokee-nana", daysAgo: 3, tags: ["archive", "oral-history"], region: "local", mostRead: true },
   { slug: "why-local-elections-deserve-more-attention", title: "Why Local Elections Deserve More of Our Attention", excerpt: "An argument for why municipal races shape daily life more than most national headlines.", category: "opinion", authorSlug: "miles-carter", daysAgo: 4, tags: ["elections", "civics"], featured: true },
   { slug: "editorial-a-newspapers-obligation-to-its-readers", title: "A Newspaper's Obligation to Its Readers", excerpt: "The Journal's editorial board on what it owes the community it serves.", category: "editorial", authorSlug: "cherokee-nana", daysAgo: 5, tags: ["editorial-board"] },
-  { slug: "three-generations-under-one-roof", title: "Three Generations, One Roof: A Family Perspective", excerpt: "A reflection on multigenerational households and what they teach about patience.", category: "family-perspectives", authorSlug: "cherokee-nana", daysAgo: 6, tags: ["family", "generations"], featured: true, mostRead: true },
+  { slug: "three-generations-under-one-roof", title: "Three Generations, One Roof", excerpt: "A reflection on multigenerational households and what they teach about patience.", category: "generations", authorSlug: "cherokee-nana", daysAgo: 6, tags: ["housing", "generations"], featured: true, mostRead: true },
   { slug: "interview-with-the-new-fire-chief", title: "An Interview with the Region's New Fire Chief", excerpt: "The department's first female chief discusses staffing, safety, and community trust.", category: "interviews", authorSlug: "miles-carter", daysAgo: 6, tags: ["public-safety"], region: "local" },
   { slug: "reading-the-room-a-review", title: "Reading the Room: A Review of the Season's Debut Novel", excerpt: "A quiet, generous first novel about a family bookstore finds its footing.", category: "books", authorSlug: "sam-whitfield", daysAgo: 7, tags: ["book-review"] },
   { slug: "harbor-road-bridge-repairs-begin", title: "Harbor Road Bridge Repairs Begin Next Month", excerpt: "The long-awaited infrastructure project will close one lane through the spring.", category: "local-news", authorSlug: "miles-carter", daysAgo: 7, tags: ["infrastructure"], region: "local", trending: true },
@@ -142,7 +142,7 @@ const seeds: Seed[] = [
   { slug: "letters-what-neighbors-are-saying", title: "Letters: What Our Neighbors Are Saying This Week", excerpt: "A selection of reader letters on the school budget and the new library hours.", category: "community-voices", authorSlug: "cherokee-nana", daysAgo: 10, tags: ["letters"] },
   { slug: "youth-council-proposes-transit-pilot", title: "Youth Council Proposes Free Transit Pilot", excerpt: "Student organizers pitch a fare-free bus program to the city council.", category: "community", authorSlug: "sam-whitfield", daysAgo: 10, tags: ["transit", "youth"], region: "local", trending: true },
   { slug: "the-quiet-work-of-precinct-volunteers", title: "The Quiet Work of Precinct Volunteers", excerpt: "Behind every election are the residents who staff the polls for a stipend and a sandwich.", category: "politics", authorSlug: "miles-carter", daysAgo: 11, tags: ["elections"], region: "local" },
-  { slug: "what-my-grandmother-taught-me-about-listening", title: "What My Grandmother Taught Me About Listening", excerpt: "A columnist reflects on the civic value of simply paying attention.", category: "family-perspectives", authorSlug: "cherokee-nana", daysAgo: 12, tags: ["memoir"], featured: true },
+  { slug: "what-my-grandmother-taught-me-about-listening", title: "What My Grandmother Taught Me About Listening", excerpt: "A columnist reflects on the civic value of simply paying attention.", category: "generations", authorSlug: "cherokee-nana", daysAgo: 12, tags: ["memoir"], featured: true },
   { slug: "faith-leaders-convene-on-housing-crisis", title: "Faith Leaders Convene on the Regional Housing Crisis", excerpt: "An interfaith coalition proposes a joint land-use initiative.", category: "faith", authorSlug: "victor-lindqvist", daysAgo: 13, tags: ["housing"], region: "local" },
   { slug: "next-gen-essay-what-we-owe-each-other", title: "What We Owe Each Other: A Next Generation Essay", excerpt: "A young contributor argues for a renewed civic contract between generations.", category: "opinion", authorSlug: "sam-whitfield", daysAgo: 14, tags: ["essay", "next-generation"], trending: true },
   { slug: "historic-schoolhouse-added-to-register", title: "Historic Schoolhouse Added to the National Register", excerpt: "The one-room building will be preserved as a teaching site.", category: "history", authorSlug: "victor-lindqvist", daysAgo: 15, tags: ["preservation"], region: "local" },
@@ -157,11 +157,16 @@ const dateFromDaysAgo = (n: number) => {
   return d.toISOString();
 };
 
-export const articles: Article[] = seeds.map((s) => ({
+export const articles: Article[] = seeds.map((s) => {
+  const body = paragraphs(7, s.slug);
+  return {
   slug: s.slug,
   title: s.title,
   excerpt: s.excerpt,
-  body: paragraphs(7, s.slug),
+  body,
+  bodyHtml: body.map((p) => `<p>${p}</p>`).join("\n"),
+  readingMinutes: Math.max(1, Math.round(body.join(" ").split(/\s+/).length / 220)),
+  wordCount: body.join(" ").split(/\s+/).length,
   category: s.category,
   authorSlug: s.authorSlug,
   publishedAt: dateFromDaysAgo(s.daysAgo),
@@ -174,7 +179,8 @@ export const articles: Article[] = seeds.map((s) => ({
   breaking: s.breaking,
   region: s.region,
   isDemo: true,
-}));
+  };
+});
 
 export const books: Book[] = [
   {
@@ -222,7 +228,7 @@ export const books: Book[] = [
 ];
 
 export const videos: Video[] = [
-  { slug: "cherokee-nana-on-listening", title: "Cherokee Nana on the Civic Value of Listening", description: "A short conversation on why attention is a civic skill. Placeholder description.", youtubeId: "dQw4w9WgXcQ", thumbnail: img("video-listening"), category: "family-perspectives", publishedAt: dateFromDaysAgo(5), playlist: "Cherokee Nana Talks" },
+  { slug: "cherokee-nana-on-listening", title: "Cherokee Nana on the Civic Value of Listening", description: "A short conversation on why attention is a civic skill. Placeholder description.", youtubeId: "dQw4w9WgXcQ", thumbnail: img("video-listening"), category: "generations", publishedAt: dateFromDaysAgo(5), playlist: "Cherokee Nana Talks" },
   { slug: "inside-the-budget-forum", title: "Inside the Civic Budget Forum", description: "Highlights from this week's packed town hall. Placeholder description.", youtubeId: "dQw4w9WgXcQ", thumbnail: img("video-forum"), category: "politics", publishedAt: dateFromDaysAgo(1), playlist: "Local Politics" },
   { slug: "next-gen-roundtable-civic-contract", title: "Next Generation Roundtable: The Civic Contract", description: "Young contributors debate what generations owe each other. Placeholder description.", youtubeId: "dQw4w9WgXcQ", thumbnail: img("video-roundtable"), category: "opinion", publishedAt: dateFromDaysAgo(14), playlist: "Next Generation" },
   { slug: "gallery-walk-mainstreet", title: "A Walk Through the Gallery District", description: "A visual tour of the revived Main Street art scene. Placeholder description.", youtubeId: "dQw4w9WgXcQ", thumbnail: img("video-gallery"), category: "culture", publishedAt: dateFromDaysAgo(2), playlist: "Culture Desk" },
@@ -293,6 +299,6 @@ export const newsletterIssues: NewsletterIssue[] = [
   { slug: "issue-12", title: "Issue No. 12: The Budget Season Begins", summary: "This week: the civic budget forum, a Next Generation essay, and Cherokee Nana on listening.", publishedAt: dateFromDaysAgo(0), issueNumber: 12 },
   { slug: "issue-11", title: "Issue No. 11: Main Street's Second Act", summary: "The gallery walk revival, a faith coalition on housing, and our books desk's spring picks.", publishedAt: dateFromDaysAgo(7), issueNumber: 11 },
   { slug: "issue-10", title: "Issue No. 10: What the River Remembers", summary: "A history feature, a new interview series, and reader letters on the library hours debate.", publishedAt: dateFromDaysAgo(14), issueNumber: 10 },
-  { slug: "issue-9", title: "Issue No. 9: Youth Council Takes the Floor", summary: "Transit pilots, a fire chief interview, and a family perspectives column on multigenerational homes.", publishedAt: dateFromDaysAgo(21), issueNumber: 9 },
+  { slug: "issue-9", title: "Issue No. 9: Youth Council Takes the Floor", summary: "Transit pilots, a fire chief interview, and a Generations column on multigenerational homes.", publishedAt: dateFromDaysAgo(21), issueNumber: 9 },
   { slug: "issue-8", title: "Issue No. 8: The Civic Contract", summary: "A Next Generation roundtable, world briefing, and the editorial board on civility.", publishedAt: dateFromDaysAgo(28), issueNumber: 8 },
 ];

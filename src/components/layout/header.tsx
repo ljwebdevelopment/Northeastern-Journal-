@@ -28,7 +28,7 @@ export function Header() {
       <div className="hidden border-b border-border/70 bg-surface-muted/60 lg:block">
         <div className="content-container flex h-8 items-center justify-between text-[11px] font-medium uppercase tracking-wide text-muted">
           <span>{todayLabel()}</span>
-          <span>A Family Platform for Civic Writing &amp; Generational Perspectives</span>
+          <span>{siteConfig.tagline}</span>
         </div>
       </div>
 
@@ -47,7 +47,7 @@ export function Header() {
               Northeastern <span className="text-brand">Journal</span>
             </span>
             <span className="mt-1 hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted sm:block">
-              Est. for Family &amp; Community &middot; Civic Writing
+              Independent &middot; Local &middot; Northeastern Oklahoma
             </span>
           </span>
         </Link>

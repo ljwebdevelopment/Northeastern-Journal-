@@ -34,7 +34,7 @@ const readingList = [
 ];
 
 const timeline = [
-  { year: "1968", label: "The Journal's earliest predecessor begins as a family mimeograph." },
+  { year: "1968", label: "The Journal's earliest predecessor begins as a mimeographed community bulletin." },
   { year: "1991", label: "Cherokee Nana writes her first Sunday column." },
   { year: "2015", label: "The Sunday Letter newsletter launches." },
   { year: "2026", label: "Northeastern Journal relaunches as a full civic platform." },
@@ -241,7 +241,7 @@ export default async function CherokeeNanaPage() {
           <h2 className="rule-red font-serif text-2xl font-bold">Speaking</h2>
           <p className="mt-8 max-w-2xl text-sm leading-relaxed text-muted">
             Cherokee Nana speaks regularly at civic forums, library events,
-            and community gatherings on family, memory, and local journalism.
+            and community gatherings on memory, place, and local journalism.
             Placeholder booking information for the rebuild.
           </p>
           <Link

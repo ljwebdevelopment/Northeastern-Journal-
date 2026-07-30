@@ -1,10 +1,21 @@
 export const siteConfig = {
   name: "Northeastern Journal",
-  tagline: "A Family Platform for Civic Writing & Generational Perspectives",
+  tagline: "Independent News for Northeastern Oklahoma",
+  shortTagline: "Independent Local Journalism",
   description:
-    "Northeastern Journal is a family platform dedicated to civic writing, thoughtful journalism, community discussion, and generational perspectives.",
-  url: "https://northeasternjournal.com",
-  ogImage: "https://picsum.photos/seed/nj-og/1200/630",
+    "Northeastern Journal is an independent newsroom covering northeastern Oklahoma — local reporting, civic accountability, culture, and community voices.",
+  url: "https://www.northeasternjournal.com",
+  ogImage: "https://www.northeasternjournal.com/opengraph-image",
+  /**
+   * The people who founded and operate the Journal. Rendered on the About
+   * page and in the Organization JSON-LD. Contributors are stored in
+   * Supabase (`authors`) and are intentionally *not* listed here — the
+   * masthead grows without a code change.
+   */
+  founders: [
+    { name: "Cheryl Leeds", role: "Co-Founder & Editor" },
+    { name: "Luke Johnson", role: "Co-Founder & Publisher" },
+  ],
   links: {
     twitter: "https://twitter.com/example",
     facebook: "https://facebook.com/example",
@@ -50,6 +61,7 @@ export const siteConfig = {
         { label: "Books", href: "/books" },
         { label: "Videos", href: "/videos" },
         { label: "Community Voices", href: "/category/community-voices" },
+        { label: "Write for Us", href: "/contribute" },
         { label: "Search", href: "/search" },
       ],
     },

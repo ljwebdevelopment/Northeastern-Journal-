@@ -56,8 +56,8 @@ export function Footer() {
       <div className="border-t border-border">
         <div className="content-container flex flex-col items-center justify-between gap-3 py-6 text-xs text-muted sm:flex-row">
           <p>
-            &copy; {new Date().getFullYear()} {siteConfig.name}. A family
-            platform for civic writing.
+            &copy; {new Date().getFullYear()} {siteConfig.name}. Independent
+            local journalism for northeastern Oklahoma.
           </p>
           <div className="flex gap-4">
             <Link href="/about" className="hover:text-accent">
@@ -68,6 +68,9 @@ export function Footer() {
             </Link>
             <Link href="/search" className="hover:text-accent">
               Search
+            </Link>
+            <Link href="/login" className="hover:text-accent">
+              Editor Sign In
             </Link>
           </div>
         </div>

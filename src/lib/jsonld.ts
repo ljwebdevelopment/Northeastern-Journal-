@@ -4,10 +4,27 @@ import type { Article, Author, Book, Video } from "./content/types";
 export function organizationJsonLd() {
   return {
     "@context": "https://schema.org",
-    "@type": "Organization",
+    // NewsMediaOrganization is the specific type Google expects from a news
+    // publisher; it unlocks publisher rich results that plain Organization
+    // does not.
+    "@type": "NewsMediaOrganization",
     name: siteConfig.name,
+    alternateName: "The Journal",
     url: siteConfig.url,
-    logo: `${siteConfig.url}/icon.svg`,
+    logo: {
+      "@type": "ImageObject",
+      url: `${siteConfig.url}/icon.svg`,
+    },
+    description: siteConfig.description,
+    areaServed: {
+      "@type": "AdministrativeArea",
+      name: "Northeastern Oklahoma",
+    },
+    founder: siteConfig.founders.map((person) => ({
+      "@type": "Person",
+      name: person.name,
+      jobTitle: person.role,
+    })),
     sameAs: Object.values(siteConfig.links),
   };
 }
@@ -55,17 +72,23 @@ export function personJsonLd(author: Author) {
 export function articleJsonLd(article: Article, author?: Author) {
   return {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: article.title,
-    description: article.excerpt,
+    "@type": "NewsArticle",
+    headline: article.title.slice(0, 110), // Google truncates past 110 chars
+    alternativeHeadline: article.subtitle,
+    description: article.metaDescription || article.excerpt,
     image: [article.image],
     datePublished: article.publishedAt,
     dateModified: article.updatedAt ?? article.publishedAt,
+    articleSection: article.category,
+    keywords: article.tags.join(", "),
+    wordCount: article.wordCount,
+    inLanguage: "en-US",
+    isAccessibleForFree: true,
     author: author
       ? { "@type": "Person", name: author.name, url: `${siteConfig.url}/author/${author.slug}` }
-      : undefined,
+      : { "@type": "Organization", name: siteConfig.name },
     publisher: {
-      "@type": "Organization",
+      "@type": "NewsMediaOrganization",
       name: siteConfig.name,
       logo: { "@type": "ImageObject", url: `${siteConfig.url}/icon.svg` },
     },

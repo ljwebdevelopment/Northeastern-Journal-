@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Facebook, Mic, Quote, Rss as SubstackIcon, Twitter, Youtube } from "lucide-react";
+import { Mic, Quote } from "lucide-react";
+import { SubstackIcon } from "@/components/icons/brand-icons";
 import { getArticlesByAuthor, getAuthorBySlug, getVideos } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, personJsonLd } from "@/lib/jsonld";
+import { resolveSocial } from "@/lib/authors/social";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { VideoCard } from "@/components/shared/video-card";
+import { SocialLinks } from "@/components/shared/social-links";
+import { AuthorPhoto } from "@/components/shared/author-photo";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 
 export const metadata: Metadata = {
@@ -18,7 +21,8 @@ export const metadata: Metadata = {
   alternates: { canonical: `${siteConfig.url}/cherokee-nana` },
 };
 
-const featuredQuote =
+/** Used when the profile has no featured quote saved in the dashboard. */
+const fallbackQuote =
   "Listening is the first civic duty. Everything I've ever written started with sitting still long enough to hear someone else's version of the truth.";
 
 const quotes = [
@@ -40,16 +44,12 @@ const timeline = [
   { year: "2026", label: "Northeastern Journal relaunches as a full civic platform." },
 ];
 
-const socialLinks = [
-  { key: "substack", icon: SubstackIcon, label: "Substack" },
-  { key: "youtube", icon: Youtube, label: "YouTube" },
-  { key: "twitter", icon: Twitter, label: "Twitter" },
-  { key: "facebook", icon: Facebook, label: "Facebook" },
-] as const;
-
 export default async function CherokeeNanaPage() {
   const author = await getAuthorBySlug("cherokee-nana");
   if (!author) notFound();
+
+  const featuredQuote = author.featuredQuote?.trim() || fallbackQuote;
+  const substackUrl = resolveSocial(author.social).substack;
 
   const [columns, videos] = await Promise.all([
     getArticlesByAuthor("cherokee-nana"),
@@ -82,13 +82,11 @@ export default async function CherokeeNanaPage() {
         </div>
         <div className="content-container relative grid gap-10 py-14 lg:grid-cols-[22rem_1fr] lg:items-center lg:py-20">
           <div className="relative mx-auto aspect-[4/5] w-64 overflow-hidden rounded-2xl border-4 border-white/20 shadow-2xl lg:mx-0 lg:w-full">
-            <Image
+            <AuthorPhoto
               src={author.photo}
-              alt={author.name}
-              fill
+              alt={`Portrait of ${author.name}`}
               sizes="(min-width: 1024px) 22rem, 16rem"
               priority
-              className="object-cover"
             />
           </div>
           <div>
@@ -103,21 +101,7 @@ export default async function CherokeeNanaPage() {
             <p className="mt-6 max-w-2xl text-sm leading-relaxed text-white/80">
               {author.longBio}
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              {socialLinks
-                .filter((s) => author.social[s.key])
-                .map(({ key, icon: Icon, label }) => (
-                  <a
-                    key={key}
-                    href={author.social[key]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/20"
-                  >
-                    <Icon className="h-3.5 w-3.5" aria-hidden="true" /> {label}
-                  </a>
-                ))}
-            </div>
+            <SocialLinks author={author} inverted labelled className="mt-7" />
           </div>
         </div>
       </section>
@@ -164,14 +148,16 @@ export default async function CherokeeNanaPage() {
                 Substack embed placeholder. Connect Cherokee Nana&apos;s
                 publication URL to display recent posts here.
               </p>
-              <a
-                href={author.social.substack}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 rounded-full bg-brand px-4 py-2 text-xs font-semibold text-brand-foreground"
-              >
-                Visit Substack
-              </a>
+              {substackUrl && (
+                <a
+                  href={substackUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 rounded-full bg-brand px-4 py-2 text-xs font-semibold text-brand-foreground"
+                >
+                  Visit Substack
+                </a>
+              )}
             </div>
           </div>
           <div>

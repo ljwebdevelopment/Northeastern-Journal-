@@ -40,6 +40,9 @@ export function breadcrumbJsonLd(items: { name: string; url: string }[]) {
 }
 
 export function personJsonLd(author: Author) {
+  const sameAs = [
+    ...new Set([...Object.values(author.social ?? {}), author.website].filter(Boolean)),
+  ];
   return {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -48,7 +51,13 @@ export function personJsonLd(author: Author) {
     description: author.bio,
     image: author.photo,
     url: `${siteConfig.url}/author/${author.slug}`,
-    sameAs: Object.values(author.social).filter(Boolean),
+    email: author.email,
+    homeLocation: author.location ? { "@type": "Place", name: author.location } : undefined,
+    worksFor: { "@type": "Organization", name: siteConfig.name, url: siteConfig.url },
+    sameAs,
+    award: (author.professionalLinks ?? [])
+      .filter((link) => link.kind === "award")
+      .map((link) => [link.title, link.outlet].filter(Boolean).join(" — ")),
   };
 }
 

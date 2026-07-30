@@ -5,6 +5,20 @@ export const siteConfig = {
     "Northeastern Journal is a family platform dedicated to civic writing, thoughtful journalism, community discussion, and generational perspectives.",
   url: "https://northeasternjournal.com",
   ogImage: "https://picsum.photos/seed/nj-og/1200/630",
+  /**
+   * Publisher identity used in newsletter emails. CAN-SPAM requires every
+   * commercial message to carry a valid physical postal address, so this
+   * is rendered in the footer of every send. Override in production with
+   * `NEWSLETTER_POSTAL_ADDRESS` / `NEWSLETTER_CONTACT_EMAIL`.
+   */
+  publisher: {
+    legalName: "Northeastern Journal",
+    postalAddress:
+      process.env.NEWSLETTER_POSTAL_ADDRESS ??
+      "Northeastern Journal, PO Box 000, Your City, ST 00000",
+    contactEmail:
+      process.env.NEWSLETTER_CONTACT_EMAIL ?? "hello@northeasternjournal.com",
+  },
   links: {
     twitter: "https://twitter.com/example",
     facebook: "https://facebook.com/example",
@@ -38,6 +52,7 @@ export const siteConfig = {
       title: "The Journal",
       links: [
         { label: "About", href: "/about" },
+        { label: "Contributors", href: "/authors" },
         { label: "Cherokee Nana", href: "/cherokee-nana" },
         { label: "Next Generation", href: "/next-generation" },
         { label: "Conversations", href: "/conversations" },

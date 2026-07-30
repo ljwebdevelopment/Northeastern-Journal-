@@ -161,6 +161,14 @@ Article pages are statically generated and revalidated on publish via cache
 tags, so readers get static-file performance and editors get instant updates.
 Images are served as AVIF/WebP through `next/image` with a 30-day cache.
 
+## A note on scheduled publishing
+
+`vercel.json` runs the publish job once daily, because **the Vercel Hobby plan
+fails any deployment whose cron is more frequent than that**. On Pro, change
+the schedule to `*/5 * * * *`. Manual publishing is instant either way — cron
+only matters for articles scheduled ahead of time. See
+[docs/SETUP.md](docs/SETUP.md#14-turn-on-scheduled-publishing).
+
 ## Roadmap
 
 The schema and the content boundary were designed with these in mind. Each is

@@ -9,9 +9,14 @@ import { emailConfig } from "@/lib/email/resend";
  * Publishes any article whose scheduled time has passed, then emails the ones
  * that asked for an announcement.
  *
- * Wired to Vercel Cron in `vercel.json` (every 5 minutes). Vercel sends the
- * CRON_SECRET as a bearer token; requests without it are rejected so the
- * endpoint can't be triggered by anyone who finds the URL.
+ * Wired to Vercel Cron in `vercel.json`. Vercel sends CRON_SECRET as a bearer
+ * token; requests without it are rejected so the endpoint can't be triggered
+ * by anyone who finds the URL.
+ *
+ * The schedule is once daily (`0 11 * * *`) because the Vercel Hobby plan
+ * rejects any deployment whose cron runs more often than that. On Pro, change
+ * it in vercel.json to a five-minute interval. This endpoint is also safe to
+ * call by hand at any time.
  */
 
 export const runtime = "nodejs";

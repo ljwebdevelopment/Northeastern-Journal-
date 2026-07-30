@@ -357,23 +357,44 @@ Magic links must know where to send editors in production.
 
 ## 14. Turn on scheduled publishing
 
-`vercel.json` already declares the cron job:
+`vercel.json` declares the cron job:
 
 ```json
-{ "path": "/api/cron/publish-scheduled", "schedule": "*/5 * * * *" }
+{ "path": "/api/cron/publish-scheduled", "schedule": "0 11 * * *" }
 ```
 
 Vercel registers it automatically on your next deploy. To confirm:
 
 1. Vercel → **Project → Cron Jobs**.
-2. You should see `/api/cron/publish-scheduled`, running every 5 minutes.
+2. You should see `/api/cron/publish-scheduled`.
 
 Vercel sends `CRON_SECRET` as a bearer token, which is why that variable is
 required. Without it, scheduled articles will not go live on their own.
 
-> The Vercel Hobby plan limits cron jobs to **once per day**. If you're on
-> Hobby, either upgrade to Pro, or change the schedule in `vercel.json` to
-> something like `"0 6 * * *"` (6am daily) and schedule articles accordingly.
+### About that schedule
+
+**The Vercel Hobby plan allows one cron run per day.** Anything more frequent
+makes the deployment fail outright with a plan-limit error — not a warning, a
+hard failure.
+
+So the schedule is set to `0 11 * * *`: once daily at 11:00 UTC, which is 6am
+Central (5am during standard time). An article scheduled for Tuesday afternoon
+will not appear until Wednesday morning.
+
+If that's too coarse — and for a working newsroom it probably is — you have two
+options:
+
+1. **Upgrade to Vercel Pro** and change the schedule to `*/5 * * * *`. Scheduled
+   articles then go live within five minutes of their time.
+2. **Stay on Hobby and publish manually.** The **Publish** button is instant and
+   always available; scheduling is a convenience, not the only path. Nothing
+   else on the site depends on cron.
+
+You can also trigger a publishing run by hand at any time:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://www.northeasternjournal.com/api/cron/publish-scheduled
+```
 
 ---
 

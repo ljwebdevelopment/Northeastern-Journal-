@@ -35,7 +35,7 @@ export default async function NewsletterPage() {
         <p className="kicker">The Sunday Letter</p>
         <h1 className="mt-2 font-serif text-4xl font-bold sm:text-5xl">Newsletter</h1>
         <p className="mt-3 text-base text-muted">
-          One weekly email from the Northeastern Journal family, delivered
+          One weekly email from the Northeastern Journal newsroom, delivered
           Sunday mornings.
         </p>
       </header>

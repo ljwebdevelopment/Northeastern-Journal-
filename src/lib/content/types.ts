@@ -15,7 +15,7 @@ export type CategorySlug =
   | "history"
   | "opinion"
   | "editorial"
-  | "family-perspectives"
+  | "generations"
   | "interviews"
   | "books"
   | "local-news"
@@ -50,17 +50,31 @@ export interface Author {
 }
 
 export interface Article {
+  /** Supabase row id. Absent for the built-in placeholder archive. */
+  id?: string;
   slug: string;
   title: string;
+  subtitle?: string;
   excerpt: string;
-  body: string[]; // paragraphs
+  /** Sanitized HTML from the editor. This is what article pages render. */
+  bodyHtml: string;
+  /** Paragraph-split plain text. Kept for feeds, search, and word counts. */
+  body: string[];
   category: CategorySlug;
   authorSlug: string;
   publishedAt: string; // ISO
   updatedAt?: string;
   image: string;
   imageAlt: string;
+  imageCaption?: string;
   tags: string[];
+  /** SEO overrides set in the CMS; fall back to title/excerpt when empty. */
+  seoTitle?: string;
+  metaDescription?: string;
+  canonicalUrl?: string;
+  /** Stored at save time so the reader sees the same number as the editor. */
+  readingMinutes?: number;
+  wordCount?: number;
   featured?: boolean;
   trending?: boolean;
   mostRead?: boolean;

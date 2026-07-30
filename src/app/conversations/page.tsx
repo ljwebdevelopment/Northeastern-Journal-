@@ -8,7 +8,7 @@ import { ConversationCard } from "@/components/shared/conversation-card";
 export const metadata: Metadata = {
   title: "Conversations",
   description:
-    "Intergenerational discussions: point/counterpoint, interviews, roundtables, and shared essays from the Northeastern Journal family.",
+    "Point/counterpoint, interviews, roundtables, and shared essays from Northeastern Journal contributors and the communities we cover.",
   alternates: { canonical: `${siteConfig.url}/conversations` },
 };
 
@@ -27,7 +27,7 @@ export default async function ConversationsPage() {
           __html: JSON.stringify([
             collectionPageJsonLd(
               "Conversations",
-              "Intergenerational discussions from the Northeastern Journal family.",
+              "Recorded discussions between Northeastern Journal contributors and the communities we cover.",
               `${siteConfig.url}/conversations`
             ),
             breadcrumbJsonLd([
@@ -42,9 +42,9 @@ export default async function ConversationsPage() {
         <p className="kicker">A Flagship Section</p>
         <h1 className="mt-3 font-serif text-4xl font-bold sm:text-5xl">Conversations</h1>
         <p className="mt-4 text-base text-muted">
-          Intergenerational discussion in point/counterpoint, interview,
-          roundtable, and dialogue formats &mdash; family members and
-          contributors working through civic questions in the open.
+          Point/counterpoint, interview, roundtable, and dialogue formats
+          &mdash; contributors, officials, and readers working through civic
+          questions in the open.
         </p>
       </header>
 

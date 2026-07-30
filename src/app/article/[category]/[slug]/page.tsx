@@ -13,8 +13,17 @@ import { siteConfig } from "@/lib/site-config";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
+import { ShareButtons } from "@/components/article/share-buttons";
+import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { formatDate, readingTime } from "@/lib/utils";
 import { demoContentConfig } from "@/lib/content/demo-config";
+
+/**
+ * Published articles are static until something changes; `revalidateTag` in
+ * the CMS save path clears them the moment an editor hits Publish.
+ */
+export const revalidate = 300;
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const articles = await getArticles();
@@ -29,25 +38,37 @@ export async function generateMetadata({
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return {};
-  const url = `${siteConfig.url}/article/${article.category}/${article.slug}`;
+
+  const author = await getAuthorBySlug(article.authorSlug);
+  const url = article.canonicalUrl
+    ?? `${siteConfig.url}/article/${article.category}/${article.slug}`;
   const noindex = Boolean(article.isDemo) && !demoContentConfig.indexable;
+  const description = article.metaDescription || article.excerpt;
+
   return {
-    title: article.title,
-    description: article.excerpt,
+    title: article.seoTitle || article.title,
+    description,
+    authors: author ? [{ name: author.name, url: `${siteConfig.url}/author/${author.slug}` }] : undefined,
+    keywords: article.tags,
     alternates: { canonical: url },
     robots: noindex ? { index: false, follow: true } : undefined,
     openGraph: {
       type: "article",
-      title: article.title,
-      description: article.excerpt,
+      siteName: siteConfig.name,
+      title: article.seoTitle || article.title,
+      description,
       url,
-      images: [{ url: article.image, width: 1200, height: 800 }],
+      images: [{ url: article.image, width: 1200, height: 800, alt: article.imageAlt }],
       publishedTime: article.publishedAt,
+      modifiedTime: article.updatedAt ?? article.publishedAt,
+      authors: author ? [author.name] : undefined,
+      section: article.category,
+      tags: article.tags,
     },
     twitter: {
       card: "summary_large_image",
-      title: article.title,
-      description: article.excerpt,
+      title: article.seoTitle || article.title,
+      description,
       images: [article.image],
     },
   };
@@ -65,13 +86,21 @@ export default async function ArticlePage({
   const [author, category, related] = await Promise.all([
     getAuthorBySlug(article.authorSlug),
     getCategory(article.category),
-    getRelatedArticles(article),
+    getRelatedArticles(article, 3),
   ]);
 
-  const words = article.body.join(" ").split(/\s+/).length;
+  const url = `${siteConfig.url}/article/${article.category}/${article.slug}`;
+  const minutes =
+    article.readingMinutes ?? readingTime(article.body.join(" ").split(/\s+/).length);
+
+  // Only surface an "updated" line when the revision is meaningfully later
+  // than publication — a same-day typo fix isn't news.
+  const updatedLater =
+    article.updatedAt &&
+    +new Date(article.updatedAt) - +new Date(article.publishedAt) > 12 * 60 * 60 * 1000;
 
   return (
-    <article className="content-container py-10">
+    <article className="content-container py-8 sm:py-10">
       <Breadcrumbs
         items={[
           ...(category ? [{ name: category.name, href: `/category/${category.slug}` }] : []),
@@ -85,74 +114,174 @@ export default async function ArticlePage({
             articleJsonLd(article, author),
             breadcrumbJsonLd([
               { name: "Home", url: siteConfig.url },
-              ...(category ? [{ name: category.name, url: `${siteConfig.url}/category/${category.slug}` }] : []),
-              { name: article.title, url: `${siteConfig.url}/article/${article.category}/${article.slug}` },
+              ...(category
+                ? [{ name: category.name, url: `${siteConfig.url}/category/${category.slug}` }]
+                : []),
+              { name: article.title, url },
             ]),
           ]),
         }}
       />
 
+      {/* ---------------------------------------------------------------- */}
+      {/* Headline block                                                    */}
+      {/* ---------------------------------------------------------------- */}
       <header className="mx-auto max-w-3xl">
         <p className="kicker">
-          <Link href={`/category/${article.category}`}>{category?.name ?? article.category}</Link>
+          <Link href={`/category/${article.category}`}>
+            {category?.name ?? article.category}
+          </Link>
         </p>
-        <h1 className="mt-3 text-balance font-serif text-3xl font-bold leading-tight sm:text-5xl">
+
+        <h1 className="mt-3 text-balance font-serif text-[2rem] font-bold leading-[1.12] sm:text-5xl">
           {article.title}
         </h1>
-        <p className="mt-4 text-lg text-muted">{article.excerpt}</p>
 
-        <div className="mt-6 flex items-center gap-3 border-y border-border py-4">
-          {author && (
-            <>
-              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-surface-muted">
-                <Image src={author.photo} alt={author.name} fill sizes="40px" className="object-cover" />
-              </div>
-              <div className="text-sm">
-                <Link href={`/author/${author.slug}`} className="font-semibold hover:text-accent">
-                  {author.name}
-                </Link>
-                <p className="text-muted">
-                  <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
-                  {" · "}
-                  {readingTime(words)} min read
-                </p>
-              </div>
-            </>
-          )}
+        {article.subtitle && (
+          <p className="mt-4 text-balance font-serif text-xl leading-snug text-muted sm:text-2xl">
+            {article.subtitle}
+          </p>
+        )}
+
+        <p className="mt-4 text-lg leading-relaxed text-muted">{article.excerpt}</p>
+
+        <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4">
+          <div className="flex items-center gap-3">
+            {author && (
+              <>
+                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-surface-muted">
+                  <Image
+                    src={author.photo}
+                    alt=""
+                    fill
+                    sizes="44px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="text-sm">
+                  <Link
+                    href={`/author/${author.slug}`}
+                    className="font-semibold hover:text-accent"
+                  >
+                    {author.name}
+                  </Link>
+                  <p className="text-muted">
+                    <time dateTime={article.publishedAt}>
+                      {formatDate(article.publishedAt)}
+                    </time>
+                    {" · "}
+                    {minutes} min read
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          <ShareButtons url={url} title={article.title} />
         </div>
+
+        {updatedLater && (
+          <p className="mt-3 text-xs text-muted">
+            Updated{" "}
+            <time dateTime={article.updatedAt}>{formatDate(article.updatedAt!)}</time>
+          </p>
+        )}
       </header>
 
-      <div className="relative mx-auto mt-8 aspect-[16/9] max-w-4xl overflow-hidden rounded-2xl bg-surface-muted">
-        <Image
-          src={article.image}
-          alt={article.imageAlt}
-          fill
-          sizes="(min-width: 1024px) 900px, 100vw"
-          priority
-          className="object-cover"
-        />
+      {/* ---------------------------------------------------------------- */}
+      {/* Lead image                                                        */}
+      {/* ---------------------------------------------------------------- */}
+      <figure className="mx-auto mt-8 max-w-4xl">
+        <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-surface-muted">
+          <Image
+            src={article.image}
+            alt={article.imageAlt}
+            fill
+            sizes="(min-width: 1024px) 900px, 100vw"
+            priority
+            fetchPriority="high"
+            className="object-cover"
+          />
+        </div>
+        {article.imageCaption && (
+          <figcaption className="mt-2.5 text-sm leading-relaxed text-muted">
+            {article.imageCaption}
+          </figcaption>
+        )}
+      </figure>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Body                                                              */}
+      {/* ---------------------------------------------------------------- */}
+      <div
+        className="prose prose-neutral dark:prose-invert mx-auto mt-10 max-w-[38rem]
+                   prose-headings:font-serif prose-headings:tracking-tight
+                   prose-h2:mt-12 prose-h2:text-2xl prose-h3:text-xl
+                   prose-p:text-[1.0625rem] prose-p:leading-[1.75]
+                   prose-a:text-accent prose-a:underline-offset-2
+                   prose-blockquote:border-l-brand prose-blockquote:font-serif
+                   prose-blockquote:not-italic prose-blockquote:text-foreground
+                   prose-img:rounded-xl
+                   prose-figcaption:text-sm prose-figcaption:text-muted"
+        // Sanitized on write in `sanitizeArticleHtml` — see lib/richtext.ts.
+        dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
+      />
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Tags + share                                                      */}
+      {/* ---------------------------------------------------------------- */}
+      {article.tags.length > 0 && (
+        <div className="mx-auto mt-10 flex max-w-[38rem] flex-wrap gap-2">
+          {article.tags.map((t) => (
+            <Link
+              key={t}
+              href={`/search?q=${encodeURIComponent(t)}`}
+              className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted transition-colors hover:border-brand hover:text-brand"
+            >
+              #{t}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <div className="mx-auto mt-8 flex max-w-[38rem] justify-center border-t border-border pt-8">
+        <ShareButtons url={url} title={article.title} />
       </div>
 
-      <div className="prose prose-neutral dark:prose-invert mx-auto mt-10 max-w-2xl prose-headings:font-serif">
-        {article.body.map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
-      </div>
+      {/* ---------------------------------------------------------------- */}
+      {/* Author card                                                       */}
+      {/* ---------------------------------------------------------------- */}
+      {author && (
+        <aside className="mx-auto mt-12 max-w-[38rem] rounded-2xl border border-border bg-surface p-6">
+          <div className="flex items-start gap-4">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-surface-muted">
+              <Image src={author.photo} alt="" fill sizes="64px" className="object-cover" />
+            </div>
+            <div className="min-w-0">
+              <p className="kicker">{author.role}</p>
+              <h2 className="mt-1 font-serif text-xl font-bold">
+                <Link href={`/author/${author.slug}`} className="hover:text-accent">
+                  {author.name}
+                </Link>
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{author.bio}</p>
+              <Link
+                href={`/author/${author.slug}`}
+                className="mt-3 inline-block text-sm font-semibold text-accent hover:underline"
+              >
+                More from {author.name.split(" ")[0]} →
+              </Link>
+            </div>
+          </div>
+        </aside>
+      )}
 
-      <div className="mx-auto mt-8 flex max-w-2xl flex-wrap gap-2">
-        {article.tags.map((t) => (
-          <span
-            key={t}
-            className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted"
-          >
-            #{t}
-          </span>
-        ))}
-      </div>
-
+      {/* ---------------------------------------------------------------- */}
+      {/* Related                                                           */}
+      {/* ---------------------------------------------------------------- */}
       {related.length > 0 && (
         <section className="mx-auto mt-16 max-w-5xl border-t border-border pt-10">
-          <h2 className="font-serif text-2xl font-bold">Related &amp; Suggested Reading</h2>
+          <h2 className="font-serif text-2xl font-bold">Related Reading</h2>
           <div className="mt-6 grid gap-8 sm:grid-cols-3">
             {related.map((a) => (
               <ArticleCard key={a.slug} article={a} />
@@ -160,6 +289,10 @@ export default async function ArticlePage({
           </div>
         </section>
       )}
+
+      <div className="mx-auto mt-16 max-w-3xl">
+        <NewsletterSignup compact source="article" />
+      </div>
     </article>
   );
 }

@@ -94,7 +94,7 @@ Accounts are defined in the `NJ_ADMIN_ACCOUNTS` environment variable:
     "name": "Cherokee Nana",
     "authorSlug": "cherokee-nana",   // profile this account owns
     "role": "owner",                 // "owner" edits anyone; "author" edits self
-    "passwordHash": "pbkdf2$210000$...$..."
+    "passwordHash": "pbkdf2:210000:...:..."
   }
 ]
 ```

@@ -31,23 +31,70 @@ export interface Category {
 }
 
 export interface SocialLinks {
-  substack?: string;
-  youtube?: string;
-  twitter?: string;
-  instagram?: string;
   facebook?: string;
+  instagram?: string;
+  x?: string;
+  tiktok?: string;
+  substack?: string;
+  linkedin?: string;
+  youtube?: string;
+  /** Legacy alias for `x`, kept so existing data keeps resolving. */
+  twitter?: string;
+}
+
+export type SocialPlatform = keyof SocialLinks;
+
+/**
+ * Work an author has published, won, or appeared in outside the Journal.
+ * Grouped on the public profile by `kind`.
+ */
+export type ProfessionalLinkKind =
+  | "syndicated"
+  | "publication"
+  | "award"
+  | "press"
+  | "portfolio";
+
+export interface ProfessionalLink {
+  id: string;
+  kind: ProfessionalLinkKind;
+  /** Headline, award name, segment title, or portfolio label. */
+  title: string;
+  /** Outlet, wire service, granting body, or program name. */
+  outlet?: string;
+  url?: string;
+  /** Free-form year or date label ("2024", "Spring 2023"). */
+  year?: string;
+  description?: string;
 }
 
 export interface Author {
   slug: string;
   name: string;
+  /** Job title — Editor, Publisher, Columnist, etc. */
   role: string;
   photo: string;
+  /** One- or two-sentence bio used in cards and bylines. */
   bio: string;
+  /** Full "About the Author" biography. */
   longBio: string;
+  location?: string;
+  /** Optional public contact address. Omitted from the page when unset. */
+  email?: string;
+  website?: string;
+  /** Pull quote displayed in the profile hero. */
+  featuredQuote?: string;
   social: SocialLinks;
+  professionalLinks?: ProfessionalLink[];
   relatedTopics: CategorySlug[];
+  /** ISO date the author joined the Journal, used in profile statistics. */
+  joinedAt?: string;
+  /** ISO timestamp of the last dashboard profile edit. */
+  updatedAt?: string;
 }
+
+/** Fields an author may edit from the dashboard. Slug is never editable. */
+export type AuthorProfileInput = Omit<Author, "slug" | "updatedAt">;
 
 export interface Article {
   slug: string;

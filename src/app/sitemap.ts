@@ -25,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: siteConfig.url, changeFrequency: "hourly", priority: 1 },
     { url: `${siteConfig.url}/about`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${siteConfig.url}/authors`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteConfig.url}/cherokee-nana`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${siteConfig.url}/next-generation`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${siteConfig.url}/conversations`, changeFrequency: "weekly", priority: 0.8 },

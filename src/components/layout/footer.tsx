@@ -69,6 +69,9 @@ export function Footer() {
             <Link href="/search" className="hover:text-accent">
               Search
             </Link>
+            <Link href="/admin" className="hover:text-accent">
+              Editor Login
+            </Link>
           </div>
         </div>
       </div>

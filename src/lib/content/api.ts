@@ -4,9 +4,9 @@
  * later be swapped for a real CMS client (WordPress, Sanity, Strapi,
  * Contentful, Payload) without touching UI code.
  */
+import { getAuthorProfile, listAuthorProfiles } from "@/lib/store/authors";
 import {
   articles as allArticles,
-  authors as allAuthors,
   books as allBooks,
   categories as allCategories,
   conversations as allConversations,
@@ -100,12 +100,17 @@ export async function searchArticles(query: string): Promise<Article[]> {
   );
 }
 
+/**
+ * Author reads go through the profile store, which merges the seed
+ * roster with whatever authors have saved from the dashboard — so a
+ * profile edit shows up on the public site without a code change.
+ */
 export async function getAuthors(): Promise<Author[]> {
-  return allAuthors;
+  return listAuthorProfiles();
 }
 
 export async function getAuthorBySlug(slug: string): Promise<Author | undefined> {
-  return allAuthors.find((a) => a.slug === slug);
+  return getAuthorProfile(slug);
 }
 
 export async function getBooks(): Promise<Book[]> {

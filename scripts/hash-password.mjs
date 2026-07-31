@@ -6,7 +6,10 @@
  *
  * Mirrors src/lib/auth/password.ts exactly: PBKDF2-SHA256, 210,000
  * iterations, 128-bit salt, formatted as
- * `pbkdf2$<iterations>$<saltBase64>$<hashBase64>`.
+ * `pbkdf2:<iterations>:<saltBase64>:<hashBase64>`.
+ *
+ * The `:` separator keeps the hash safe to paste into a .env file, where
+ * `$` would be expanded as a variable reference and corrupt it.
  */
 
 const ITERATIONS = 210_000;
@@ -38,4 +41,4 @@ const bits = await crypto.subtle.deriveBits(
   KEY_LENGTH_BITS
 );
 
-console.log(`pbkdf2$${ITERATIONS}$${toBase64(salt)}$${toBase64(new Uint8Array(bits))}`);
+console.log(`pbkdf2:${ITERATIONS}:${toBase64(salt)}:${toBase64(new Uint8Array(bits))}`);

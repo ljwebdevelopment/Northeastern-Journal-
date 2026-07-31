@@ -2,7 +2,14 @@
  * PBKDF2 password hashing on Web Crypto, so the same helpers work in
  * route handlers, server actions, and the password-hashing CLI script.
  *
- * Hash format: `pbkdf2$<iterations>$<saltBase64>$<hashBase64>`
+ * Hash format: `pbkdf2:<iterations>:<saltBase64>:<hashBase64>`
+ *
+ * The separator is `:` rather than the more conventional `$` on purpose.
+ * These hashes live inside `NJ_ADMIN_ACCOUNTS`, and Next.js runs `.env`
+ * files through dotenv-expand, which treats `$name` as a variable
+ * reference — a `$`-separated hash gets silently mangled before the app
+ * ever reads it, and every sign-in fails with no clue why. Base64 never
+ * contains `:`, so this separator is unambiguous and env-safe.
  */
 
 const ITERATIONS = 210_000;
@@ -46,12 +53,24 @@ async function derive(
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const hash = await derive(password, salt, ITERATIONS);
-  return `pbkdf2$${ITERATIONS}$${toBase64(salt)}$${toBase64(hash)}`;
+  return `pbkdf2:${ITERATIONS}:${toBase64(salt)}:${toBase64(hash)}`;
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const parts = stored.split("$");
-  if (parts.length !== 4 || parts[0] !== "pbkdf2") return false;
+  const parts = stored.split(":");
+  if (parts.length !== 4 || parts[0] !== "pbkdf2") {
+    // A hash that starts right but lost its structure is almost always
+    // dotenv variable expansion eating `$`-separated segments. Say so,
+    // because the alternative is an unexplained "password doesn't match".
+    if (stored.startsWith("pbkdf2")) {
+      console.error(
+        "[auth] Malformed password hash. If it came from an older `pbkdf2$...` " +
+          "format, regenerate it with `npm run hash-password` — `$` is expanded " +
+          "by .env parsing and corrupts the hash."
+      );
+    }
+    return false;
+  }
 
   const iterations = Number(parts[1]);
   if (!Number.isFinite(iterations) || iterations <= 0) return false;

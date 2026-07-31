@@ -7,10 +7,10 @@
  *   NJ_ADMIN_ACCOUNTS='[
  *     {"email":"nana@northeasternjournal.com","name":"Cherokee Nana",
  *      "authorSlug":"cherokee-nana","role":"owner",
- *      "passwordHash":"pbkdf2$210000$<salt>$<hash>"},
+ *      "passwordHash":"pbkdf2:210000:<salt>:<hash>"},
  *     {"email":"miles@northeasternjournal.com","name":"Miles Carter",
  *      "authorSlug":"miles-carter","role":"author",
- *      "passwordHash":"pbkdf2$210000$<salt>$<hash>"}
+ *      "passwordHash":"pbkdf2:210000:<salt>:<hash>"}
  *   ]'
  *
  * Generate a hash with `npm run hash-password -- 'your password'`.

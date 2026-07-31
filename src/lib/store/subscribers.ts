@@ -67,6 +67,60 @@ export async function listSubscribers(): Promise<Subscriber[]> {
     .sort((a, b) => +new Date(b.subscribedAt) - +new Date(a.subscribedAt));
 }
 
+/**
+ * Adds an author to a reader's follow list, creating the subscriber
+ * record if this is their first signup. Following a journalist also
+ * subscribes them, so there's no separate "confirm" step.
+ */
+export async function followAuthor(
+  email: string,
+  authorSlug: string,
+  patch: Partial<Omit<Subscriber, "email" | "authors">> = {}
+): Promise<Subscriber> {
+  const existing = await findSubscriber(email);
+  const authors = new Set(existing?.authors ?? []);
+  authors.add(authorSlug);
+  return upsertSubscriber(email, { ...patch, authors: [...authors] });
+}
+
+export async function unfollowAuthor(
+  email: string,
+  authorSlug: string
+): Promise<Subscriber | null> {
+  const existing = await findSubscriber(email);
+  if (!existing) return null;
+  const authors = (existing.authors ?? []).filter((slug) => slug !== authorSlug);
+  return upsertSubscriber(email, { authors });
+}
+
+/** Active followers of one journalist. */
+export async function countAuthorSubscribers(authorSlug: string): Promise<number> {
+  const all = await listSubscribers();
+  return all.filter(
+    (s) => s.status === "subscribed" && (s.authors ?? []).includes(authorSlug)
+  ).length;
+}
+
+/** Follower counts for every author, in one pass over the list. */
+export async function authorSubscriberCounts(): Promise<Record<string, number>> {
+  const all = await listSubscribers();
+  const counts: Record<string, number> = {};
+  for (const subscriber of all) {
+    if (subscriber.status !== "subscribed") continue;
+    for (const slug of subscriber.authors ?? []) {
+      counts[slug] = (counts[slug] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+export async function isFollowing(email: string, authorSlug: string): Promise<boolean> {
+  const subscriber = await findSubscriber(email);
+  return Boolean(
+    subscriber?.status === "subscribed" && subscriber.authors?.includes(authorSlug)
+  );
+}
+
 export interface SubscriberStats {
   total: number;
   active: number;

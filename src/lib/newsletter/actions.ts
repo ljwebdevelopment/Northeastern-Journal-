@@ -16,12 +16,19 @@
  * The welcome email goes out through Resend after the record is written,
  * so a mail failure never costs us the subscription.
  */
+import { revalidatePath } from "next/cache";
 import { welcomeEmail, unsubscribeHeaders } from "@/lib/email/templates";
 import { sendEmail } from "@/lib/email/resend";
 import { verifyCaptcha } from "@/lib/security/captcha";
 import { domainAcceptsMail, validateEmail } from "@/lib/security/email";
 import { clientIp, rateLimit } from "@/lib/security/rate-limit";
-import { findSubscriber, upsertSubscriber, setSubscriberStatus } from "@/lib/store/subscribers";
+import {
+  findSubscriber,
+  followAuthor,
+  upsertSubscriber,
+  setSubscriberStatus,
+} from "@/lib/store/subscribers";
+import { getAuthorProfile } from "@/lib/store/authors";
 import { verifyEmailToken } from "@/lib/security/tokens";
 import type { SubscribeState, UnsubscribeState } from "./state";
 import { unsubscribeUrls } from "./urls";
@@ -127,6 +134,101 @@ export async function subscribeAction(
     };
   } catch (error) {
     console.error("[newsletter] signup failed", error);
+    return { status: "error", message: GENERIC_ERROR };
+  }
+}
+
+/**
+ * Follow a single journalist, Substack-style. Runs the same gauntlet as
+ * a newsletter signup — honeypot, rate limit, captcha, validation — and
+ * subscribes the reader in the same step, so following is one click and
+ * never needs a confirmation email.
+ */
+export async function followAuthorAction(
+  _prevState: SubscribeState,
+  formData: FormData
+): Promise<SubscribeState> {
+  try {
+    if (String(formData.get("company") ?? "").trim()) {
+      return { status: "success", message: "You're following this journalist." };
+    }
+
+    const authorSlug = String(formData.get("authorSlug") ?? "").trim();
+    const author = authorSlug ? await getAuthorProfile(authorSlug) : undefined;
+    if (!author) {
+      return { status: "error", message: GENERIC_ERROR };
+    }
+
+    const ip = await clientIp();
+    const ipLimit = await rateLimit(`follow:ip:${ip}`, { limit: 8, windowSeconds: 600 });
+    if (!ipLimit.allowed) {
+      return {
+        status: "error",
+        message: "Too many attempts. Please try again in a few minutes.",
+      };
+    }
+
+    const captchaToken =
+      (formData.get("cf-turnstile-response") as string | null) ??
+      (formData.get("g-recaptcha-response") as string | null) ??
+      (formData.get("captchaToken") as string | null);
+    const captcha = await verifyCaptcha(captchaToken, ip);
+    if (!captcha.ok) {
+      return { status: "error", message: captcha.error ?? GENERIC_ERROR };
+    }
+
+    const validation = validateEmail(String(formData.get("email") ?? ""));
+    if (!validation.ok) {
+      return { status: "error", message: validation.error ?? GENERIC_ERROR };
+    }
+    const email = validation.email;
+
+    if (!(await domainAcceptsMail(email))) {
+      return {
+        status: "error",
+        message: "That email domain can't receive mail. Please check the address.",
+      };
+    }
+
+    const existing = await findSubscriber(email);
+    const alreadyFollowing =
+      existing?.status === "subscribed" && existing.authors?.includes(authorSlug);
+    if (alreadyFollowing) {
+      return {
+        status: "success",
+        alreadySubscribed: true,
+        message: `You already follow ${author.name}.`,
+      };
+    }
+
+    await followAuthor(email, authorSlug, { source: `author/${authorSlug}` });
+
+    // Only send the welcome email to genuinely new readers; an existing
+    // subscriber adding an author doesn't need re-welcoming.
+    if (!existing) {
+      const urls = await unsubscribeUrls(email);
+      const template = welcomeEmail({ email, unsubscribeUrl: urls.page });
+      const result = await sendEmail({
+        to: email,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+        headers: unsubscribeHeaders(urls.page, urls.oneClick),
+      });
+      if (result.sent) await upsertSubscriber(email, { welcomeEmailSent: true });
+    }
+
+    // The profile is statically rendered, so the subscriber count would
+    // otherwise stay frozen at whatever it was when the page was built.
+    revalidatePath(`/author/${authorSlug}`);
+    revalidatePath("/authors");
+
+    return {
+      status: "success",
+      message: `You're following ${author.name}. New work will reach your inbox.`,
+    };
+  } catch (error) {
+    console.error("[newsletter] follow failed", error);
     return { status: "error", message: GENERIC_ERROR };
   }
 }

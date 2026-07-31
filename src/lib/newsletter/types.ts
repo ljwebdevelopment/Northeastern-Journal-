@@ -11,6 +11,12 @@ export interface Subscriber {
   unsubscribedAt?: string;
   /** Page path the signup form was submitted from. */
   source?: string;
+  /**
+   * Author slugs this reader follows. A reader can subscribe to the
+   * Journal generally (empty) and/or to individual journalists, the way
+   * Substack readers follow individual writers.
+   */
+  authors?: string[];
   /** Whether the welcome email was accepted by Resend. */
   welcomeEmailSent?: boolean;
 }

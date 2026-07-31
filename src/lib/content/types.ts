@@ -68,9 +68,37 @@ export interface ProfessionalLink {
   description?: string;
 }
 
+/** A pull quote the author wants shown on their profile. */
+export interface AuthorQuote {
+  id: string;
+  text: string;
+  /** Where it came from — a column title, talk, or interview. */
+  source?: string;
+}
+
+/** A book or article the author recommends. */
+export interface ReadingListItem {
+  id: string;
+  title: string;
+  note?: string;
+  url?: string;
+}
+
+/** A career milestone rendered on the profile timeline. */
+export interface TimelineEntry {
+  id: string;
+  year: string;
+  label: string;
+}
+
 export interface Author {
   slug: string;
   name: string;
+  /**
+   * Optional public handle, shown as `@username` and usable in place of
+   * the slug at `/author/<username>`. Purely cosmetic when unset.
+   */
+  username?: string;
   /** Job title — Editor, Publisher, Columnist, etc. */
   role: string;
   photo: string;
@@ -86,6 +114,20 @@ export interface Author {
   featuredQuote?: string;
   social: SocialLinks;
   professionalLinks?: ProfessionalLink[];
+  /** Notable quotes, rendered as a pull-quote list. */
+  quotes?: AuthorQuote[];
+  /** Books and pieces the author recommends. */
+  readingList?: ReadingListItem[];
+  /** Career milestones, rendered as a vertical timeline. */
+  timeline?: TimelineEntry[];
+  /** Matches `Video.playlist`, surfacing that playlist on the profile. */
+  videoPlaylist?: string;
+  /** Short blurb inviting speaking or interview requests. */
+  speaking?: string;
+  /** Podcast homepage or RSS feed, shown as a listen card. */
+  podcastUrl?: string;
+  /** Whether the public profile displays the subscriber count. */
+  showSubscriberCount?: boolean;
   relatedTopics: CategorySlug[];
   /** ISO date the author joined the Journal, used in profile statistics. */
   joinedAt?: string;

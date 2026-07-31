@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ArrowUpRight, Award, Globe, Mail, MapPin, Quote } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
+import { ArrowUpRight, Award, Globe, Mail, MapPin, Mic, Quote } from "lucide-react";
+import { SubstackIcon } from "@/components/icons/brand-icons";
 import {
   getArticlesByAuthor,
   getAuthorBySlug,
-  getAuthors,
   getCategories,
+  getVideos,
 } from "@/lib/content/api";
+import { countAuthorSubscribers } from "@/lib/store/subscribers";
+import { resolveSocial } from "@/lib/authors/social";
+import { AuthorSubscribe } from "@/components/shared/author-subscribe";
+import { VideoCard } from "@/components/shared/video-card";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, personJsonLd } from "@/lib/jsonld";
 import { buildAuthorStats, groupProfessionalLinks, isPopular } from "@/lib/authors/stats";
@@ -18,10 +23,13 @@ import { SocialLinks } from "@/components/shared/social-links";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { formatDate } from "@/lib/utils";
 
-export async function generateStaticParams() {
-  const authors = await getAuthors();
-  return authors.map((a) => ({ slug: a.slug }));
-}
+/**
+ * Rendered per request rather than statically. The subscriber count has
+ * to be correct the moment someone subscribes — with static generation
+ * plus revalidation, the reader who just subscribed still saw the old
+ * number on their next page load.
+ */
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -66,10 +74,20 @@ export default async function AuthorPage({
   const author = await getAuthorBySlug(slug);
   if (!author) notFound();
 
-  const [articles, categories] = await Promise.all([
-    getArticlesByAuthor(slug),
+  // Reached via the author's @handle — send them to the canonical URL.
+  if (author.slug !== slug) redirect(`/author/${author.slug}`);
+
+  const [articles, categories, videos, subscriberCount] = await Promise.all([
+    getArticlesByAuthor(author.slug),
     getCategories(),
+    getVideos(),
+    countAuthorSubscribers(author.slug),
   ]);
+
+  const authorVideos = author.videoPlaylist
+    ? videos.filter((v) => v.playlist === author.videoPlaylist)
+    : [];
+  const substackUrl = resolveSocial(author.social ?? {}).substack;
 
   const stats = buildAuthorStats(author, articles, categories);
   const beats = categories.filter(
@@ -120,6 +138,9 @@ export default async function AuthorPage({
             <h1 className="mt-3 text-balance font-serif text-4xl font-bold leading-[1.05] sm:text-6xl">
               {author.name}
             </h1>
+            {author.username && (
+              <p className="mt-2 text-sm font-medium text-white/70">@{author.username}</p>
+            )}
 
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/80">
               {author.location && (
@@ -169,9 +190,23 @@ export default async function AuthorPage({
               )}
             </div>
 
-            <div className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-7 rounded-2xl border border-white/25 bg-white/10 p-5 backdrop-blur-sm">
+              <AuthorSubscribe
+                authorSlug={author.slug}
+                authorName={author.name}
+                subscriberCount={subscriberCount}
+                showCount={author.showSubscriberCount ?? true}
+                inverted
+              />
+            </div>
+
+            <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <StatTile value={stats.totalArticles} label="Articles published" />
-              <StatTile value={stats.categoryCount} label="Categories" />
+              {(author.showSubscriberCount ?? true) && subscriberCount > 0 ? (
+                <StatTile value={subscriberCount.toLocaleString()} label="Subscribers" />
+              ) : (
+                <StatTile value={stats.categoryCount} label="Categories" />
+              )}
               <StatTile value={stats.externalWorkCount} label="Outside bylines" />
               <StatTile value={stats.awardCount} label="Awards" />
             </div>
@@ -318,6 +353,156 @@ export default async function AuthorPage({
           )}
         </section>
 
+        {/* Substack + videos */}
+        {(substackUrl || authorVideos.length > 0) && (
+          <section className="grid gap-8 border-t border-border py-12 lg:grid-cols-2">
+            {substackUrl && (
+              <div>
+                <h2 className="rule-red font-serif text-2xl font-bold">On Substack</h2>
+                <div className="mt-8 flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface-muted p-8 text-center">
+                  <SubstackIcon className="h-8 w-8 text-muted" aria-hidden />
+                  <p className="mt-3 max-w-xs text-sm text-muted">
+                    {author.name} publishes on Substack. Follow along there for
+                    posts that don&rsquo;t run in the Journal.
+                  </p>
+                  <a
+                    href={substackUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 rounded-full bg-brand px-5 py-2.5 text-xs font-semibold text-brand-foreground transition-opacity hover:opacity-90"
+                  >
+                    Visit Substack
+                  </a>
+                </div>
+              </div>
+            )}
+            {authorVideos.length > 0 && (
+              <div>
+                <h2 className="rule-red font-serif text-2xl font-bold">Featured Videos</h2>
+                <div className="mt-8 grid gap-6 sm:grid-cols-2">
+                  {authorVideos.slice(0, 4).map((v) => (
+                    <VideoCard key={v.slug} video={v} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Podcast */}
+        {author.podcastUrl && (
+          <section className="border-t border-border py-12">
+            <h2 className="rule-red font-serif text-2xl font-bold">Podcast</h2>
+            <a
+              href={author.podcastUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-8 flex items-center gap-4 rounded-xl border border-border bg-surface p-6 transition-colors card-shadow hover:border-brand"
+            >
+              <Mic className="h-8 w-8 shrink-0 text-brand" aria-hidden />
+              <div>
+                <p className="font-serif text-lg font-bold">Listen to {author.name}</p>
+                <p className="mt-1 text-sm text-muted">
+                  Episodes, interviews, and conversations — opens in a new tab.
+                </p>
+              </div>
+              <ArrowUpRight className="ml-auto h-5 w-5 shrink-0 text-muted" aria-hidden />
+            </a>
+          </section>
+        )}
+
+        {/* Quotes + reading list */}
+        {((author.quotes?.length ?? 0) > 0 || (author.readingList?.length ?? 0) > 0) && (
+          <section className="grid gap-8 border-t border-border py-12 lg:grid-cols-2">
+            {(author.quotes?.length ?? 0) > 0 && (
+              <div>
+                <h2 className="rule-red font-serif text-2xl font-bold">Notable Quotes</h2>
+                <ul className="mt-8 space-y-5">
+                  {author.quotes!.map((quote) => (
+                    <li key={quote.id} className="border-l-2 border-brand pl-4">
+                      <p className="font-serif text-lg italic text-foreground/85">
+                        &ldquo;{quote.text}&rdquo;
+                      </p>
+                      {quote.source && (
+                        <p className="mt-1.5 text-xs uppercase tracking-wide text-muted">
+                          {quote.source}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(author.readingList?.length ?? 0) > 0 && (
+              <div>
+                <h2 className="rule-red font-serif text-2xl font-bold">
+                  Reading Recommendations
+                </h2>
+                <ul className="mt-8 space-y-3">
+                  {author.readingList!.map((item) => {
+                    const inner = (
+                      <>
+                        <p className="font-semibold">{item.title}</p>
+                        {item.note && <p className="mt-1 text-sm text-muted">{item.note}</p>}
+                      </>
+                    );
+                    return (
+                      <li key={item.id} className="rounded-lg border border-border p-4 card-shadow">
+                        {item.url ? (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block transition-colors hover:text-brand"
+                          >
+                            {inner}
+                          </a>
+                        ) : (
+                          inner
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Timeline */}
+        {(author.timeline?.length ?? 0) > 0 && (
+          <section className="border-t border-border py-12">
+            <h2 className="rule-red font-serif text-2xl font-bold">Timeline</h2>
+            <ol className="mt-9 space-y-7 border-l-2 border-border pl-7">
+              {author.timeline!.map((entry) => (
+                <li key={entry.id} className="relative">
+                  <span className="absolute -left-[2.15rem] top-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-brand" />
+                  <p className="kicker">{entry.year}</p>
+                  <p className="mt-1 text-sm text-foreground/85">{entry.label}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+
+        {/* Speaking */}
+        {author.speaking && (
+          <section className="border-t border-border py-12">
+            <h2 className="rule-red font-serif text-2xl font-bold">Speaking</h2>
+            <p className="mt-8 max-w-2xl text-sm leading-relaxed text-muted">
+              {author.speaking}
+            </p>
+            {author.email && (
+              <a
+                href={`mailto:${author.email}`}
+                className="mt-5 inline-block rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
+              >
+                Request a Speaking Engagement
+              </a>
+            )}
+          </section>
+        )}
+
         {/* Work published elsewhere */}
         {linkGroups.length > 0 && (
           <section className="border-t border-border py-12">
@@ -401,7 +586,27 @@ export default async function AuthorPage({
         )}
 
         <section className="border-t border-border py-12">
-          <NewsletterSignup source={`author/${slug}`} />
+          <div className="rounded-2xl border border-border bg-surface p-8 text-center">
+            <h2 className="font-serif text-2xl font-bold">
+              Subscribe to {author.name}
+            </h2>
+            <p className="mx-auto mt-2 max-w-lg text-sm text-muted">
+              Get new work by email as it publishes. No confirmation step, and
+              you can unsubscribe from any issue.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <AuthorSubscribe
+                authorSlug={author.slug}
+                authorName={author.name}
+                subscriberCount={subscriberCount}
+                showCount={author.showSubscriberCount ?? true}
+              />
+            </div>
+          </div>
+
+          <div className="mt-10">
+            <NewsletterSignup source={`author/${author.slug}`} />
+          </div>
           <p className="mt-8 text-center text-sm text-muted">
             <Link href="/authors" className="font-semibold text-brand hover:underline">
               Meet the rest of the Journal&rsquo;s contributors

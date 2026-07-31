@@ -4,9 +4,12 @@
  */
 import type {
   AuthorProfileInput,
+  AuthorQuote,
   CategorySlug,
   ProfessionalLink,
   ProfessionalLinkKind,
+  ReadingListItem,
+  TimelineEntry,
 } from "@/lib/content/types";
 import { socialPlatforms } from "./social";
 import { professionalLinkGroups } from "./stats";
@@ -98,6 +101,73 @@ function parseProfessionalLinks(form: FormData, errors: FieldErrors): Profession
   return links;
 }
 
+/** Collects the row indexes present for a repeatable field group. */
+function rowIndexes(form: FormData, prefix: string): number[] {
+  const indexes = new Set<number>();
+  const pattern = new RegExp(`^${prefix}\\[(\\d+)\\]\\[`);
+  for (const key of form.keys()) {
+    const match = pattern.exec(key);
+    if (match) indexes.add(Number(match[1]));
+  }
+  return [...indexes].sort((a, b) => a - b);
+}
+
+function parseQuotes(form: FormData): AuthorQuote[] {
+  const quotes: AuthorQuote[] = [];
+  for (const index of rowIndexes(form, "quotes")) {
+    const field = (name: string) => text(form, `quotes[${index}][${name}]`);
+    const quote = field("text").slice(0, 500);
+    if (!quote) continue;
+    quotes.push({
+      id: field("id") || `quote-${Date.now()}-${index}`,
+      text: quote,
+      source: field("source").slice(0, 160) || undefined,
+    });
+  }
+  return quotes;
+}
+
+function parseReadingList(form: FormData, errors: FieldErrors): ReadingListItem[] {
+  const items: ReadingListItem[] = [];
+  for (const index of rowIndexes(form, "reading")) {
+    const field = (name: string) => text(form, `reading[${index}][${name}]`);
+    const title = field("title").slice(0, 200);
+    if (!title) continue;
+    const url = normalizeUrl(field("url")).slice(0, LIMITS.url);
+    if (url && !validUrl(url)) {
+      errors[`reading[${index}][url]`] = "Enter a full link, e.g. https://example.com";
+    }
+    items.push({
+      id: field("id") || `reading-${Date.now()}-${index}`,
+      title,
+      note: field("note").slice(0, 400) || undefined,
+      url: url || undefined,
+    });
+  }
+  return items;
+}
+
+function parseTimeline(form: FormData): TimelineEntry[] {
+  const entries: TimelineEntry[] = [];
+  for (const index of rowIndexes(form, "timeline")) {
+    const field = (name: string) => text(form, `timeline[${index}][${name}]`);
+    const label = field("label").slice(0, 400);
+    const year = field("year").slice(0, 40);
+    if (!label && !year) continue;
+    entries.push({
+      id: field("id") || `timeline-${Date.now()}-${index}`,
+      year,
+      label,
+    });
+  }
+  return entries;
+}
+
+/** Handles are lowercase letters, numbers, dots, dashes and underscores. */
+export function normalizeUsername(value: string): string {
+  return value.trim().replace(/^@+/, "").toLowerCase();
+}
+
 export function parseProfileForm(
   form: FormData,
   knownCategories: CategorySlug[]
@@ -149,6 +219,17 @@ export function parseProfileForm(
 
   const professionalLinks = parseProfessionalLinks(form, errors);
 
+  const username = normalizeUsername(text(form, "username")).slice(0, 40);
+  if (username && !/^[a-z0-9._-]+$/.test(username)) {
+    errors.username =
+      "Use only letters, numbers, dots, dashes and underscores — no spaces.";
+  }
+
+  const podcastUrl = normalizeUrl(text(form, "podcastUrl")).slice(0, LIMITS.url);
+  if (podcastUrl && !validUrl(podcastUrl)) {
+    errors.podcastUrl = "Enter a full link, e.g. https://example.com/podcast";
+  }
+
   // Optional fields are written as empty strings rather than dropped, so
   // clearing one in the form actually clears it on the public profile
   // instead of falling back to the seeded value.
@@ -165,6 +246,14 @@ export function parseProfileForm(
     featuredQuote: text(form, "featuredQuote").slice(0, LIMITS.featuredQuote),
     social,
     professionalLinks,
+    username,
+    quotes: parseQuotes(form),
+    readingList: parseReadingList(form, errors),
+    timeline: parseTimeline(form),
+    videoPlaylist: text(form, "videoPlaylist").slice(0, 120),
+    speaking: text(form, "speaking").slice(0, 1200),
+    podcastUrl,
+    showSubscriberCount: form.get("showSubscriberCount") === "on",
     relatedTopics,
   };
 

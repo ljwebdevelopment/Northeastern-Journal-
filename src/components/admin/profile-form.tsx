@@ -8,9 +8,11 @@ import type { Author, Category } from "@/lib/content/types";
 import { socialPlatforms } from "@/lib/authors/social";
 import { saveProfileAction } from "@/lib/authors/actions";
 import { initialProfileFormState } from "@/lib/authors/profile-form-state";
-import { FieldGroup, TextAreaField, TextField } from "./form-fields";
+import { FieldGroup, TextAreaField, TextField, inputClasses } from "./form-fields";
 import { PhotoField } from "./photo-field";
 import { ProfessionalLinksField } from "./professional-links-field";
+import { RepeatableField, newRowId } from "./repeatable-field";
+import { cn } from "@/lib/utils";
 
 function SaveBar({ slug, message }: { slug: string; message?: string }) {
   const { pending } = useFormStatus();
@@ -97,6 +99,14 @@ export function ProfileForm({
             defaultValue={author.role}
             placeholder="Editor, Publisher, Columnist…"
             error={errors.role}
+          />
+          <TextField
+            label="Username (optional)"
+            name="username"
+            defaultValue={author.username ?? ""}
+            placeholder="yourhandle"
+            hint={`Shown as @handle. Your profile also works at /author/${author.username || "yourhandle"}.`}
+            error={errors.username}
           />
           <TextField
             label="Location"
@@ -187,6 +197,203 @@ export function ProfileForm({
         description="Syndicated columns, outside bylines, awards, press appearances, and portfolio links. These group themselves into sections on your profile."
       >
         <ProfessionalLinksField defaultValue={author.professionalLinks} errors={errors} />
+      </FieldGroup>
+
+      <FieldGroup
+        title="Subscribers"
+        description="Readers can subscribe to you directly from your profile, the way they follow a writer on Substack."
+      >
+        <label className="flex items-start gap-3 rounded-lg border border-border px-4 py-3.5 text-sm">
+          <input
+            type="checkbox"
+            name="showSubscriberCount"
+            defaultChecked={author.showSubscriberCount ?? true}
+            className="mt-0.5 h-4 w-4 accent-[var(--color-brand)]"
+          />
+          <span>
+            <span className="font-medium">Show my subscriber count publicly</span>
+            <span className="mt-1 block text-xs text-muted">
+              The Subscribe button always appears. Untick this to keep the
+              number private while you build an audience — it stays hidden
+              until you have subscribers either way.
+            </span>
+          </span>
+        </label>
+      </FieldGroup>
+
+      <FieldGroup
+        title="Notable quotes"
+        description="Lines you're known for. They appear as pull quotes on your profile."
+      >
+        <RepeatableField
+          name="quotes"
+          label="Quote"
+          addLabel="Add a quote"
+          emptyHint="Quotes left blank are dropped when you save."
+          initial={author.quotes ?? []}
+          makeRow={() => ({ id: newRowId("quote"), text: "", source: "" })}
+          renderRow={(row, index, update) => (
+            <div className="space-y-3">
+              <label className="block">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                  Quote
+                </span>
+                <textarea
+                  name={`quotes[${index}][text]`}
+                  value={row.text}
+                  onChange={(e) => update({ text: e.target.value })}
+                  rows={2}
+                  placeholder="Something you said worth repeating"
+                  className={cn(inputClasses, "mt-1.5 resize-y")}
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                  Source (optional)
+                </span>
+                <input
+                  name={`quotes[${index}][source]`}
+                  value={row.source ?? ""}
+                  onChange={(e) => update({ source: e.target.value })}
+                  placeholder="Column, talk, or interview"
+                  className={cn(inputClasses, "mt-1.5")}
+                />
+              </label>
+            </div>
+          )}
+        />
+      </FieldGroup>
+
+      <FieldGroup
+        title="Reading recommendations"
+        description="Books and pieces you point readers toward."
+      >
+        <RepeatableField
+          name="reading"
+          label="Recommendation"
+          addLabel="Add a recommendation"
+          emptyHint="Entries without a title are dropped when you save."
+          initial={author.readingList ?? []}
+          makeRow={() => ({ id: newRowId("reading"), title: "", note: "", url: "" })}
+          renderRow={(row, index, update) => (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                  Title
+                </span>
+                <input
+                  name={`reading[${index}][title]`}
+                  value={row.title}
+                  onChange={(e) => update({ title: e.target.value })}
+                  className={cn(inputClasses, "mt-1.5")}
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                  Link (optional)
+                </span>
+                <input
+                  name={`reading[${index}][url]`}
+                  value={row.url ?? ""}
+                  onChange={(e) => update({ url: e.target.value })}
+                  placeholder="https://example.com/book"
+                  className={cn(
+                    inputClasses,
+                    "mt-1.5",
+                    errors[`reading[${index}][url]`] && "border-brand"
+                  )}
+                />
+                {errors[`reading[${index}][url]`] && (
+                  <span className="mt-1.5 block text-xs font-medium text-brand">
+                    {errors[`reading[${index}][url]`]}
+                  </span>
+                )}
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                  Why you recommend it
+                </span>
+                <input
+                  name={`reading[${index}][note]`}
+                  value={row.note ?? ""}
+                  onChange={(e) => update({ note: e.target.value })}
+                  className={cn(inputClasses, "mt-1.5")}
+                />
+              </label>
+            </div>
+          )}
+        />
+      </FieldGroup>
+
+      <FieldGroup
+        title="Career timeline"
+        description="Milestones shown as a vertical timeline on your profile."
+      >
+        <RepeatableField
+          name="timeline"
+          label="Milestone"
+          addLabel="Add a milestone"
+          emptyHint="Milestones left blank are dropped when you save."
+          initial={author.timeline ?? []}
+          makeRow={() => ({ id: newRowId("timeline"), year: "", label: "" })}
+          renderRow={(row, index, update) => (
+            <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
+              <label className="block">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                  Year
+                </span>
+                <input
+                  name={`timeline[${index}][year]`}
+                  value={row.year}
+                  onChange={(e) => update({ year: e.target.value })}
+                  placeholder="2015"
+                  className={cn(inputClasses, "mt-1.5")}
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                  What happened
+                </span>
+                <input
+                  name={`timeline[${index}][label]`}
+                  value={row.label}
+                  onChange={(e) => update({ label: e.target.value })}
+                  className={cn(inputClasses, "mt-1.5")}
+                />
+              </label>
+            </div>
+          )}
+        />
+      </FieldGroup>
+
+      <FieldGroup
+        title="Media & speaking"
+        description="Your podcast, video playlist, and speaking availability."
+      >
+        <TextField
+          label="Podcast link"
+          name="podcastUrl"
+          inputMode="url"
+          defaultValue={author.podcastUrl ?? ""}
+          placeholder="https://example.com/your-podcast"
+          hint="Shows a listen card on your profile. Leave blank to hide it."
+          error={errors.podcastUrl}
+        />
+        <TextField
+          label="Video playlist name"
+          name="videoPlaylist"
+          defaultValue={author.videoPlaylist ?? ""}
+          placeholder="Cherokee Nana Talks"
+          hint="Videos tagged with this playlist name appear on your profile."
+        />
+        <TextAreaField
+          label="Speaking & bookings"
+          name="speaking"
+          rows={4}
+          maxLength={1200}
+          defaultValue={author.speaking ?? ""}
+          hint="A short invitation for speaking or interview requests. Leave blank to hide the section."
+        />
       </FieldGroup>
 
       <FieldGroup

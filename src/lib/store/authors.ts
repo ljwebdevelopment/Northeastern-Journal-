@@ -35,11 +35,19 @@ export async function listAuthorProfiles(): Promise<Author[]> {
   return seedAuthors.map((author) => merge(author, overrides[author.slug]));
 }
 
+/**
+ * Resolves by slug first, then by the author's chosen `username`, so a
+ * profile is reachable at `/author/<slug>` and `/author/<handle>` alike.
+ */
 export async function getAuthorProfile(slug: string): Promise<Author | undefined> {
-  const author = seedAuthors.find((a) => a.slug === slug);
-  if (!author) return undefined;
   const overrides = await readOverrides();
-  return merge(author, overrides[slug]);
+
+  const bySlug = seedAuthors.find((a) => a.slug === slug);
+  if (bySlug) return merge(bySlug, overrides[slug]);
+
+  const handle = slug.replace(/^@/, "").toLowerCase();
+  const merged = seedAuthors.map((author) => merge(author, overrides[author.slug]));
+  return merged.find((a) => a.username?.toLowerCase() === handle);
 }
 
 export async function saveAuthorProfile(

@@ -85,7 +85,29 @@ beats are editable there. Saving writes to the profile store and
 revalidates the public pages in the same request — no code change, no
 redeploy.
 
-Accounts are defined in the `NJ_ADMIN_ACCOUNTS` environment variable:
+### Accounts and passwords
+
+**Account & Password** in the dashboard is where you change your own
+password (current password required), display name, and sign-in email.
+Owners additionally get an editor roster there: add someone, change their
+role or linked author profile, reset a forgotten password, or remove
+access — all without touching an environment variable.
+
+Two safeguards make it hard to lock the newsroom out: the last remaining
+owner can't be deleted or demoted, and you can't delete the account
+you're signed in with.
+
+`NJ_ADMIN_ACCOUNTS` is the **seed**, not the permanent home. It gets the
+first owner in; every change made from the dashboard is written to the
+store and merged over the seed on read. A removed seeded account stays
+removed (it's tombstoned), and a dashboard password change supersedes the
+seeded hash.
+
+> Because account changes live in the store, run a persistent driver in
+> production. On the `memory` driver they'd be lost on restart — the
+> Account page warns you when that's the case.
+
+The seed format:
 
 ```jsonc
 [
@@ -103,6 +125,10 @@ Generate a hash with `npm run hash-password -- 'the password'`. With the
 variable unset, a development-only account
 (`editor@northeasternjournal.com` / `northeastern`) is available outside
 production so the dashboard is usable immediately.
+
+Note that `.env.local` is gitignored, so it does not travel with the
+repository. A fresh clone or a new deployment needs its own copy, or
+sign-in will fail with "That email and password don't match an account".
 
 The seed roster in `src/lib/content/data.ts` still defines *who* the
 authors are; dashboard edits are stored as overrides and merged on read,

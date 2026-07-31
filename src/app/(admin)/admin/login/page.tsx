@@ -15,6 +15,10 @@ export default async function LoginPage({
 }) {
   const { next = "/admin" } = await searchParams;
   const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
+  const [hasAccounts, isDevAccount] = await Promise.all([
+    accountsConfigured(),
+    usingDevAccount(),
+  ]);
 
   return (
     <div className="flex flex-1 items-center justify-center px-5 py-16">
@@ -28,7 +32,7 @@ export default async function LoginPage({
         </div>
 
         <div className="mt-8 rounded-2xl border border-border bg-surface p-6 card-shadow">
-          {accountsConfigured() ? (
+          {hasAccounts ? (
             <LoginForm next={safeNext} />
           ) : (
             <p className="text-sm text-muted">
@@ -41,7 +45,7 @@ export default async function LoginPage({
             </p>
           )}
 
-          {usingDevAccount() && (
+          {isDevAccount && (
             <p className="mt-5 rounded-lg border border-dashed border-border bg-surface-muted px-3.5 py-3 text-xs leading-relaxed text-muted">
               <strong className="text-foreground">Development account:</strong>{" "}
               editor@northeasternjournal.com / northeastern. This account only

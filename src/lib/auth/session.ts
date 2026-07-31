@@ -48,5 +48,5 @@ export async function getCurrentAccount(): Promise<AdminAccount | null> {
   const store = await cookies();
   const email = await readSessionToken(store.get(SESSION_COOKIE)?.value);
   if (!email) return null;
-  return findAccount(email) ?? null;
+  return (await findAccount(email)) ?? null;
 }

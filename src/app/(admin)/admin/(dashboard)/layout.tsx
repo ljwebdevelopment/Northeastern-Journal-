@@ -45,10 +45,14 @@ export default async function DashboardLayout({
               View site <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             </Link>
             <ThemeToggle />
-            <div className="hidden text-right sm:block">
+            <Link
+              href="/admin/account"
+              className="hidden rounded-lg px-2 py-1 text-right transition-colors hover:bg-surface-muted sm:block"
+              title="Account and password"
+            >
               <p className="text-sm font-semibold leading-none">{account.name}</p>
               <p className="mt-1 text-xs capitalize text-muted">{account.role}</p>
-            </div>
+            </Link>
             <form action={logoutAction}>
               <button
                 type="submit"

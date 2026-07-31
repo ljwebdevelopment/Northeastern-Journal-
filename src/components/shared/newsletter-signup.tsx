@@ -42,8 +42,8 @@ export function NewsletterSignup({
         <h2 className="mt-4 font-serif text-2xl font-bold sm:text-3xl">The Sunday Letter</h2>
         <p className="mt-2 text-sm opacity-90 sm:text-base">
           One weekly email from the Northeastern Journal family &mdash; civic
-          news, generational perspectives, and Cherokee Nana&apos;s column,
-          delivered Sunday mornings.
+          news, community reporting, and generational perspectives, delivered
+          Sunday mornings.
         </p>
 
         {state.status === "success" ? (

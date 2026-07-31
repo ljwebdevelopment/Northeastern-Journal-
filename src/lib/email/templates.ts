@@ -89,8 +89,8 @@ export function welcomeEmail({ email, unsubscribeUrl }: WelcomeEmailContext) {
       </p>
       <p style="margin:0 0 16px;">
         Every Sunday morning we send one email: civic reporting from our home
-        communities, generational perspectives from the Journal family, and
-        Cherokee Nana's column.
+        communities, community news, and generational perspectives from the
+        Journal family.
       </p>
       <p style="margin:0 0 24px;">
         While you wait for the first issue, browse the archive or catch up on
@@ -113,7 +113,7 @@ export function welcomeEmail({ email, unsubscribeUrl }: WelcomeEmailContext) {
     "",
     `Thank you for joining the ${siteConfig.name} family. Your subscription is active right now — there is nothing else to confirm.`,
     "",
-    "Every Sunday morning we send one email: civic reporting from our home communities, generational perspectives from the Journal family, and Cherokee Nana's column.",
+    "Every Sunday morning we send one email: civic reporting from our home communities, community news, and generational perspectives from the Journal family.",
     "",
     `Read the archive: ${siteConfig.url}/newsletter/archive`,
     "",

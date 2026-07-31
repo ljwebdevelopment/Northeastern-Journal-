@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { KeyRound, LayoutDashboard, Mail, UserCog, Users } from "lucide-react";
+import { KeyRound, LayoutDashboard, Mail, Newspaper, UserCog, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/admin/articles", label: "Articles", icon: Newspaper },
   { href: "/admin/profile", label: "Edit Profile", icon: UserCog },
   { href: "/admin/account", label: "Account & Password", icon: KeyRound },
   { href: "/admin/authors", label: "Authors", icon: Users, ownerOnly: true },

@@ -32,7 +32,14 @@ export function AuthorCard({
           />
         </Link>
         <div className="mt-5 min-w-0 flex-1 text-center sm:mt-0 sm:text-left">
-          <p className="kicker">{author.role}</p>
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+            <p className="kicker">{author.role}</p>
+            {author.foundingRole && (
+              <span className="rounded-full border border-border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
+                {author.foundingRole}
+              </span>
+            )}
+          </div>
           <h3 className="mt-1.5 font-serif text-xl font-bold">
             <Link href={`/author/${author.slug}`} className="transition-colors hover:text-brand">
               {author.name}

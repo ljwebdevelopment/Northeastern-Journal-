@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { ArticleImage } from "@/components/shared/article-image";
 import type { Article } from "@/lib/content/types";
 import { categories } from "@/lib/content/data";
 import { formatDate, cn } from "@/lib/utils";
@@ -36,11 +36,10 @@ export function ArticleCard({
           className="relative h-16 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-surface-muted"
         >
           {article.isDemo && <DemoBadge />}
-          <Image
-            src={article.image}
-            alt={article.imageAlt}
-            fill
+          <ArticleImage
+            article={article}
             sizes="80px"
+            
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </Link>
@@ -64,11 +63,10 @@ export function ArticleCard({
           className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-surface-muted card-shadow"
         >
           {article.isDemo && <DemoBadge />}
-          <Image
-            src={article.image}
-            alt={article.imageAlt}
-            fill
+          <ArticleImage
+            article={article}
             sizes="200px"
+            
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
         </Link>
@@ -98,10 +96,8 @@ export function ArticleCard({
       <article className="group relative overflow-hidden rounded-2xl border border-border card-shadow-lg">
         <Link href={href} className="relative block aspect-[16/10] w-full sm:aspect-[16/9]">
           {article.isDemo && <DemoBadge />}
-          <Image
-            src={article.image}
-            alt={article.imageAlt}
-            fill
+          <ArticleImage
+            article={article}
             sizes="(min-width: 1024px) 66vw, 100vw"
             priority={priority}
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
@@ -131,13 +127,12 @@ export function ArticleCard({
         className="relative block aspect-[4/3] overflow-hidden rounded-xl border border-border bg-surface-muted card-shadow transition-shadow duration-300 group-hover:shadow-xl"
       >
         {article.isDemo && <DemoBadge />}
-        <Image
-          src={article.image}
-          alt={article.imageAlt}
-          fill
-          sizes="(min-width: 1024px) 25vw, 50vw"
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-        />
+        <ArticleImage
+            article={article}
+            sizes="(min-width: 1024px) 25vw, 50vw"
+            
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+          />
       </Link>
       <p className="kicker mt-4">{categoryName(article.category)}</p>
       <h3 className="mt-1.5 font-serif text-lg font-bold leading-snug transition-colors">

@@ -4,7 +4,7 @@ export const siteConfig = {
   description:
     "Northeastern Journal is a family platform dedicated to civic writing, thoughtful journalism, community discussion, and generational perspectives.",
   url: "https://northeasternjournal.com",
-  ogImage: "https://picsum.photos/seed/nj-og/1200/630",
+  ogImage: "/opengraph-image",
   /**
    * Publisher identity used in newsletter emails. CAN-SPAM requires every
    * commercial message to carry a valid physical postal address, so this
@@ -25,46 +25,28 @@ export const siteConfig = {
     instagram: "https://instagram.com/example",
     youtube: "https://youtube.com/@example",
   },
+  /**
+   * Fallback navigation, used only before anything is published. The real
+   * header nav is assembled at request time from sections that actually
+   * contain articles — see `buildNav` in `lib/navigation.ts`.
+   */
   nav: [
-    { label: "Politics", href: "/category/politics" },
-    { label: "Community", href: "/category/community" },
-    { label: "Culture", href: "/category/culture" },
-    { label: "Opinion", href: "/category/opinion" },
-    { label: "Cherokee Nana", href: "/cherokee-nana" },
-    { label: "Next Generation", href: "/next-generation" },
-    { label: "Conversations", href: "/conversations" },
-    { label: "Books", href: "/books" },
-    { label: "Videos", href: "/videos" },
+    { label: "About", href: "/about" },
+    { label: "Contributors", href: "/authors" },
+    { label: "Newsletter", href: "/newsletter" },
   ],
+  /**
+   * Evergreen footer links. Section links are appended at request time
+   * from whatever has been published.
+   */
   footerColumns: [
-    {
-      title: "Sections",
-      links: [
-        { label: "Local News", href: "/category/local-news" },
-        { label: "National News", href: "/category/national-news" },
-        { label: "World News", href: "/category/world-news" },
-        { label: "Editorial", href: "/category/editorial" },
-        { label: "Interviews", href: "/category/interviews" },
-        { label: "Events", href: "/category/events" },
-      ],
-    },
     {
       title: "The Journal",
       links: [
         { label: "About", href: "/about" },
         { label: "Contributors", href: "/authors" },
-        { label: "Cherokee Nana", href: "/cherokee-nana" },
         { label: "Next Generation", href: "/next-generation" },
-        { label: "Conversations", href: "/conversations" },
         { label: "Newsletter", href: "/newsletter" },
-      ],
-    },
-    {
-      title: "More",
-      links: [
-        { label: "Books", href: "/books" },
-        { label: "Videos", href: "/videos" },
-        { label: "Community Voices", href: "/category/community-voices" },
         { label: "Search", href: "/search" },
       ],
     },

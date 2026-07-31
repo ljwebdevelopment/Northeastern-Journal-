@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * rendered with a plain `<img>` so an unconfigured host can never crash
  * the profile page.
  */
-const OPTIMIZABLE_HOSTS = ["picsum.photos", "img.youtube.com"];
+const OPTIMIZABLE_HOSTS = ["img.youtube.com"];
 
 export function isOptimizable(src: string): boolean {
   if (!src) return false;

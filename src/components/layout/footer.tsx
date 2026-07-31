@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
+import type { NavItem } from "@/lib/navigation";
 
-export function Footer() {
+export function Footer({
+  columns,
+}: {
+  columns: { title: string; links: NavItem[] }[];
+}) {
   return (
     <footer className="border-t border-border bg-surface">
       <div className="content-container grid gap-10 py-14 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
@@ -34,7 +39,7 @@ export function Footer() {
           </div>
         </div>
 
-        {siteConfig.footerColumns.map((col) => (
+        {columns.map((col) => (
           <nav key={col.title} aria-label={col.title}>
             <h3 className="kicker">{col.title}</h3>
             <ul className="mt-4 space-y-2.5">

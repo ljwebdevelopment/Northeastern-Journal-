@@ -1,11 +1,14 @@
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { buildFooterColumns, buildNav } from "@/lib/navigation";
 
 /**
  * Public site chrome. The admin dashboard lives in its own route group
  * with a different shell, so it doesn't inherit the masthead and footer.
  */
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
+export default async function SiteLayout({ children }: { children: React.ReactNode }) {
+  const [nav, footerColumns] = await Promise.all([buildNav(), buildFooterColumns()]);
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <a
@@ -14,11 +17,11 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       >
         Skip to content
       </a>
-      <Header />
+      <Header nav={nav} />
       <main id="main-content" className="flex-1">
         {children}
       </main>
-      <Footer />
+      <Footer columns={footerColumns} />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArticleCard } from "@/components/article/article-card";
 import { BreakingTicker } from "@/components/home/breaking-ticker";
 import { SectionHeader } from "@/components/shared/section-header";
+import { siteConfig } from "@/lib/site-config";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { VideoCard } from "@/components/shared/video-card";
 import { BookCard } from "@/components/shared/book-card";
@@ -60,8 +61,49 @@ export default async function HomePage() {
   ]);
 
   const hero = featured[0] ?? articles[0];
-  const heroSecondary = articles.filter((a) => a.slug !== hero.slug).slice(0, 4);
+  const heroSecondary = hero
+    ? articles.filter((a) => a.slug !== hero.slug).slice(0, 4)
+    : [];
   const authorName = (slug: string) => authors.find((a) => a.slug === slug)?.name;
+
+  // Nothing published yet: show the masthead's promise rather than a
+  // skeleton of empty sections.
+  if (!hero) {
+    return (
+      <>
+        <section className="content-container py-20 text-center">
+          <p className="kicker">Northeastern Journal</p>
+          <h1 className="mx-auto mt-3 max-w-3xl text-balance font-serif text-4xl font-bold leading-tight sm:text-5xl">
+            {siteConfig.tagline}
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-base text-muted">
+            The first edition is on its way. Subscribe to the Sunday Letter and
+            you&apos;ll get our reporting the moment it publishes.
+          </p>
+          <div className="mx-auto mt-10 max-w-xl">
+            <NewsletterSignup source="home-launch" />
+          </div>
+        </section>
+
+        {authors.length > 0 && (
+          <section className="bg-surface py-12">
+            <div className="content-container">
+              <SectionHeader
+                title="Our Contributors"
+                description="The writers and editors behind the Journal."
+                href="/authors"
+              />
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                {authors.map((a) => (
+                  <AuthorCard key={a.slug} author={a} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+      </>
+    );
+  }
 
   return (
     <>
@@ -88,6 +130,7 @@ export default async function HomePage() {
       </section>
 
       {/* Latest News */}
+      {articles.length > 0 && (
       <section className="content-container py-10">
         <SectionHeader
           title="Latest News"
@@ -100,8 +143,10 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+)}
 
       {/* Featured Opinions */}
+      {opinion.length > 0 && (
       <section className="bg-surface py-10">
         <div className="content-container">
           <SectionHeader
@@ -116,9 +161,12 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+)}
 
       {/* Civic Issues + Community */}
+      {(politics.length > 0 || community.length > 0) && (
       <section className="content-container grid gap-10 py-10 lg:grid-cols-2">
+        {politics.length > 0 && (
         <div>
           <SectionHeader title="Civic Issues" href="/category/politics" />
           <div className="flex flex-col divide-y divide-border">
@@ -129,6 +177,8 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
+        )}
+        {community.length > 0 && (
         <div>
           <SectionHeader title="Community" href="/category/community" />
           <div className="flex flex-col divide-y divide-border">
@@ -139,9 +189,12 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
+        )}
       </section>
+)}
 
       {/* Local / National */}
+      {(local.length > 0 || national.length > 0) && (
       <section className="bg-surface py-10">
         <div className="content-container grid gap-10 lg:grid-cols-2">
           <div>
@@ -162,8 +215,10 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+)}
 
       {/* Editorial Picks */}
+      {editorial.length > 0 && (
       <section className="content-container py-10">
         <SectionHeader
           title="Editorial Picks"
@@ -176,8 +231,10 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+)}
 
       {/* Trending / Most Read */}
+      {(trending.length > 0 || mostRead.length > 0) && (
       <section className="bg-surface py-10">
         <div className="content-container grid gap-10 lg:grid-cols-2">
           <div>
@@ -208,8 +265,10 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+)}
 
       {/* Featured Videos */}
+      {videos.length > 0 && (
       <section className="content-container py-10">
         <SectionHeader
           title="Featured Videos"
@@ -222,8 +281,10 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+)}
 
       {/* Featured Books */}
+      {books.length > 0 && (
       <section className="bg-surface py-10">
         <div className="content-container">
           <SectionHeader
@@ -238,6 +299,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+)}
 
       {/* Newsletter */}
       <section className="content-container py-14">
@@ -261,6 +323,7 @@ export default async function HomePage() {
       </section>
 
       {/* Conversations Preview */}
+      {conversations.length > 0 && (
       <section className="content-container py-10">
         <SectionHeader
           title="Conversations"
@@ -277,6 +340,7 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+)}
 
       {/* Categories */}
       <section className="bg-surface py-14">

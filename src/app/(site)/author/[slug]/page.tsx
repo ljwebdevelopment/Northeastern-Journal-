@@ -134,7 +134,14 @@ export default async function AuthorPage({
           </div>
 
           <div className="min-w-0">
-            <p className="kicker-inverted">{author.role}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="kicker-inverted">{author.role}</p>
+              {author.foundingRole && (
+                <span className="rounded-full border border-white/40 bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
+                  {author.foundingRole}
+                </span>
+              )}
+            </div>
             <h1 className="mt-3 text-balance font-serif text-4xl font-bold leading-[1.05] sm:text-6xl">
               {author.name}
             </h1>

@@ -131,12 +131,20 @@ export interface Author {
   relatedTopics: CategorySlug[];
   /** ISO date the author joined the Journal, used in profile statistics. */
   joinedAt?: string;
+  /**
+   * Standing at the publication beyond a job title — "Co-Founder",
+   * "Publisher Emeritus". Rendered as a badge on the profile and the
+   * contributors index.
+   */
+  foundingRole?: string;
   /** ISO timestamp of the last dashboard profile edit. */
   updatedAt?: string;
 }
 
 /** Fields an author may edit from the dashboard. Slug is never editable. */
 export type AuthorProfileInput = Omit<Author, "slug" | "updatedAt">;
+
+export type ArticleStatus = "draft" | "published";
 
 export interface Article {
   slug: string;
@@ -147,9 +155,12 @@ export interface Article {
   authorSlug: string;
   publishedAt: string; // ISO
   updatedAt?: string;
+  /** Optional — articles render fine without art. */
   image: string;
   imageAlt: string;
   tags: string[];
+  /** Drafts are visible in the dashboard only. */
+  status?: ArticleStatus;
   featured?: boolean;
   trending?: boolean;
   mostRead?: boolean;

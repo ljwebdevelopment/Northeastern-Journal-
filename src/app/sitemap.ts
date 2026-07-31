@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 import { siteConfig } from "@/lib/site-config";
 import {
   getArticles,
+  getActiveCategories,
   getAuthors,
   getBooks,
-  getCategories,
   getConversations,
   getNewsletterIssues,
   getVideos,
@@ -15,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [articles, authors, categories, books, videos, conversations, issues] = await Promise.all([
     getArticles(),
     getAuthors(),
-    getCategories(),
+    getActiveCategories(),
     getBooks(),
     getVideos(),
     getConversations(),

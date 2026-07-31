@@ -37,6 +37,9 @@ export default async function CategoryPage({
   if (!category) notFound();
 
   const articles = await getArticlesByCategory(slug as CategorySlug);
+  // A section with nothing in it isn't a page — it's hidden from the nav
+  // and the sitemap, so it shouldn't be reachable by URL either.
+  if (articles.length === 0) notFound();
 
   return (
     <div className="content-container py-10">

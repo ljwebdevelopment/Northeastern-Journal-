@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getAuthors, getBooks } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
@@ -14,6 +15,9 @@ export const metadata: Metadata = {
 
 export default async function BooksPage() {
   const [books, authors] = await Promise.all([getBooks(), getAuthors()]);
+  // Nothing here yet — the section stays hidden rather than
+  // presenting readers an empty page linked from nowhere.
+  if (books.length === 0) notFound();
   const authorName = (slug: string) => authors.find((a) => a.slug === slug)?.name;
 
   return (

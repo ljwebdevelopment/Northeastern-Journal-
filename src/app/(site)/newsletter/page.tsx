@@ -44,6 +44,7 @@ export default async function NewsletterPage() {
         <NewsletterSignup />
       </div>
 
+      {issues.length > 0 && (
       <section className="mt-16 border-t border-border pt-10">
         <div className="flex items-end justify-between">
           <h2 className="font-serif text-2xl font-bold">Featured Issues</h2>
@@ -68,6 +69,7 @@ export default async function NewsletterPage() {
           ))}
         </div>
       </section>
+      )}
     </div>
   );
 }

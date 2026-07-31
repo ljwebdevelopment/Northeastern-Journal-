@@ -241,6 +241,7 @@ export function parseProfileForm(
     // Blank photo keeps the current one rather than blanking the hero.
     photo: photo || undefined,
     location: text(form, "location").slice(0, LIMITS.location),
+    foundingRole: text(form, "foundingRole").slice(0, 60),
     email,
     website,
     featuredQuote: text(form, "featuredQuote").slice(0, LIMITS.featuredQuote),

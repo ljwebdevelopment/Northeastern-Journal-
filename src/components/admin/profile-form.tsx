@@ -109,6 +109,14 @@ export function ProfileForm({
             error={errors.username}
           />
           <TextField
+            label="Founding role (optional)"
+            name="foundingRole"
+            defaultValue={author.foundingRole ?? ""}
+            placeholder="Co-Founder"
+            hint="Shown as a badge beside your job title. Leave blank if it doesn't apply."
+            error={errors.foundingRole}
+          />
+          <TextField
             label="Location"
             name="location"
             defaultValue={author.location ?? ""}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BookOpen, PenLine, Rocket, Sparkles } from "lucide-react";
+import { PenLine, Sparkles } from "lucide-react";
 import { getArticlesByAuthor, getAuthorBySlug, getBookBySlug } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
@@ -15,16 +15,6 @@ export const metadata: Metadata = {
     "Books, essays, reviews, commentary, and projects from the Journal's Next Generation program for younger voices.",
   alternates: { canonical: `${siteConfig.url}/next-generation` },
 };
-
-const readingLists = [
-  { title: "Civic Foundations", items: ["The Porch Light", "Letters to the Next Council", "What the River Remembers"] },
-  { title: "Essays on Belonging", items: ["The Long Table", "What We Owe Each Other (essay)", "Youth Council Reader"] },
-];
-
-const upcomingBooks = [
-  { title: "The Waiting Room", author: "A Next Generation Fellow", date: "Fall 2026" },
-  { title: "Field Notes on Growing Up Here", author: "A Next Generation Fellow", date: "Winter 2026" },
-];
 
 export default async function NextGenerationPage() {
   const fellow = await getAuthorBySlug("sam-whitfield");
@@ -75,6 +65,7 @@ export default async function NextGenerationPage() {
         </div>
 
         {/* Featured Articles */}
+        {articles.length > 0 && (
         <section className="py-10">
           <h2 className="rule-red font-serif text-2xl font-bold">Featured Articles</h2>
           <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -83,63 +74,18 @@ export default async function NextGenerationPage() {
             ))}
           </div>
         </section>
+        )}
 
-        {/* Books + Upcoming */}
-        <section className="grid gap-10 border-t border-border py-10 lg:grid-cols-[1fr_1.4fr]">
-          <div>
-            <h2 className="rule-red font-serif text-2xl font-bold">Books</h2>
-            <div className="mt-8 grid max-w-xs grid-cols-1">
-              {book && <BookCard book={book} authorName={fellow.name} />}
-            </div>
-          </div>
-          <div>
-            <h2 className="rule-red font-serif text-2xl font-bold">Upcoming Books</h2>
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-              {upcomingBooks.map((b) => (
-                <li
-                  key={b.title}
-                  className="flex items-start gap-3 rounded-xl border border-border bg-surface p-5 card-shadow transition-shadow hover:shadow-lg"
-                >
-                  <Rocket className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden="true" />
-                  <div>
-                    <p className="font-semibold">{b.title}</p>
-                    <p className="mt-1 text-sm text-muted">
-                      {b.author} &middot; {b.date}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* Reading Lists */}
+        {/* Books */}
+        {book && (
         <section className="border-t border-border py-10">
-          <h2 className="rule-red font-serif text-2xl font-bold">Reading Lists</h2>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            {readingLists.map((list) => (
-              <div
-                key={list.title}
-                className="rounded-2xl border border-border bg-surface p-6 card-shadow transition-shadow hover:shadow-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4.5 w-4.5 text-brand" aria-hidden="true" />
-                  <h3 className="font-serif text-lg font-bold">{list.title}</h3>
-                </div>
-                <ul className="mt-4 flex flex-wrap gap-2">
-                  {list.items.map((item) => (
-                    <li
-                      key={item}
-                      className="rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-foreground/80"
-                    >
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+          <h2 className="rule-red font-serif text-2xl font-bold">Books</h2>
+          <div className="mt-8 grid max-w-xs grid-cols-1">
+            <BookCard book={book} authorName={fellow.name} />
           </div>
         </section>
+        )}
+
 
         {/* Projects / Youth Perspectives */}
         <section className="border-t border-border py-10">

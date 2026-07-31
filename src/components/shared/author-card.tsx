@@ -87,6 +87,11 @@ export function AuthorCard({
       </div>
       <h3 className="mt-4 font-serif text-lg font-bold group-hover:text-brand">{author.name}</h3>
       <p className="mt-1 text-xs uppercase tracking-wide text-muted">{author.role}</p>
+      {author.foundingRole && (
+        <span className="mt-2 rounded-full border border-border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
+          {author.foundingRole}
+        </span>
+      )}
     </Link>
   );
 }

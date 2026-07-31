@@ -1,17 +1,50 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 /**
- * Exchanges the one-time code from a magic-link email for a session cookie,
- * then forwards the editor to wherever they were headed.
+ * Turns a sign-in email link into a session cookie.
+ *
+ * Supabase sends one of two shapes depending on the project's email
+ * template, and a link that arrives in the other shape has to work too —
+ * otherwise the reader is bounced to /login with no explanation:
+ *
+ *   ?code=…                     PKCE. Exchanged for a session. The
+ *                               code_verifier cookie is set in the browser
+ *                               that requested the link, so this form only
+ *                               works in that same browser.
+ *   ?token_hash=…&type=magiclink  Email OTP. Verified server-side with no
+ *                               verifier cookie, so it works even when the
+ *                               link is opened on another device.
+ *
+ * Anything that fails is sent to /login with a reason, which the login
+ * page renders.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
-  const code = searchParams.get("code");
-  const nextParam = searchParams.get("next");
-  const next = nextParam && nextParam.startsWith("/") ? nextParam : "/admin";
 
-  if (!code) {
+  const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type") as EmailOtpType | null;
+
+  const nextParam = searchParams.get("next");
+  // Only ever forward to a path on this site.
+  const next =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+      ? nextParam
+      : "/admin";
+
+  // Supabase reports its own failures (expired link, already used) by
+  // redirecting here with an error rather than a code.
+  const providerError =
+    searchParams.get("error_description") ?? searchParams.get("error");
+  if (providerError && !code && !tokenHash) {
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(providerError)}`
+    );
+  }
+
+  if (!code && !tokenHash) {
     return NextResponse.redirect(`${origin}/login?error=missing-code`);
   }
 
@@ -20,7 +53,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=not-configured`);
   }
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } = tokenHash
+    ? await supabase.auth.verifyOtp({
+        type: type ?? "magiclink",
+        token_hash: tokenHash,
+      })
+    : await supabase.auth.exchangeCodeForSession(code!);
+
   if (error) {
     return NextResponse.redirect(
       `${origin}/login?error=${encodeURIComponent(error.message)}`

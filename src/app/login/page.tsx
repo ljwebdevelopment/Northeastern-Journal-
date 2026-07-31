@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
+import { LoginError } from "@/components/auth/login-error";
 import { getSessionUser, canWrite } from "@/lib/auth/roles";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -14,9 +15,9 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, error } = await searchParams;
   const destination = next && next.startsWith("/") ? next : "/admin";
 
   const user = await getSessionUser();
@@ -35,6 +36,7 @@ export default async function LoginPage({
         </div>
 
         <div className="mt-8 rounded-2xl border border-border bg-surface p-6 card-shadow sm:p-8">
+          {error && <LoginError error={error} />}
           {isSupabaseConfigured ? (
             <LoginForm next={destination} />
           ) : (

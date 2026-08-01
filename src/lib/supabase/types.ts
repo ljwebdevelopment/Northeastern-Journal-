@@ -51,8 +51,41 @@ export type AuthorRow = {
   social: Record<string, string>;
   related_topics: string[];
   is_active: boolean;
+  username: string | null;
+  location: string | null;
+  website: string | null;
+  featured_quote: string | null;
+  founding_role: string | null;
+  quotes: AuthorQuoteRow[];
+  reading_list: ReadingListRow[];
+  timeline: TimelineRow[];
+  professional_links: ProfessionalLinkRow[];
+  video_playlist: string | null;
+  speaking: string | null;
+  podcast_url: string | null;
+  show_subscriber_count: boolean;
   created_at: string;
   updated_at: string;
+}
+
+/** Shapes stored in the `authors` JSONB columns (migration 0007). */
+export type AuthorQuoteRow = { id: string; text: string; source?: string };
+export type ReadingListRow = { id: string; title: string; note?: string; url?: string };
+export type TimelineRow = { id: string; year: string; label: string };
+export type ProfessionalLinkRow = {
+  id: string;
+  kind: "syndicated" | "publication" | "award" | "press" | "portfolio";
+  title: string;
+  outlet?: string;
+  url?: string;
+  year?: string;
+  description?: string;
+};
+
+export type SubscriberAuthorRow = {
+  subscriber_id: string;
+  author_id: string;
+  created_at: string;
 }
 
 export type TagRow = {
@@ -173,6 +206,7 @@ export interface Database {
   public: {
     Tables: {
       profiles: Table<ProfileRow>;
+      subscriber_authors: Table<SubscriberAuthorRow>;
       admin_allowlist: Table<AllowlistRow>;
       categories: Table<CategoryRow>;
       authors: Table<AuthorRow>;
@@ -194,6 +228,16 @@ export interface Database {
       is_admin: { Args: Record<string, never>; Returns: boolean };
       is_staff: { Args: Record<string, never>; Returns: boolean };
       can_write: { Args: Record<string, never>; Returns: boolean };
+      increment_article_view: { Args: { article_slug: string }; Returns: number | null };
+      author_subscriber_count: { Args: { author_slug: string }; Returns: number };
+      author_subscriber_counts: {
+        Args: Record<string, never>;
+        Returns: { author_slug: string; subscribers: number }[];
+      };
+      check_rate_limit: {
+        Args: { limit_key: string; max_hits: number; window_seconds: number };
+        Returns: boolean;
+      };
     };
     Enums: {
       user_role: UserRole;

@@ -17,7 +17,7 @@ const ARTICLE_SELECT = `
   id, slug, title, subtitle, excerpt, body_html, status, published_at, updated_at,
   featured_image_url, featured_image_alt, featured_image_caption,
   seo_title, meta_description, canonical_url,
-  reading_minutes, word_count, region,
+  reading_minutes, word_count, region, view_count,
   is_featured, is_breaking, is_trending,
   category:categories(slug, name),
   author:authors(slug, name, role, photo_url, bio),
@@ -60,6 +60,7 @@ export function mapArticle(row: ArticleWithRelations): Article {
     canonicalUrl: row.canonical_url ?? undefined,
     readingMinutes: row.reading_minutes ?? undefined,
     wordCount: row.word_count ?? undefined,
+    viewCount: row.view_count ?? 0,
     featured: row.is_featured,
     trending: row.is_trending,
     breaking: row.is_breaking,
@@ -79,6 +80,20 @@ export function mapAuthor(row: AuthorRow): Author {
     longBio: row.long_bio || row.bio,
     social: (row.social ?? {}) as Author["social"],
     relatedTopics: (row.related_topics ?? []).map(asCategorySlug),
+    username: row.username ?? undefined,
+    location: row.location ?? undefined,
+    email: row.email ?? undefined,
+    website: row.website ?? undefined,
+    featuredQuote: row.featured_quote ?? undefined,
+    foundingRole: row.founding_role ?? undefined,
+    quotes: row.quotes ?? [],
+    readingList: row.reading_list ?? [],
+    timeline: row.timeline ?? [],
+    professionalLinks: row.professional_links ?? [],
+    videoPlaylist: row.video_playlist ?? undefined,
+    speaking: row.speaking ?? undefined,
+    podcastUrl: row.podcast_url ?? undefined,
+    showSubscriberCount: row.show_subscriber_count ?? true,
   };
 }
 
@@ -135,4 +150,22 @@ export async function fetchCategories(): Promise<Category[]> {
 
   if (error || !data) return [];
   return data.map(mapCategory);
+}
+
+/**
+ * How many confirmed subscribers follow this author.
+ *
+ * Reads through `author_subscriber_count`, a security-definer function that
+ * returns a number and never a row — the subscriber list itself stays
+ * unreadable to `anon`.
+ */
+export async function fetchAuthorSubscriberCount(slug: string): Promise<number> {
+  const supabase = createPublicSupabase();
+  if (!supabase) return 0;
+
+  const { data, error } = await supabase.rpc("author_subscriber_count", {
+    author_slug: slug,
+  });
+  if (error) return 0;
+  return typeof data === "number" ? data : 0;
 }

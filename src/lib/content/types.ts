@@ -38,6 +38,46 @@ export interface SocialLinks {
   facebook?: string;
 }
 
+/** A pull quote shown on the author's profile. */
+export interface AuthorQuote {
+  id: string;
+  text: string;
+  source?: string;
+}
+
+/** Something the author recommends reading. */
+export interface ReadingListItem {
+  id: string;
+  title: string;
+  note?: string;
+  url?: string;
+}
+
+/** A career milestone on the profile timeline. */
+export interface TimelineEntry {
+  id: string;
+  year: string;
+  label: string;
+}
+
+export type ProfessionalLinkKind =
+  | "syndicated"
+  | "publication"
+  | "award"
+  | "press"
+  | "portfolio";
+
+/** Work published, won, or appeared in outside the Journal. */
+export interface ProfessionalLink {
+  id: string;
+  kind: ProfessionalLinkKind;
+  title: string;
+  outlet?: string;
+  url?: string;
+  year?: string;
+  description?: string;
+}
+
 export interface Author {
   slug: string;
   name: string;
@@ -47,6 +87,22 @@ export interface Author {
   longBio: string;
   social: SocialLinks;
   relatedTopics: CategorySlug[];
+  /** Optional handle, shown as @username and usable in the profile URL. */
+  username?: string;
+  location?: string;
+  email?: string;
+  website?: string;
+  featuredQuote?: string;
+  /** Standing beyond the job title — "Co-Founder". Rendered as a badge. */
+  foundingRole?: string;
+  quotes?: AuthorQuote[];
+  readingList?: ReadingListItem[];
+  timeline?: TimelineEntry[];
+  professionalLinks?: ProfessionalLink[];
+  videoPlaylist?: string;
+  speaking?: string;
+  podcastUrl?: string;
+  showSubscriberCount?: boolean;
 }
 
 export interface Article {
@@ -75,6 +131,8 @@ export interface Article {
   /** Stored at save time so the reader sees the same number as the editor. */
   readingMinutes?: number;
   wordCount?: number;
+  /** Reads recorded for this article. Placeholder archive entries have none. */
+  viewCount?: number;
   featured?: boolean;
   trending?: boolean;
   mostRead?: boolean;

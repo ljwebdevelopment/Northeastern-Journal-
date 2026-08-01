@@ -48,8 +48,8 @@ export function LoginForm({ next }: { next: string }) {
         <h2 className="mt-4 font-serif text-xl font-bold">Check your email</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           We sent a sign-in link to <strong className="text-foreground">{email}</strong>.
-          It expires in one hour. You can close this tab — open the link on any
-          device and you&apos;ll land in the newsroom.
+          It expires in one hour and works once. Open it in this browser —
+          links opened on a different device can&apos;t complete sign-in.
         </p>
         <button
           type="button"

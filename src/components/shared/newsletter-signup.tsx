@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Loader2, Mail, MailCheck } from "lucide-react";
+import { CaptchaWidget } from "./captcha-widget";
 
 /**
- * Newsletter signup. Posts to /api/newsletter/subscribe, which stores a
- * `pending` subscriber and emails a confirmation link — nothing is ever sent
- * to an address that hasn't opted in twice.
+ * Newsletter signup — single opt-in. Posts to /api/newsletter/subscribe,
+ * which subscribes the reader immediately and sends a welcome email. There
+ * is no confirmation link to click.
  */
 export function NewsletterSignup({
   compact = false,
@@ -18,6 +19,11 @@ export function NewsletterSignup({
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  // Hidden from readers, irresistible to bots.
+  const [company, setCompany] = useState("");
+
+  const onToken = useCallback((token: string) => setCaptchaToken(token), []);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,7 +34,7 @@ export function NewsletterSignup({
       const response = await fetch("/api/newsletter/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source }),
+        body: JSON.stringify({ email, source, company, captchaToken }),
       });
       const data = (await response.json()) as { ok: boolean; message: string };
 
@@ -69,6 +75,18 @@ export function NewsletterSignup({
               className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row"
               aria-label="Newsletter signup"
             >
+              <div aria-hidden className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+                <label htmlFor={`newsletter-company-${source}`}>Company</label>
+                <input
+                  id={`newsletter-company-${source}`}
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                />
+              </div>
+
               <label htmlFor={`newsletter-email-${source}`} className="sr-only">
                 Email address
               </label>
@@ -95,6 +113,10 @@ export function NewsletterSignup({
               </button>
             </form>
 
+            <div className="mt-4 flex justify-center">
+              <CaptchaWidget onToken={onToken} />
+            </div>
+
             {state === "error" && (
               <p role="alert" className="mt-3 text-sm font-medium">
                 {message}
@@ -103,8 +125,9 @@ export function NewsletterSignup({
 
             {!compact && (
               <p className="mt-3 text-xs opacity-70">
-                We&apos;ll email you once to confirm. Unsubscribe in one click,
-                any time. We never sell or share your address &mdash; see our{" "}
+                No confirmation email needed &mdash; you&apos;re subscribed the
+                moment you submit. Unsubscribe in one click, any time. We never
+                sell or share your address &mdash; see our{" "}
                 <a href="/privacy" className="underline">
                   privacy notice
                 </a>

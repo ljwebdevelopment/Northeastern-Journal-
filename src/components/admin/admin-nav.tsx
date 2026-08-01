@@ -2,14 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  FileText,
-  LayoutDashboard,
-  Mail,
-  PenSquare,
-  Settings,
-  Users,
-} from "lucide-react";
+import { FileText, LayoutDashboard, Mail, PenSquare, Settings, UserCog, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/supabase/types";
 
@@ -17,6 +10,7 @@ const items = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, adminOnly: false },
   { href: "/admin/articles", label: "Articles", icon: FileText, exact: false, adminOnly: false },
   { href: "/admin/articles/new", label: "Write", icon: PenSquare, exact: true, adminOnly: false },
+  { href: "/admin/profile", label: "Edit Profile", icon: UserCog, exact: false, adminOnly: false },
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail, exact: false, adminOnly: true },
   { href: "/admin/team", label: "Team", icon: Users, exact: false, adminOnly: true },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: false, adminOnly: true },

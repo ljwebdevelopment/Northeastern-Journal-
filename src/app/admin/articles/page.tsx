@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PenSquare } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { formatViews } from "@/lib/format-views";
 import { requireNewsroomUser, canPublish } from "@/lib/auth/roles";
 import { StatusBadge } from "@/components/admin/article-editor";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
@@ -31,7 +32,7 @@ export default async function ArticlesPage({
   let query = supabase
     .from("articles")
     .select(
-      "id, title, slug, status, published_at, scheduled_for, updated_at, notified_at, category:categories(slug, name), author:authors(name)"
+      "id, title, slug, status, published_at, scheduled_for, updated_at, notified_at, view_count, category:categories(slug, name), author:authors(name)"
     )
     .order("updated_at", { ascending: false })
     .limit(200);
@@ -118,6 +119,10 @@ export default async function ArticlesPage({
                 </div>
 
                 <StatusBadge status={a.status} scheduledFor={a.scheduled_for} />
+
+                <span className="hidden w-20 shrink-0 text-right text-xs text-muted sm:block">
+                  {a.status === "published" ? `${formatViews(a.view_count ?? 0)} views` : "—"}
+                </span>
 
                 <span className="hidden w-24 shrink-0 text-right text-xs text-muted sm:block">
                   {new Date(a.updated_at).toLocaleDateString()}

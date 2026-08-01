@@ -194,6 +194,7 @@ export interface Database {
       is_admin: { Args: Record<string, never>; Returns: boolean };
       is_staff: { Args: Record<string, never>; Returns: boolean };
       can_write: { Args: Record<string, never>; Returns: boolean };
+      increment_article_view: { Args: { article_slug: string }; Returns: number | null };
     };
     Enums: {
       user_role: UserRole;

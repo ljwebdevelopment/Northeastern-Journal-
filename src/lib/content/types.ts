@@ -75,6 +75,8 @@ export interface Article {
   /** Stored at save time so the reader sees the same number as the editor. */
   readingMinutes?: number;
   wordCount?: number;
+  /** Reads recorded for this article. Placeholder archive entries have none. */
+  viewCount?: number;
   featured?: boolean;
   trending?: boolean;
   mostRead?: boolean;

@@ -16,6 +16,8 @@ import { ArticleCard } from "@/components/article/article-card";
 import { ShareButtons } from "@/components/article/share-buttons";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { formatDate, readingTime } from "@/lib/utils";
+import { formatViews } from "@/lib/format-views";
+import { ViewTracker } from "@/components/article/view-tracker";
 import { demoContentConfig } from "@/lib/content/demo-config";
 
 /**
@@ -101,6 +103,8 @@ export default async function ArticlePage({
 
   return (
     <article className="content-container py-8 sm:py-10">
+      {/* Placeholder archive entries have no row to count against. */}
+      {!article.isDemo && <ViewTracker slug={article.slug} />}
       <Breadcrumbs
         items={[
           ...(category ? [{ name: category.name, href: `/category/${category.slug}` }] : []),
@@ -171,6 +175,9 @@ export default async function ArticlePage({
                     </time>
                     {" · "}
                     {minutes} min read
+                    {(article.viewCount ?? 0) > 0 && (
+                      <> &middot; {formatViews(article.viewCount!)} views</>
+                    )}
                   </p>
                 </div>
               </>

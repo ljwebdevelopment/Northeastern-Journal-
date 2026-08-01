@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArticleCard } from "@/components/article/article-card";
 import { BreakingTicker } from "@/components/home/breaking-ticker";
 import { SectionHeader } from "@/components/shared/section-header";
+import { siteConfig } from "@/lib/site-config";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { VideoCard } from "@/components/shared/video-card";
 import { BookCard } from "@/components/shared/book-card";
@@ -60,8 +61,49 @@ export default async function HomePage() {
   ]);
 
   const hero = featured[0] ?? articles[0];
-  const heroSecondary = articles.filter((a) => a.slug !== hero.slug).slice(0, 4);
+  const heroSecondary = hero
+    ? articles.filter((a) => a.slug !== hero.slug).slice(0, 4)
+    : [];
   const authorName = (slug: string) => authors.find((a) => a.slug === slug)?.name;
+
+  // Nothing published yet — a front page with no front is worse than a
+  // deliberate holding page.
+  if (!hero) {
+    return (
+      <>
+        <section className="content-container py-20 text-center">
+          <p className="kicker">Northeastern Journal</p>
+          <h1 className="mx-auto mt-3 max-w-3xl text-balance font-serif text-4xl font-bold leading-tight sm:text-5xl">
+            {siteConfig.tagline}
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-base text-muted">
+            The first edition is on its way. Subscribe and you&apos;ll get our
+            reporting the moment it publishes.
+          </p>
+          <div className="mx-auto mt-10 max-w-xl">
+            <NewsletterSignup source="home-launch" />
+          </div>
+        </section>
+
+        {authors.length > 0 && (
+          <section className="bg-surface py-12">
+            <div className="content-container">
+              <SectionHeader
+                title="Our Contributors"
+                description="The people behind the reporting."
+                href="/authors"
+              />
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                {authors.map((a) => (
+                  <AuthorCard key={a.slug} author={a} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+      </>
+    );
+  }
 
   return (
     <>

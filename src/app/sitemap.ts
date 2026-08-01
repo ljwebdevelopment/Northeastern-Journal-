@@ -22,28 +22,48 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getNewsletterIssues(),
   ]);
 
+  // Only list collections that have something in them; the pages 404 when
+  // empty, and a sitemap entry pointing at a 404 is a crawl error.
+  const collectionRoutes: MetadataRoute.Sitemap = [
+    ...(books.length > 0
+      ? [{ url: `${siteConfig.url}/books`, changeFrequency: "weekly" as const, priority: 0.7 }]
+      : []),
+    ...(videos.length > 0
+      ? [{ url: `${siteConfig.url}/videos`, changeFrequency: "weekly" as const, priority: 0.7 }]
+      : []),
+    ...(conversations.length > 0
+      ? [{ url: `${siteConfig.url}/conversations`, changeFrequency: "weekly" as const, priority: 0.8 }]
+      : []),
+    ...(issues.length > 0
+      ? [{ url: `${siteConfig.url}/newsletter/archive`, changeFrequency: "weekly" as const, priority: 0.5 }]
+      : []),
+  ];
+
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: siteConfig.url, changeFrequency: "hourly", priority: 1 },
     { url: `${siteConfig.url}/about`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${siteConfig.url}/authors`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteConfig.url}/contribute`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${siteConfig.url}/privacy`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${siteConfig.url}/cherokee-nana`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${siteConfig.url}/next-generation`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteConfig.url}/conversations`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteConfig.url}/books`, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${siteConfig.url}/videos`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteConfig.url}/newsletter`, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${siteConfig.url}/newsletter/archive`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${siteConfig.url}/search`, changeFrequency: "monthly", priority: 0.3 },
   ];
 
+  // Category pages 404 while empty, so only list the ones with articles.
+  const usedCategories = new Set(articles.map((a) => a.category));
+
   return [
     ...staticRoutes,
-    ...categories.map((c) => ({
-      url: `${siteConfig.url}/category/${c.slug}`,
-      changeFrequency: "daily" as const,
-      priority: 0.7,
-    })),
+    ...collectionRoutes,
+    ...categories
+      .filter((c) => usedCategories.has(c.slug))
+      .map((c) => ({
+        url: `${siteConfig.url}/category/${c.slug}`,
+        changeFrequency: "daily" as const,
+        priority: 0.7,
+      })),
     ...authors.map((a) => ({
       url: `${siteConfig.url}/author/${a.slug}`,
       changeFrequency: "weekly" as const,

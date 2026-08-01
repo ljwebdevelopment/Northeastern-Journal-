@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, Search, X } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
+import type { NavItem } from "@/lib/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +18,7 @@ const todayLabel = () =>
     year: "numeric",
   });
 
-export function Header() {
+export function Header({ nav }: { nav: NavItem[] }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -56,7 +57,7 @@ export function Header() {
           aria-label="Primary"
           className="hidden min-w-0 flex-1 flex-wrap items-center justify-center gap-x-5 gap-y-1 lg:flex xl:gap-x-6"
         >
-          {siteConfig.nav.map((item) => {
+          {nav.map((item) => {
             const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
             return (
               <Link
@@ -118,7 +119,7 @@ export function Header() {
       >
         <div className="min-h-0">
           <div className="content-container flex flex-col gap-1 py-3">
-            {siteConfig.nav.map((item) => {
+            {nav.map((item) => {
               const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
               return (
                 <Link

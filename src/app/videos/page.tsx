@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getVideos } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
@@ -13,6 +14,8 @@ export const metadata: Metadata = {
 
 export default async function VideosPage() {
   const videos = await getVideos();
+  // Nothing published here yet — hide the page rather than show an empty one.
+  if (videos.length === 0) notFound();
   const playlists = Array.from(new Set(videos.map((v) => v.playlist).filter(Boolean)));
 
   return (

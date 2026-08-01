@@ -22,47 +22,40 @@ export const siteConfig = {
     instagram: "https://instagram.com/example",
     youtube: "https://youtube.com/@example",
   },
+  /**
+   * Fallback navigation, used only before anything is published. Every entry
+   * must be a page that exists unconditionally — section pages 404 while
+   * empty, so they can't appear here. The real nav is assembled at request
+   * time from published sections; see `lib/navigation.ts`.
+   */
   nav: [
-    { label: "Politics", href: "/category/politics" },
-    { label: "Community", href: "/category/community" },
-    { label: "Culture", href: "/category/culture" },
-    { label: "Opinion", href: "/category/opinion" },
-    { label: "Cherokee Nana", href: "/cherokee-nana" },
-    { label: "Next Generation", href: "/next-generation" },
-    { label: "Conversations", href: "/conversations" },
-    { label: "Books", href: "/books" },
-    { label: "Videos", href: "/videos" },
+    { label: "About", href: "/about" },
+    { label: "Contributors", href: "/authors" },
+    { label: "Newsletter", href: "/newsletter" },
+    { label: "Contribute", href: "/contribute" },
   ],
+  /**
+   * Evergreen footer links only — every page here exists regardless of what
+   * has been published. Sections and collections are appended at request
+   * time by `buildFooterColumns`, which knows which ones have content.
+   */
   footerColumns: [
-    {
-      title: "Sections",
-      links: [
-        { label: "Local News", href: "/category/local-news" },
-        { label: "National News", href: "/category/national-news" },
-        { label: "World News", href: "/category/world-news" },
-        { label: "Editorial", href: "/category/editorial" },
-        { label: "Interviews", href: "/category/interviews" },
-        { label: "Events", href: "/category/events" },
-      ],
-    },
     {
       title: "The Journal",
       links: [
         { label: "About", href: "/about" },
+        { label: "Contributors", href: "/authors" },
         { label: "Cherokee Nana", href: "/cherokee-nana" },
         { label: "Next Generation", href: "/next-generation" },
-        { label: "Conversations", href: "/conversations" },
         { label: "Newsletter", href: "/newsletter" },
       ],
     },
     {
       title: "More",
       links: [
-        { label: "Books", href: "/books" },
-        { label: "Videos", href: "/videos" },
-        { label: "Community Voices", href: "/category/community-voices" },
         { label: "Write for Us", href: "/contribute" },
         { label: "Search", href: "/search" },
+        { label: "Privacy", href: "/privacy" },
       ],
     },
   ],

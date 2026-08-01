@@ -82,6 +82,12 @@ export type ProfessionalLinkRow = {
   description?: string;
 };
 
+export type SubscriberAuthorRow = {
+  subscriber_id: string;
+  author_id: string;
+  created_at: string;
+}
+
 export type TagRow = {
   id: string;
   slug: string;
@@ -200,6 +206,7 @@ export interface Database {
   public: {
     Tables: {
       profiles: Table<ProfileRow>;
+      subscriber_authors: Table<SubscriberAuthorRow>;
       admin_allowlist: Table<AllowlistRow>;
       categories: Table<CategoryRow>;
       authors: Table<AuthorRow>;
@@ -222,6 +229,11 @@ export interface Database {
       is_staff: { Args: Record<string, never>; Returns: boolean };
       can_write: { Args: Record<string, never>; Returns: boolean };
       increment_article_view: { Args: { article_slug: string }; Returns: number | null };
+      author_subscriber_count: { Args: { author_slug: string }; Returns: number };
+      author_subscriber_counts: {
+        Args: Record<string, never>;
+        Returns: { author_slug: string; subscribers: number }[];
+      };
       check_rate_limit: {
         Args: { limit_key: string; max_hits: number; window_seconds: number };
         Returns: boolean;

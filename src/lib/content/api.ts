@@ -27,6 +27,7 @@ import {
 } from "./data";
 import { resolveContent } from "./demo-config";
 import {
+  fetchAuthorSubscriberCount,
   fetchAuthors,
   fetchCategories,
   fetchPublishedArticles,
@@ -190,6 +191,11 @@ export async function getAuthorBySlug(slug: string): Promise<Author | undefined>
   // /author/name both reach the profile.
   const handle = slug.replace(/^@/, "").toLowerCase();
   return authors.find((a) => a.username?.toLowerCase() === handle);
+}
+
+/** Confirmed subscribers following this journalist. */
+export async function getAuthorSubscriberCount(slug: string): Promise<number> {
+  return fetchAuthorSubscriberCount(slug);
 }
 
 // --- Books, videos, conversations, newsletter --------------------------------

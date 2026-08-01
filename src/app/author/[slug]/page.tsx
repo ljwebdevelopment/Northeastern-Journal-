@@ -6,6 +6,7 @@ import { ArrowUpRight, Award, Globe, Mail, MapPin, Mic } from "lucide-react";
 import {
   getArticlesByAuthor,
   getAuthorBySlug,
+  getAuthorSubscriberCount,
   getAuthors,
   getCategories,
 } from "@/lib/content/api";
@@ -14,6 +15,7 @@ import { breadcrumbJsonLd, personJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { AuthorSocial } from "@/components/shared/author-social";
+import { AuthorSubscribe } from "@/components/shared/author-subscribe";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { SubstackIcon } from "@/components/icons/brand-icons";
 import { formatViews } from "@/lib/format-views";
@@ -78,10 +80,12 @@ export default async function AuthorPage({
   // Reached via the author's handle — send them to the canonical URL.
   if (author.slug !== slug) redirect(`/author/${author.slug}`);
 
-  const [articles, categories] = await Promise.all([
+  const [articles, categories, subscriberCount] = await Promise.all([
     getArticlesByAuthor(author.slug),
     getCategories(),
+    getAuthorSubscriberCount(author.slug),
   ]);
+  const showCount = author.showSubscriberCount ?? true;
 
   const beats = categories.filter(
     (c) => author.relatedTopics.includes(c.slug) || articles.some((a) => a.category === c.slug)
@@ -193,12 +197,26 @@ export default async function AuthorPage({
               )}
             </div>
 
-            <div className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatTile value={articles.length} label="Articles published" />
-              <StatTile
-                value={totalViews > 0 ? formatViews(totalViews) : beats.length}
-                label={totalViews > 0 ? "Total reads" : "Beats"}
+            <div className="mt-7 rounded-2xl border border-white/25 bg-white/10 p-5 backdrop-blur-sm">
+              <AuthorSubscribe
+                authorSlug={author.slug}
+                authorName={author.name}
+                subscriberCount={subscriberCount}
+                showCount={showCount}
+                inverted
               />
+            </div>
+
+            <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <StatTile value={articles.length} label="Articles published" />
+              {showCount && subscriberCount > 0 ? (
+                <StatTile value={subscriberCount.toLocaleString()} label="Subscribers" />
+              ) : (
+                <StatTile
+                  value={totalViews > 0 ? formatViews(totalViews) : beats.length}
+                  label={totalViews > 0 ? "Total reads" : "Beats"}
+                />
+              )}
               <StatTile value={outsideWork} label="Outside bylines" />
               <StatTile value={awards} label="Awards" />
             </div>
@@ -491,7 +509,25 @@ export default async function AuthorPage({
         )}
 
         <section className="border-t border-border py-12">
-          <NewsletterSignup source={`author-${author.slug}`} />
+          <div className="rounded-2xl border border-border bg-surface p-8 text-center">
+            <h2 className="font-serif text-2xl font-bold">Subscribe to {author.name}</h2>
+            <p className="mx-auto mt-2 max-w-lg text-sm text-muted">
+              Get new work by email as it publishes. No confirmation step, and
+              you can unsubscribe from any issue.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <AuthorSubscribe
+                authorSlug={author.slug}
+                authorName={author.name}
+                subscriberCount={subscriberCount}
+                showCount={showCount}
+              />
+            </div>
+          </div>
+
+          <div className="mt-10">
+            <NewsletterSignup source={`author-${author.slug}`} />
+          </div>
         </section>
       </div>
     </div>

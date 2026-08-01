@@ -151,3 +151,21 @@ export async function fetchCategories(): Promise<Category[]> {
   if (error || !data) return [];
   return data.map(mapCategory);
 }
+
+/**
+ * How many confirmed subscribers follow this author.
+ *
+ * Reads through `author_subscriber_count`, a security-definer function that
+ * returns a number and never a row — the subscriber list itself stays
+ * unreadable to `anon`.
+ */
+export async function fetchAuthorSubscriberCount(slug: string): Promise<number> {
+  const supabase = createPublicSupabase();
+  if (!supabase) return 0;
+
+  const { data, error } = await supabase.rpc("author_subscriber_count", {
+    author_slug: slug,
+  });
+  if (error) return 0;
+  return typeof data === "number" ? data : 0;
+}

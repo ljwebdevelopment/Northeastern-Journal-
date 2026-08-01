@@ -117,7 +117,11 @@ export default async function EditProfilePage({
         )}
       </header>
 
-      <ProfileForm author={author} authorId={targetId} />
+      <ProfileForm
+        author={author}
+        authorId={targetId}
+        photoUrl={(row as AuthorRow).photo_url ?? ""}
+      />
     </div>
   );
 }

@@ -87,7 +87,7 @@ export function AuthorSubscribe({
           <BellRing className="h-4 w-4" aria-hidden />
           Subscribe
         </button>
-        {showCount && subscriberCount > 0 && (
+        {showCount && (
           <span className={inverted ? "text-sm text-white/80" : "text-sm text-muted"}>
             {countLabel}
           </span>

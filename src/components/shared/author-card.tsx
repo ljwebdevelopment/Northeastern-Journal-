@@ -67,14 +67,12 @@ export function AuthorCard({
                 {articleCount} {articleCount === 1 ? "article" : "articles"}
               </span>
             )}
-            {(author.showSubscriberCount ?? true) &&
-              typeof subscriberCount === "number" &&
-              subscriberCount > 0 && (
-                <span>
-                  {subscriberCount.toLocaleString()}{" "}
-                  {subscriberCount === 1 ? "subscriber" : "subscribers"}
-                </span>
-              )}
+            {(author.showSubscriberCount ?? true) && typeof subscriberCount === "number" && (
+              <span>
+                {subscriberCount.toLocaleString()}{" "}
+                {subscriberCount === 1 ? "subscriber" : "subscribers"}
+              </span>
+            )}
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-start">

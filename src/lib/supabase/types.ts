@@ -195,6 +195,10 @@ export interface Database {
       is_staff: { Args: Record<string, never>; Returns: boolean };
       can_write: { Args: Record<string, never>; Returns: boolean };
       increment_article_view: { Args: { article_slug: string }; Returns: number | null };
+      check_rate_limit: {
+        Args: { limit_key: string; max_hits: number; window_seconds: number };
+        Returns: boolean;
+      };
     };
     Enums: {
       user_role: UserRole;

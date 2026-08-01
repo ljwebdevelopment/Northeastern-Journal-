@@ -4,8 +4,12 @@ import { hasServiceRole } from "@/lib/supabase/env";
 import { sendWelcomeEmail } from "@/lib/email/send";
 
 /**
- * Double opt-in, step two. The link in the confirmation email lands here.
- * On success the subscriber becomes `confirmed` and gets the welcome email.
+ * Legacy confirmation link.
+ *
+ * Signup is single opt-in now — nobody is sent here by a new subscription.
+ * The route stays because confirmation emails from the old flow may still be
+ * sitting in inboxes, and those links have to keep working rather than
+ * landing on an error. Anyone already subscribed is told so.
  */
 
 export const runtime = "nodejs";

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { BookOpen, PenLine, Rocket, Sparkles } from "lucide-react";
 import { getArticlesByAuthor, getAuthorBySlug, getBookBySlug } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
@@ -27,8 +26,9 @@ const upcomingBooks = [
 ];
 
 export default async function NextGenerationPage() {
+  // The programme stands on its own; a missing fellow byline just means the
+  // fellow-specific sections don't render.
   const fellow = await getAuthorBySlug("sam-whitfield");
-  if (!fellow) notFound();
   const [articles, book] = await Promise.all([
     getArticlesByAuthor("sam-whitfield"),
     getBookBySlug("letters-to-the-next-council"),
@@ -89,7 +89,7 @@ export default async function NextGenerationPage() {
           <div>
             <h2 className="rule-red font-serif text-2xl font-bold">Books</h2>
             <div className="mt-8 grid max-w-xs grid-cols-1">
-              {book && <BookCard book={book} authorName={fellow.name} />}
+              {book && <BookCard book={book} authorName={fellow?.name} />}
             </div>
           </div>
           <div>

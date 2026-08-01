@@ -11,7 +11,14 @@ import "server-only";
  * section — her hub is linked from the footer and her byline, not the
  * masthead.
  */
-import { getArticles, getCategories } from "@/lib/content/api";
+import {
+  getArticles,
+  getAuthorBySlug,
+  getBooks,
+  getCategories,
+  getConversations,
+  getVideos,
+} from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 
 export interface NavItem {
@@ -53,27 +60,50 @@ export async function buildNav(): Promise<NavItem[]> {
 
   items.push({ label: "Contributors", href: "/authors" });
 
-  // Nothing published at all — keep the masthead from going bare.
+  // Nothing published at all. Fall back to evergreen pages rather than
+  // section links, which 404 while their sections are empty.
   return items.length > 1 ? items : siteConfig.nav;
 }
 
 export async function buildFooterColumns(): Promise<
   { title: string; links: NavItem[] }[]
 > {
-  const categories = await activeCategories();
-  const columns = siteConfig.footerColumns.map((c) => ({ ...c, links: [...c.links] }));
+  const [categories, books, videos, conversations, cherokeeNana] = await Promise.all([
+    activeCategories(),
+    getBooks(),
+    getVideos(),
+    getConversations(),
+    getAuthorBySlug("cherokee-nana"),
+  ]);
 
-  if (categories.length === 0) return columns;
+  const columns: { title: string; links: NavItem[] }[] = [];
 
-  // Replace the hardcoded Sections column with the sections that exist.
-  return columns.map((column) =>
-    column.title === "Sections"
-      ? {
-          ...column,
-          links: categories
-            .slice(0, 8)
-            .map((c) => ({ label: c.name, href: `/category/${c.slug}` })),
-        }
-      : column
+  // Sections only appear once they hold something — their pages 404 while
+  // empty, and a footer full of dead links is worse than a shorter footer.
+  if (categories.length > 0) {
+    columns.push({
+      title: "Sections",
+      links: categories
+        .slice(0, 8)
+        .map((c) => ({ label: c.name, href: `/category/${c.slug}` })),
+    });
+  }
+
+  // Her hub 404s if the byline isn't in the database, so don't advertise it.
+  columns.push(
+    ...siteConfig.footerColumns.map((column) => ({
+      ...column,
+      links: column.links.filter(
+        (link) => link.href !== "/cherokee-nana" || Boolean(cherokeeNana)
+      ),
+    }))
   );
+
+  const collections: NavItem[] = [];
+  if (conversations.length > 0) collections.push({ label: "Conversations", href: "/conversations" });
+  if (books.length > 0) collections.push({ label: "Books", href: "/books" });
+  if (videos.length > 0) collections.push({ label: "Videos", href: "/videos" });
+  if (collections.length > 0) columns.push({ title: "Collections", links: collections });
+
+  return columns;
 }

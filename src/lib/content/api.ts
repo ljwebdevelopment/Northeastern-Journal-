@@ -182,7 +182,14 @@ export async function getAuthors(): Promise<Author[]> {
 }
 
 export async function getAuthorBySlug(slug: string): Promise<Author | undefined> {
-  return (await allAuthorsMerged()).find((a) => a.slug === slug);
+  const authors = await allAuthorsMerged();
+  const bySlug = authors.find((a) => a.slug === slug);
+  if (bySlug) return bySlug;
+
+  // Fall back to the author's chosen handle, so /author/@name and
+  // /author/name both reach the profile.
+  const handle = slug.replace(/^@/, "").toLowerCase();
+  return authors.find((a) => a.username?.toLowerCase() === handle);
 }
 
 // --- Books, videos, conversations, newsletter --------------------------------

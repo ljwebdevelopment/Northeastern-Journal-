@@ -51,9 +51,36 @@ export type AuthorRow = {
   social: Record<string, string>;
   related_topics: string[];
   is_active: boolean;
+  username: string | null;
+  location: string | null;
+  website: string | null;
+  featured_quote: string | null;
+  founding_role: string | null;
+  quotes: AuthorQuoteRow[];
+  reading_list: ReadingListRow[];
+  timeline: TimelineRow[];
+  professional_links: ProfessionalLinkRow[];
+  video_playlist: string | null;
+  speaking: string | null;
+  podcast_url: string | null;
+  show_subscriber_count: boolean;
   created_at: string;
   updated_at: string;
 }
+
+/** Shapes stored in the `authors` JSONB columns (migration 0007). */
+export type AuthorQuoteRow = { id: string; text: string; source?: string };
+export type ReadingListRow = { id: string; title: string; note?: string; url?: string };
+export type TimelineRow = { id: string; year: string; label: string };
+export type ProfessionalLinkRow = {
+  id: string;
+  kind: "syndicated" | "publication" | "award" | "press" | "portfolio";
+  title: string;
+  outlet?: string;
+  url?: string;
+  year?: string;
+  description?: string;
+};
 
 export type TagRow = {
   id: string;

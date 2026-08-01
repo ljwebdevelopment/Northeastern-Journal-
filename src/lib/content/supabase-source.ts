@@ -80,6 +80,20 @@ export function mapAuthor(row: AuthorRow): Author {
     longBio: row.long_bio || row.bio,
     social: (row.social ?? {}) as Author["social"],
     relatedTopics: (row.related_topics ?? []).map(asCategorySlug),
+    username: row.username ?? undefined,
+    location: row.location ?? undefined,
+    email: row.email ?? undefined,
+    website: row.website ?? undefined,
+    featuredQuote: row.featured_quote ?? undefined,
+    foundingRole: row.founding_role ?? undefined,
+    quotes: row.quotes ?? [],
+    readingList: row.reading_list ?? [],
+    timeline: row.timeline ?? [],
+    professionalLinks: row.professional_links ?? [],
+    videoPlaylist: row.video_playlist ?? undefined,
+    speaking: row.speaking ?? undefined,
+    podcastUrl: row.podcast_url ?? undefined,
+    showSubscriberCount: row.show_subscriber_count ?? true,
   };
 }
 

@@ -3,7 +3,9 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 /**
- * Turns a sign-in email link into a session cookie.
+ * Turns an emailed auth link into a session cookie. Day-to-day sign in is
+ * email + password and does not pass through here — this is for password
+ * recovery and invite links.
  *
  * Supabase sends one of two shapes depending on the project's email
  * template, and a link that arrives in the other shape has to work too —

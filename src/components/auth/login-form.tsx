@@ -1,17 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, MailCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Magic-link sign in. No passwords are ever collected or stored — Supabase
- * emails a one-time link, and the /auth/callback route exchanges it for a
- * session cookie.
+ * Email + password sign in. Supabase sets the session cookie in the browser,
+ * then we refresh so the server components re-render as the signed-in editor.
+ * Accounts are created by an admin in Supabase — there is no public sign-up.
  */
 export function LoginForm({ next }: { next: string }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [status, setStatus] = useState<"idle" | "signing-in" | "error">("idle");
   const [message, setMessage] = useState("");
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -23,43 +27,26 @@ export function LoginForm({ next }: { next: string }) {
       return;
     }
 
-    setStatus("sending");
+    setStatus("signing-in");
     setMessage("");
 
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: redirectTo },
+      password,
     });
 
     if (error) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(
+        error.message === "Invalid login credentials"
+          ? "That email and password don't match an account."
+          : error.message
+      );
       return;
     }
 
-    setStatus("sent");
-  }
-
-  if (status === "sent") {
-    return (
-      <div className="text-center">
-        <MailCheck className="mx-auto h-10 w-10 text-brand" aria-hidden="true" />
-        <h2 className="mt-4 font-serif text-xl font-bold">Check your email</h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          We sent a sign-in link to <strong className="text-foreground">{email}</strong>.
-          It expires in one hour and works once. Open it in this browser —
-          links opened on a different device can&apos;t complete sign-in.
-        </p>
-        <button
-          type="button"
-          onClick={() => setStatus("idle")}
-          className="mt-5 text-sm font-semibold text-accent hover:underline"
-        >
-          Use a different email
-        </button>
-      </div>
-    );
+    router.replace(next);
+    router.refresh();
   }
 
   return (
@@ -81,6 +68,36 @@ export function LoginForm({ next }: { next: string }) {
         />
       </div>
 
+      <div>
+        <label htmlFor="password" className="block text-sm font-semibold">
+          Password
+        </label>
+        <div className="relative mt-2">
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 pr-11 text-sm outline-none focus:border-brand"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted hover:text-foreground"
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Eye className="h-4 w-4" aria-hidden="true" />
+            )}
+          </button>
+        </div>
+      </div>
+
       {status === "error" && (
         <p role="alert" className="rounded-lg bg-brand/10 px-3 py-2 text-sm text-brand">
           {message}
@@ -89,11 +106,13 @@ export function LoginForm({ next }: { next: string }) {
 
       <button
         type="submit"
-        disabled={status === "sending"}
+        disabled={status === "signing-in"}
         className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
       >
-        {status === "sending" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-        {status === "sending" ? "Sending link…" : "Email me a sign-in link"}
+        {status === "signing-in" && (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        )}
+        {status === "signing-in" ? "Signing in…" : "Sign in"}
       </button>
     </form>
   );

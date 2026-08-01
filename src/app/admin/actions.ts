@@ -427,7 +427,7 @@ export async function inviteTeamMember(
 
   revalidatePath("/admin/team");
   return ok(
-    `${email} can now sign in as ${role}. Send them to ${emailConfig.siteUrl}/login — they'll get a magic link.`
+    `${email} is allowlisted as ${role}. Create their account in Supabase (Authentication → Users) with a password, then send them to ${emailConfig.siteUrl}/login.`
   );
 }
 

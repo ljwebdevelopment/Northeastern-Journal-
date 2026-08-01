@@ -108,7 +108,7 @@ src/
       newsletter/       Double opt-in: subscribe, confirm, unsubscribe
       cron/             Scheduled publishing (Vercel Cron)
     article/[category]/[slug]/
-    auth/               Magic-link callback and sign-out
+    auth/               Password-recovery/invite callback and sign-out
     login/
   components/
     admin/              Editor, rich text, uploader, nav

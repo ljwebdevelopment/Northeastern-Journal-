@@ -100,27 +100,32 @@ allowlist.
 
 ---
 
-## 3. Turn on email sign-in
+## 3. Turn on email + password sign-in
 
-Editors sign in with a magic link — no passwords are ever created or stored.
+Editors sign in with an email address and a password. There is no public
+sign-up — an admin creates each account in Supabase.
 
 1. Go to **Authentication → Sign In / Providers** in the sidebar.
-2. Confirm **Email** is enabled.
-3. Turn **Confirm email** ON.
-4. Turn **Enable email provider** ON, and leave **Secure email change** on.
-5. Under **Authentication → URL Configuration**:
+2. Confirm **Email** is enabled, with **Enable email provider** ON.
+3. Leave **Secure email change** on.
+4. To add an editor: **Authentication → Users → Add user → Create new user**.
+   Enter their email and a password, and tick **Auto Confirm User** so they can
+   sign in immediately.
+5. Their email must also exist in `admin_allowlist` with the right role, or the
+   account signs in as a `reader` with no newsroom access. The two founding
+   admins are seeded by the migration; add anyone else from **/admin/team**.
+6. Under **Authentication → URL Configuration**:
    - **Site URL:** `http://localhost:3000` for now. You'll change this in
      step 13.
    - **Redirect URLs:** click **Add URL** and add:
      ```
      http://localhost:3000/auth/callback
      ```
+   This is used by password-recovery and invite emails, not by normal sign-in.
 
-> **Note on Supabase's built-in email:** the free tier sends a limited number
-> of auth emails per hour and they sometimes land in spam. That's fine for two
-> editors. If magic links become unreliable, Supabase can be pointed at your
-> Resend account under **Project Settings → Authentication → SMTP Settings** —
-> optional, and not needed to launch.
+> **Forgot a password?** Reset it from **Authentication → Users** — open the
+> user's row menu and choose **Send password recovery** (or set a new password
+> directly). There is no self-serve reset link on the sign-in page.
 
 ---
 
@@ -346,7 +351,8 @@ SSL certificates are issued automatically once DNS resolves.
 
 ## 13. Finish the Supabase redirect URLs
 
-Magic links must know where to send editors in production.
+Password-recovery and invite emails must know where to send editors in
+production.
 
 1. Supabase → **Authentication → URL Configuration**.
 2. Set **Site URL** to `https://www.northeasternjournal.com`.
@@ -362,8 +368,8 @@ Magic links must know where to send editors in production.
    ```
 5. Click **Save**.
 
-> Skipping this is the single most common cause of "magic link takes me to the
-> wrong site" or "invalid redirect URL".
+> Skipping this is the single most common cause of "the recovery link takes me
+> to the wrong site" or "invalid redirect URL".
 
 ---
 
@@ -417,7 +423,7 @@ almost everything.
 
 **Sign in**
 - [ ] Visit `https://www.northeasternjournal.com/login`
-- [ ] Enter your email, receive the magic link, click it
+- [ ] Enter your email and password, click **Sign in**
 - [ ] You land on `/admin`
 
 **Publish**
@@ -494,10 +500,19 @@ The first query should show your address. If the case differs, the trigger
 still matches — it compares lowercased. Running the `update` fixes an account
 that was created before the allowlist row existed.
 
-**Magic link goes to localhost from the live site**
+**Sign in says "That email and password don't match an account"**
+The account doesn't exist yet, or the password is wrong. Check
+**Authentication → Users** in Supabase — create the user, or reset the password
+from their row menu.
+
+**Sign in succeeds but lands on "no access"**
+The account exists but the email isn't in `admin_allowlist` with a newsroom
+role. Add it from /admin/team, or run the `update public.profiles` query above.
+
+**Password recovery link goes to localhost from the live site**
 The Supabase **Site URL** is still `http://localhost:3000`. See step 13.
 
-**Magic link says "invalid redirect URL"**
+**Recovery link says "invalid redirect URL"**
 The exact callback URL isn't in Supabase's Redirect URLs list. It must include
 the `/auth/callback` path, not just the domain.
 

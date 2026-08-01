@@ -30,8 +30,7 @@ export default async function LoginPage({
           <p className="kicker">Northeastern Journal</p>
           <h1 className="mt-2 font-serif text-3xl font-bold">Newsroom Sign In</h1>
           <p className="mt-3 text-sm text-muted">
-            Enter your email and we&apos;ll send you a secure sign-in link. No
-            password to remember.
+            Sign in with the email and password for your newsroom account.
           </p>
         </div>
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getNewsletterIssues } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
 
 export default async function NewsletterArchivePage() {
   const issues = await getNewsletterIssues();
+  // Nothing published here yet — hide the page rather than show an empty one.
+  if (issues.length === 0) notFound();
 
   return (
     <div className="content-container py-10">

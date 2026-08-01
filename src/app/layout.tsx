@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { siteConfig } from "@/lib/site-config";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/jsonld";
+import { buildFooterColumns, buildNav } from "@/lib/navigation";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -59,11 +60,13 @@ export const viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [nav, footerColumns] = await Promise.all([buildNav(), buildFooterColumns()]);
+
   return (
     <html
       lang="en"
@@ -78,11 +81,11 @@ export default function RootLayout({
           >
             Skip to content
           </a>
-          <Header />
+          <Header nav={nav} />
           <main id="main-content" className="flex-1">
             {children}
           </main>
-          <Footer />
+          <Footer columns={footerColumns} />
         </ThemeProvider>
         <script
           type="application/ld+json"

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getAuthors, getConversations } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
 
 export default async function ConversationsPage() {
   const [conversations, authors] = await Promise.all([getConversations(), getAuthors()]);
+  // Nothing published here yet — hide the page rather than show an empty one.
+  if (conversations.length === 0) notFound();
   const [featured, ...rest] = conversations;
   const namesFor = (slugs: string[]) =>
     slugs.map((s) => authors.find((a) => a.slug === s)?.name).filter((n): n is string => Boolean(n));

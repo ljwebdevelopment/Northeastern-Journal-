@@ -169,3 +169,19 @@ export async function fetchAuthorSubscriberCount(slug: string): Promise<number> 
   if (error) return 0;
   return typeof data === "number" ? data : 0;
 }
+
+/** Follower counts for the whole roster, keyed by author slug. */
+export async function fetchAuthorSubscriberCounts(): Promise<Record<string, number>> {
+  const supabase = createPublicSupabase();
+  if (!supabase) return {};
+
+  const { data, error } = await supabase.rpc("author_subscriber_counts");
+  if (error || !data) return {};
+
+  return Object.fromEntries(
+    (data as { author_slug: string; subscribers: number }[]).map((row) => [
+      row.author_slug,
+      row.subscribers,
+    ])
+  );
+}

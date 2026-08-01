@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import NextImage from "next/image";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, ImagePlus, Loader2, Trash2, UserRound } from "lucide-react";
 import type { Author } from "@/lib/content/types";
 import { saveProfileAction } from "@/app/admin/profile/actions";
 import { initialProfileFormState } from "@/app/admin/profile/state";
+import { useImageUpload } from "./use-image-upload";
 import {
   FieldGroup,
   RepeatableField,
@@ -34,6 +36,88 @@ const LINK_KINDS = [
   ["portfolio", "Portfolio"],
 ] as const;
 
+/**
+ * Profile photo picker. The file goes straight to Supabase Storage as the
+ * signed-in user; only the resulting URL is posted with the form, so the save
+ * action keeps taking a single `photo` field.
+ */
+function PhotoField({ initialUrl, error }: { initialUrl: string; error?: string }) {
+  const [url, setUrl] = useState(initialUrl);
+  const { upload, uploading, error: uploadError } = useImageUpload();
+
+  async function pick(file: File) {
+    const uploaded = await upload(file);
+    if (uploaded) setUrl(uploaded);
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">Profile photo</p>
+      <input type="hidden" name="photo" value={url} />
+
+      <div className="mt-2 flex flex-wrap items-center gap-5">
+        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-border bg-background">
+          {url ? (
+            // Unoptimized: the file lives on the Supabase Storage host.
+            <NextImage src={url} alt="" fill sizes="112px" className="object-cover" unoptimized />
+          ) : (
+            <span className="flex h-full items-center justify-center">
+              <UserRound className="h-9 w-9 text-muted" aria-hidden />
+            </span>
+          )}
+        </div>
+
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <label
+              className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-xs font-semibold transition-colors ${
+                uploading ? "opacity-70" : "cursor-pointer hover:border-brand hover:text-brand"
+              }`}
+            >
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <ImagePlus className="h-4 w-4" aria-hidden />
+              )}
+              {uploading ? "Uploading…" : url ? "Replace photo" : "Upload a photo"}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploading}
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  // Clear the input so re-picking the same file still fires.
+                  e.target.value = "";
+                  if (file) void pick(file);
+                }}
+              />
+            </label>
+
+            {url && (
+              <button
+                type="button"
+                onClick={() => setUrl("")}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-brand"
+              >
+                <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remove
+              </button>
+            )}
+          </div>
+
+          <p className="mt-2.5 text-xs text-muted">
+            JPEG, PNG, WebP or AVIF · up to 10&nbsp;MB. A square headshot looks best.
+          </p>
+        </div>
+      </div>
+
+      {(uploadError ?? error) && (
+        <p className="mt-2.5 text-xs font-medium text-brand">{uploadError ?? error}</p>
+      )}
+    </div>
+  );
+}
+
 function SaveBar({ slug }: { slug: string }) {
   const { pending } = useFormStatus();
   return (
@@ -60,7 +144,16 @@ function SaveBar({ slug }: { slug: string }) {
   );
 }
 
-export function ProfileForm({ author, authorId }: { author: Author; authorId: string }) {
+export function ProfileForm({
+  author,
+  authorId,
+  photoUrl,
+}: {
+  author: Author;
+  authorId: string;
+  /** The stored photo, empty when unset — `author.photo` falls back to the logo. */
+  photoUrl: string;
+}) {
   const [state, formAction] = useActionState(saveProfileAction, initialProfileFormState);
   const errors = state.errors;
   const social = author.social as Record<string, string | undefined>;
@@ -90,7 +183,7 @@ export function ProfileForm({ author, authorId }: { author: Author; authorId: st
       )}
 
       <FieldGroup title="Identity" description="How your name and title appear on your profile and bylines.">
-        <TextField label="Profile photo URL" name="photo" defaultValue={author.photo ?? ""} inputMode="url" hint="Paste a link, or upload an image in the media library and use its URL." error={errors.photo} />
+        <PhotoField initialUrl={photoUrl} error={errors.photo} />
         <div className="grid gap-5 sm:grid-cols-2">
           <TextField label="Full name" name="name" required defaultValue={author.name} error={errors.name} />
           <TextField label="Job title" name="role" required defaultValue={author.role} placeholder="Reporter, Editor, Columnist…" error={errors.role} />

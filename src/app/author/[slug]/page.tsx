@@ -96,6 +96,35 @@ export default async function AuthorPage({
   const awards = (author.professionalLinks ?? []).filter((l) => l.kind === "award").length;
   const outsideWork = (author.professionalLinks ?? []).filter((l) => l.kind !== "award").length;
 
+  /**
+   * Subscribers sit alongside the other numbers rather than competing with
+   * them, and show from the first day — a count of 0 is the honest answer.
+   * The only thing that hides it is the author's own privacy toggle. The
+   * remaining tiles drop out when there is nothing to count.
+   */
+  const stats: { value: string | number; label: string }[] = [
+    { value: articles.length, label: articles.length === 1 ? "Article published" : "Articles published" },
+    ...(showCount
+      ? [
+          {
+            value: subscriberCount.toLocaleString(),
+            label: subscriberCount === 1 ? "Subscriber" : "Subscribers",
+          },
+        ]
+      : []),
+    ...(totalViews > 0 ? [{ value: formatViews(totalViews), label: "Total reads" }] : []),
+    ...(outsideWork > 0 ? [{ value: outsideWork, label: "Outside bylines" }] : []),
+    ...(awards > 0 ? [{ value: awards, label: "Awards" }] : []),
+  ];
+  const statColumns =
+    stats.length >= 5
+      ? "sm:grid-cols-3"
+      : stats.length === 4
+        ? "sm:grid-cols-4"
+        : stats.length === 3
+          ? "sm:grid-cols-3"
+          : "sm:grid-cols-2";
+
   const linkGroups = LINK_GROUPS.map((group) => ({
     ...group,
     items: (author.professionalLinks ?? []).filter((l) => l.kind === group.kind),
@@ -207,18 +236,10 @@ export default async function AuthorPage({
               />
             </div>
 
-            <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatTile value={articles.length} label="Articles published" />
-              {showCount && subscriberCount > 0 ? (
-                <StatTile value={subscriberCount.toLocaleString()} label="Subscribers" />
-              ) : (
-                <StatTile
-                  value={totalViews > 0 ? formatViews(totalViews) : beats.length}
-                  label={totalViews > 0 ? "Total reads" : "Beats"}
-                />
-              )}
-              <StatTile value={outsideWork} label="Outside bylines" />
-              <StatTile value={awards} label="Awards" />
+            <div className={`mt-7 grid grid-cols-2 gap-3 ${statColumns}`}>
+              {stats.map((stat) => (
+                <StatTile key={stat.label} value={stat.value} label={stat.label} />
+              ))}
             </div>
           </div>
         </div>

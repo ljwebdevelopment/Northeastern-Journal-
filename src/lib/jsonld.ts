@@ -56,20 +56,65 @@ export function breadcrumbJsonLd(items: { name: string; url: string }[]) {
   };
 }
 
-export function personJsonLd(author: Author) {
+/**
+ * `topics` are the author's beats (category names, e.g. "Politics",
+ * "Faith") — they populate `knowsAbout`, which is one of the signals
+ * Google's guidance points to for E-E-A-T on author/bio pages.
+ */
+export function personJsonLd(author: Author, topics: string[] = []) {
+  const url = `${siteConfig.url}/author/${author.slug}`;
   return {
     "@context": "https://schema.org",
     "@type": "Person",
     name: author.name,
+    alternateName: author.username,
     jobTitle: author.role,
     description: author.bio,
-    image: author.photo,
-    url: `${siteConfig.url}/author/${author.slug}`,
-    sameAs: Object.values(author.social).filter(Boolean),
+    image: {
+      "@type": "ImageObject",
+      url: author.photo,
+    },
+    url,
+    mainEntityOfPage: { "@type": "ProfilePage", "@id": url },
+    email: author.email,
+    ...(author.location ? { homeLocation: { "@type": "Place", name: author.location } } : {}),
+    ...(topics.length > 0 ? { knowsAbout: topics } : {}),
+    worksFor: {
+      "@type": "NewsMediaOrganization",
+      name: siteConfig.name,
+      url: siteConfig.url,
+    },
+    sameAs: [author.website, ...Object.values(author.social)].filter(Boolean),
   };
 }
 
-export function articleJsonLd(article: Article, author?: Author) {
+export function articleJsonLd(article: Article, author?: Author, commentCount = 0) {
+  /**
+   * Likes and comments as `interactionStatistic`. Google reads these as
+   * engagement signals on an article, and they cost nothing to emit since
+   * both numbers are already on the page.
+   */
+  const interactions = [
+    ...(article.likeCount
+      ? [
+          {
+            "@type": "InteractionCounter",
+            interactionType: "https://schema.org/LikeAction",
+            userInteractionCount: article.likeCount,
+          },
+        ]
+      : []),
+    ...(commentCount
+      ? [
+          {
+            "@type": "InteractionCounter",
+            interactionType: "https://schema.org/CommentAction",
+            userInteractionCount: commentCount,
+          },
+        ]
+      : []),
+  ];
+
   return {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -96,6 +141,8 @@ export function articleJsonLd(article: Article, author?: Author) {
       "@type": "WebPage",
       "@id": `${siteConfig.url}/article/${article.category}/${article.slug}`,
     },
+    ...(commentCount ? { commentCount } : {}),
+    ...(interactions.length > 0 ? { interactionStatistic: interactions } : {}),
   };
 }
 

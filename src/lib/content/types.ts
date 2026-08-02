@@ -133,6 +133,8 @@ export interface Article {
   wordCount?: number;
   /** Reads recorded for this article. Placeholder archive entries have none. */
   viewCount?: number;
+  /** Reader likes. Placeholder archive entries have none. */
+  likeCount?: number;
   featured?: boolean;
   trending?: boolean;
   mostRead?: boolean;

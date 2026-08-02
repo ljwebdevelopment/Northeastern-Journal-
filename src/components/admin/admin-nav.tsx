@@ -2,15 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, LayoutDashboard, Mail, PenSquare, Settings, UserCog, Users } from "lucide-react";
+import {
+  FileText,
+  LayoutDashboard,
+  Mail,
+  Newspaper,
+  PenSquare,
+  Settings,
+  UserCog,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/supabase/types";
 
+/**
+ * `staffOnly` hides an item from contributors; `adminOnly` narrows it further
+ * to administrators. The routes enforce the same thing server-side — this only
+ * keeps the sidebar honest about where a link would actually lead.
+ */
 const items = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, adminOnly: false },
-  { href: "/admin/articles", label: "Articles", icon: FileText, exact: false, adminOnly: false },
-  { href: "/admin/articles/new", label: "Write", icon: PenSquare, exact: true, adminOnly: false },
-  { href: "/admin/profile", label: "Edit Profile", icon: UserCog, exact: false, adminOnly: false },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/articles", label: "Articles", icon: FileText, exact: false },
+  { href: "/admin/articles/new", label: "Write", icon: PenSquare, exact: true },
+  { href: "/admin/profile", label: "Edit Profile", icon: UserCog, exact: false },
+  { href: "/admin/newsletter", label: "Newsletter", icon: Newspaper, exact: false, staffOnly: true },
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail, exact: false, adminOnly: true },
   { href: "/admin/team", label: "Team", icon: Users, exact: false, adminOnly: true },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: false, adminOnly: true },
@@ -18,7 +33,10 @@ const items = [
 
 export function AdminNav({ role }: { role: UserRole }) {
   const pathname = usePathname();
-  const visible = items.filter((item) => !item.adminOnly || role === "admin");
+  const isStaff = role === "admin" || role === "editor";
+  const visible = items.filter(
+    (item) => (!item.adminOnly || role === "admin") && (!item.staffOnly || isStaff)
+  );
 
   return (
     <nav aria-label="Newsroom" className="mt-6 flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">

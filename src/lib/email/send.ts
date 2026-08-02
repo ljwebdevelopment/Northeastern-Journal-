@@ -6,8 +6,10 @@ import { emailConfig, getResend, isResendConfigured } from "./resend";
 import {
   articleAnnouncementEmail,
   confirmSubscriptionEmail,
+  newsletterIssueEmail,
   welcomeEmail,
   type ArticleAnnouncement,
+  type NewsletterIssueView,
 } from "./templates";
 
 /**
@@ -97,19 +99,32 @@ export async function sendWelcomeEmail(
 // Broadcast
 // ---------------------------------------------------------------------------
 
+/** One rendered message, before it is addressed to anybody. */
+type Rendered = { subject: string; html: string; text: string };
+
+interface BroadcastOptions {
+  /** Rendered per recipient, because the unsubscribe link differs for each. */
+  render: (unsubscribeUrl: string) => Rendered;
+  /** Subject recorded on the audit row. */
+  subject: string;
+  articleId?: string | null;
+  newsletterIssueId?: string | null;
+  sentBy?: string | null;
+  /** Wording for the success message: "Announcement sent to 40 subscribers." */
+  noun: string;
+}
+
 /**
- * Emails a published article to every confirmed subscriber.
+ * Emails every confirmed subscriber, one message each.
  *
- * Each recipient gets their own message with their own unsubscribe token —
- * no shared "To" line, no exposed addresses. Sent through Resend's batch
- * endpoint, 100 at a time.
+ * Each recipient gets their own message with their own unsubscribe token — no
+ * shared "To" line, no exposed addresses. Sent through Resend's batch endpoint,
+ * 100 at a time, and logged to `email_sends` either way.
  *
- * Idempotency is the caller's job: `articles.notified_at` is checked and
- * stamped in `publishAndNotify` so an article is never announced twice.
+ * Idempotency is the caller's job. Articles guard on `notified_at`; newsletter
+ * issues guard on `status`.
  */
-export async function sendArticleAnnouncement(
-  article: ArticleAnnouncement & { articleId?: string; sentBy?: string }
-): Promise<SendResult> {
+async function broadcast(options: BroadcastOptions): Promise<SendResult> {
   if (!isResendConfigured) {
     return { ok: false, sent: 0, failed: 0, message: "RESEND_API_KEY is not set — no email sent." };
   }
@@ -145,7 +160,7 @@ export async function sendArticleAnnouncement(
 
     const payload = chunk.map((sub) => {
       const unsubscribeUrl = unsubscribeUrlFor(sub.unsubscribe_token);
-      const mail = articleAnnouncementEmail(article, unsubscribeUrl);
+      const mail = options.render(unsubscribeUrl);
       return {
         from: emailConfig.from,
         replyTo: emailConfig.replyTo,
@@ -168,12 +183,13 @@ export async function sendArticleAnnouncement(
 
   // Audit row so /admin can show what went out and when.
   await supabase.from("email_sends").insert({
-    article_id: article.articleId ?? null,
-    subject: article.title,
+    article_id: options.articleId ?? null,
+    newsletter_issue_id: options.newsletterIssueId ?? null,
+    subject: options.subject,
     recipients: subscribers.length,
     succeeded: sent,
     failed,
-    sent_by: article.sentBy ?? null,
+    sent_by: options.sentBy ?? null,
     error: firstError || null,
   });
 
@@ -183,6 +199,71 @@ export async function sendArticleAnnouncement(
     failed,
     message: failed
       ? `Sent to ${sent} subscriber${sent === 1 ? "" : "s"}, ${failed} failed. ${firstError}`
-      : `Announcement sent to ${sent} subscriber${sent === 1 ? "" : "s"}.`,
+      : `${options.noun} sent to ${sent} subscriber${sent === 1 ? "" : "s"}.`,
   };
+}
+
+/** Emails a published article to every confirmed subscriber. */
+export async function sendArticleAnnouncement(
+  article: ArticleAnnouncement & { articleId?: string; sentBy?: string }
+): Promise<SendResult> {
+  return broadcast({
+    render: (unsubscribeUrl) => articleAnnouncementEmail(article, unsubscribeUrl),
+    subject: article.title,
+    articleId: article.articleId ?? null,
+    sentBy: article.sentBy ?? null,
+    noun: "Announcement",
+  });
+}
+
+/**
+ * Emails one issue of the weekly newsletter to every confirmed subscriber.
+ *
+ * The caller flips the issue to `sent` before calling — see `sendIssue` in
+ * `app/admin/newsletter/actions.ts` — so a double-submit cannot produce two
+ * blasts.
+ */
+export async function sendNewsletterIssue(
+  issue: NewsletterIssueView & { issueId?: string; sentBy?: string }
+): Promise<SendResult> {
+  return broadcast({
+    render: (unsubscribeUrl) => newsletterIssueEmail(issue, unsubscribeUrl),
+    subject: issue.title,
+    newsletterIssueId: issue.issueId ?? null,
+    sentBy: issue.sentBy ?? null,
+    noun: `Issue No. ${issue.issueNumber}`,
+  });
+}
+
+/**
+ * Sends one copy of an issue to a single address so an editor can see it in a
+ * real inbox before it goes out.
+ *
+ * Deliberately does not touch `email_sends` or the subscriber table: a test is
+ * not a send, and showing it in the audit log would make it harder to tell what
+ * subscribers actually received. The unsubscribe link points at a token that
+ * matches nobody, so clicking it in a test cannot unsubscribe a real reader.
+ */
+export async function sendNewsletterTest(
+  to: string,
+  issue: NewsletterIssueView
+): Promise<SendResult> {
+  if (!isResendConfigured) {
+    return { ok: false, sent: 0, failed: 1, message: "RESEND_API_KEY is not set." };
+  }
+
+  const unsubscribeUrl = unsubscribeUrlFor("test-send-not-a-real-token");
+  const mail = newsletterIssueEmail(issue, unsubscribeUrl);
+
+  const { error } = await getResend().emails.send({
+    from: emailConfig.from,
+    replyTo: emailConfig.replyTo,
+    to,
+    subject: `[Test] ${mail.subject}`,
+    html: mail.html,
+    text: mail.text,
+  });
+
+  if (error) return { ok: false, sent: 0, failed: 1, message: error.message };
+  return { ok: true, sent: 1, failed: 0, message: `Test issue sent to ${to}.` };
 }

@@ -133,8 +133,38 @@ export type ArticleRow = {
   notified_at: string | null;
 
   view_count: number;
+  like_count: number;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Migration 0009. The public site never selects this table directly — reads go
+ * through `get_article_comments`, which omits `delete_token` and the request
+ * metadata. This shape is the full row, as staff moderation sees it.
+ */
+export type ArticleCommentRow = {
+  id: string;
+  article_id: string;
+  parent_id: string | null;
+  author_name: string;
+  body: string;
+  delete_token: string;
+  deleted_at: string | null;
+  hidden_at: string | null;
+  created_at: string;
+  author_ip: string | null;
+  author_user_agent: string | null;
+}
+
+/** What `get_article_comments` returns — the safe, public projection. */
+export type PublicCommentRow = {
+  id: string;
+  parent_id: string | null;
+  author_name: string;
+  body: string;
+  is_deleted: boolean;
+  created_at: string;
 }
 
 /** An article row joined with its category, author, and tags. */
@@ -213,6 +243,7 @@ export interface Database {
       tags: Table<TagRow>;
       articles: Table<ArticleRow>;
       article_tags: Table<{ article_id: string; tag_id: string }>;
+      article_comments: Table<ArticleCommentRow>;
       media: Table<MediaRow>;
       settings: Table<SettingRow>;
       subscribers: Table<SubscriberRow>;
@@ -229,6 +260,31 @@ export interface Database {
       is_staff: { Args: Record<string, never>; Returns: boolean };
       can_write: { Args: Record<string, never>; Returns: boolean };
       increment_article_view: { Args: { article_slug: string }; Returns: number | null };
+      set_article_like: {
+        Args: { article_slug: string; liked: boolean };
+        Returns: number | null;
+      };
+      get_article_comments: { Args: { article_slug: string }; Returns: PublicCommentRow[] };
+      add_article_comment: {
+        Args: {
+          article_slug: string;
+          comment_author: string;
+          comment_body: string;
+          reply_to?: string | null;
+          ip?: string | null;
+          user_agent?: string | null;
+        };
+        Returns: {
+          id: string;
+          parent_id: string | null;
+          delete_token: string;
+          created_at: string;
+        }[];
+      };
+      delete_article_comment: {
+        Args: { comment_id: string; token: string };
+        Returns: boolean;
+      };
       author_subscriber_count: { Args: { author_slug: string }; Returns: number };
       author_subscriber_counts: {
         Args: Record<string, never>;

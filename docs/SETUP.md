@@ -71,6 +71,11 @@ Run **every file in `supabase/migrations/`, in numerical order**. Today that is:
 | `0002_seed_reference_data.sql` | Sections, founding bylines, default settings |
 | `0003_harden_profile_privileges.sql` | Blocks self-promotion to admin |
 | `0004_grant_table_privileges.sql` | Grants API roles access to the tables |
+| `0005_article_views.sql` | Lets anonymous readers count one view per article |
+| `0006_single_opt_in.sql` | Single opt-in newsletter + durable rate-limit counters |
+| `0007_author_profiles.sql` | Extended contributor profile fields |
+| `0008_author_subscriptions.sql` | Per-journalist follower subscriptions |
+| `0009_article_engagement.sql` | Article likes and reader comments |
 
 For each one:
 

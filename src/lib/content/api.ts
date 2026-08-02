@@ -27,11 +27,13 @@ import {
 } from "./data";
 import { resolveContent } from "./demo-config";
 import {
+  fetchArticleComments,
   fetchAuthorSubscriberCount,
   fetchAuthors,
   fetchCategories,
   fetchPublishedArticles,
 } from "./supabase-source";
+import type { PublicCommentRow } from "@/lib/supabase/types";
 import type {
   Article,
   Author,
@@ -196,6 +198,16 @@ export async function getAuthorBySlug(slug: string): Promise<Author | undefined>
 /** Confirmed subscribers following this journalist. */
 export async function getAuthorSubscriberCount(slug: string): Promise<number> {
   return fetchAuthorSubscriberCount(slug);
+}
+
+// --- Comments ---------------------------------------------------------------
+
+/**
+ * The public comment thread for an article, oldest first. Placeholder archive
+ * entries have no row in Supabase, so they always come back empty.
+ */
+export async function getArticleComments(slug: string): Promise<PublicCommentRow[]> {
+  return fetchArticleComments(slug);
 }
 
 // --- Books, videos, conversations, newsletter --------------------------------

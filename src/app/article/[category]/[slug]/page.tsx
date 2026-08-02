@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getArticleBySlug,
+  getArticleComments,
   getArticles,
   getAuthorBySlug,
   getCategory,
@@ -14,6 +15,8 @@ import { articleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { ShareButtons } from "@/components/article/share-buttons";
+import { LikeButton } from "@/components/article/like-button";
+import { CommentSection } from "@/components/article/comment-section";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { formatDate, readingTime } from "@/lib/utils";
 import { formatViews } from "@/lib/format-views";
@@ -85,10 +88,13 @@ export default async function ArticlePage({
   const article = await getArticleBySlug(slug);
   if (!article || article.category !== categorySlug) notFound();
 
-  const [author, category, related] = await Promise.all([
+  const [author, category, related, comments] = await Promise.all([
     getAuthorBySlug(article.authorSlug),
     getCategory(article.category),
     getRelatedArticles(article, 3),
+    // Placeholder archive entries have no Supabase row, so this is empty for
+    // them and the section renders its "be the first" state.
+    getArticleComments(article.slug),
   ]);
 
   const url = `${siteConfig.url}/article/${article.category}/${article.slug}`;
@@ -115,7 +121,7 @@ export default async function ArticlePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify([
-            articleJsonLd(article, author),
+            articleJsonLd(article, author, comments.filter((c) => !c.is_deleted).length),
             breadcrumbJsonLd([
               { name: "Home", url: siteConfig.url },
               ...(category
@@ -251,7 +257,8 @@ export default async function ArticlePage({
         </div>
       )}
 
-      <div className="mx-auto mt-8 flex max-w-[38rem] justify-center border-t border-border pt-8">
+      <div className="mx-auto mt-8 flex max-w-[38rem] flex-wrap items-center justify-center gap-4 border-t border-border pt-8">
+        <LikeButton slug={article.slug} initialCount={article.likeCount ?? 0} />
         <ShareButtons url={url} title={article.title} />
       </div>
 
@@ -296,6 +303,8 @@ export default async function ArticlePage({
           </div>
         </section>
       )}
+
+      <CommentSection slug={article.slug} initialComments={comments} />
 
       <div className="mx-auto mt-16 max-w-3xl">
         <NewsletterSignup compact source="article" />

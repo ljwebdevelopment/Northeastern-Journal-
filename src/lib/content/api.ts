@@ -31,6 +31,7 @@ import {
   fetchAuthorSubscriberCount,
   fetchAuthors,
   fetchCategories,
+  fetchNewsletterIssues,
   fetchPublishedArticles,
 } from "./supabase-source";
 import type { PublicCommentRow } from "@/lib/supabase/types";
@@ -239,12 +240,24 @@ export async function getConversationBySlug(slug: string): Promise<Conversation 
   return allConversations.find((c) => c.slug === slug);
 }
 
+/**
+ * Sent newsletter issues, newest first.
+ *
+ * Real issues supersede the placeholder archive outright rather than merging
+ * with it — issue numbers have to run in one unbroken sequence, and
+ * interleaving two sources would produce duplicates.
+ */
+const allNewsletterIssuesMerged = cache(async (): Promise<NewsletterIssue[]> => {
+  const live = await fetchNewsletterIssues();
+  return live.length > 0 ? live : allNewsletterIssues;
+});
+
 export async function getNewsletterIssues(): Promise<NewsletterIssue[]> {
-  return byDateDesc(allNewsletterIssues);
+  return byDateDesc(await allNewsletterIssuesMerged());
 }
 
 export async function getNewsletterIssueBySlug(
   slug: string
 ): Promise<NewsletterIssue | undefined> {
-  return allNewsletterIssues.find((n) => n.slug === slug);
+  return (await allNewsletterIssuesMerged()).find((n) => n.slug === slug);
 }

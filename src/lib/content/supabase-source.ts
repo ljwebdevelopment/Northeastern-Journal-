@@ -5,10 +5,19 @@ import type {
   ArticleWithRelations,
   AuthorRow,
   CategoryRow,
+  NewsletterIssueRow,
+  NewsletterItem,
   PublicCommentRow,
 } from "@/lib/supabase/types";
 import { htmlToParagraphs } from "@/lib/richtext";
-import type { Article, Author, Category, CategorySlug } from "./types";
+import type {
+  Article,
+  Author,
+  Category,
+  CategorySlug,
+  NewsletterIssue,
+  NewsletterIssueItem,
+} from "./types";
 import { categories as fallbackCategories } from "./data";
 
 /**
@@ -175,6 +184,64 @@ export async function fetchCategories(): Promise<Category[]> {
 
   if (error || !data) return [];
   return data.map(mapCategory);
+}
+
+/**
+ * Sent newsletter issues, newest first, for the public archive.
+ *
+ * Renders from each issue's `snapshot` — the copy written at send time — not
+ * from the article ids it was assembled from. An archived issue is a record of
+ * what subscribers received, so it must not drift when an article is later
+ * edited or unpublished. Drafts are invisible here: the anon policy on
+ * `newsletter_issues` only exposes rows with status 'sent'.
+ */
+export async function fetchNewsletterIssues(): Promise<NewsletterIssue[]> {
+  const supabase = createPublicSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("newsletter_issues")
+    .select("slug, title, summary, intro, issue_number, sent_at, snapshot")
+    .eq("status", "sent")
+    .order("sent_at", { ascending: false })
+    .limit(100);
+
+  if (error || !data) return [];
+  return data.map(mapNewsletterIssue);
+}
+
+const mapNewsletterItem = (item: NewsletterItem): NewsletterIssueItem => ({
+  slug: item.slug,
+  title: item.title,
+  excerpt: item.excerpt,
+  url: item.url,
+  imageUrl: item.imageUrl ?? undefined,
+  imageAlt: item.imageAlt || item.title,
+  categoryName: item.categoryName ?? undefined,
+  authorName: item.authorName ?? undefined,
+  publishedAt: item.publishedAt,
+  readingMinutes: item.readingMinutes ?? undefined,
+  viewCount: item.viewCount ?? undefined,
+});
+
+function mapNewsletterIssue(
+  row: Pick<
+    NewsletterIssueRow,
+    "slug" | "title" | "summary" | "intro" | "issue_number" | "sent_at" | "snapshot"
+  >
+): NewsletterIssue {
+  const snapshot = row.snapshot;
+  return {
+    slug: row.slug,
+    title: row.title,
+    summary: row.summary,
+    intro: row.intro,
+    issueNumber: row.issue_number,
+    publishedAt: row.sent_at ?? new Date().toISOString(),
+    lead: snapshot?.lead ? mapNewsletterItem(snapshot.lead) : null,
+    latest: (snapshot?.latest ?? []).map(mapNewsletterItem),
+    trending: (snapshot?.trending ?? []).map(mapNewsletterItem),
+  };
 }
 
 /**

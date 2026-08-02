@@ -10,6 +10,7 @@ export type UserRole = "admin" | "editor" | "contributor" | "reader";
 export type ArticleStatus = "draft" | "scheduled" | "published" | "archived";
 export type SubscriberStatus = "pending" | "confirmed" | "unsubscribed" | "bounced";
 export type Region = "local" | "national" | "world";
+export type NewsletterStatus = "draft" | "sent";
 
 export type ProfileRow = {
   id: string;
@@ -206,9 +207,64 @@ export type SubscriberRow = {
   updated_at: string;
 }
 
+/**
+ * Migration 0010. One item as it appears in a rendered issue.
+ *
+ * A flattened copy rather than an article reference: this is what gets frozen
+ * into `newsletter_issues.snapshot` at send time so the archive keeps showing
+ * what subscribers received, even if the article changes later.
+ */
+export type NewsletterItem = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  url: string;
+  imageUrl: string | null;
+  imageAlt: string;
+  categoryName: string | null;
+  authorName: string | null;
+  publishedAt: string;
+  readingMinutes: number | null;
+  viewCount: number | null;
+};
+
+export type NewsletterSnapshot = {
+  lead: NewsletterItem | null;
+  latest: NewsletterItem[];
+  trending: NewsletterItem[];
+};
+
+export type NewsletterIssueRow = {
+  id: string;
+  issue_number: number;
+  slug: string;
+  title: string;
+  summary: string;
+  intro: string;
+  status: NewsletterStatus;
+
+  lead_article_id: string | null;
+  latest_ids: string[];
+  trending_ids: string[];
+
+  snapshot: NewsletterSnapshot | null;
+
+  sent_at: string | null;
+  recipients: number;
+  succeeded: number;
+  failed: number;
+
+  created_by: string | null;
+  sent_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type EmailSendRow = {
   id: string;
   article_id: string | null;
+  /** Set when the send was a newsletter issue (migration 0010). */
+  newsletter_issue_id: string | null;
   subject: string;
   recipients: number;
   succeeded: number;
@@ -248,6 +304,7 @@ export interface Database {
       settings: Table<SettingRow>;
       subscribers: Table<SubscriberRow>;
       email_sends: Table<EmailSendRow>;
+      newsletter_issues: Table<NewsletterIssueRow>;
     };
     // `{ [_ in never]: never }` — an empty object type. `Record<string, never>`
     // would make every key resolve to `never` when supabase-js intersects
@@ -299,6 +356,7 @@ export interface Database {
       user_role: UserRole;
       article_status: ArticleStatus;
       subscriber_status: SubscriberStatus;
+      newsletter_status: NewsletterStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };

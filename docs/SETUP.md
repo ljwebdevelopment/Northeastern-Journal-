@@ -77,6 +77,10 @@ Run **every file in `supabase/migrations/`, in numerical order**. Today that is:
 | `0008_author_subscriptions.sql` | Per-journalist follower subscriptions |
 | `0009_article_engagement.sql` | Article likes and reader comments |
 | `0010_newsletter_issues.sql` | Weekly newsletter issues and their archive |
+| `0011_in_review_status.sql` | Adds the `in_review` article status |
+| `0012_editorial_workflow.sql` | Review queue, revisions, preview tokens |
+| `0013_reader_platform.sql` | Full-text search, letters, preferences, daily reads |
+| `0014_collections.sql` | Books, videos, and conversations |
 
 For each one:
 
@@ -90,8 +94,34 @@ For each one:
 > **0003 and 0004 are already included in 0001 for a fresh project.** They
 > exist separately so a database created before those fixes can be patched
 > without a rebuild. Running them anyway is harmless — every statement is
-> idempotent. If you're setting up for the first time, run all four and don't
-> think about it.
+> idempotent. If you're setting up for the first time, run them all in order
+> and don't think about it.
+
+> **0011 must be run on its own, as its own query, before 0012.** It contains
+> a single statement, and that is deliberate: Postgres will not let a new enum
+> value be used in the same transaction that created it, and the SQL Editor
+> runs each script as one transaction. Paste 0011, run it, then start a new
+> query for 0012. If you see `unsafe use of new value "in_review"`, you pasted
+> them together — run them separately and it will go through.
+
+### What happens if you skip 0011-0014
+
+Nothing breaks, but features quietly stay switched off:
+
+- Without **0011/0012**: "Send to desk" fails, and the review queue, version
+  history, and preview links are unavailable.
+- Without **0013**: search falls back to matching headlines and summaries only
+  (the site logs a warning saying so), the letters page stays empty, the
+  preferences link in emails goes nowhere useful, and Analytics has no daily
+  figures to chart.
+- Without **0014**: `/admin/collections` says so on screen, and `/books`,
+  `/videos`, and `/conversations` stay hidden — which is also what they do when
+  they're simply empty, so nothing looks broken.
+
+> **Newsletter issues are not part of 0014.** They have their own table from
+> `0010` and their own composer at **/admin/newsletter**, which picks the
+> articles, sends the issue, and freezes a copy of what shipped. The
+> collections editor covers books, videos, and conversations only.
 
 **What just happened:** you created tables for articles, authors, categories,
 tags, subscribers, media, and settings; enabled Row Level Security on all of

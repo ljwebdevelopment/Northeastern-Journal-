@@ -23,7 +23,7 @@ export function Header({ nav }: { nav: NavItem[] }) {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header data-site-header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="h-[3px] w-full bg-gradient-to-r from-brand via-accent to-brand" />
 
       <div className="hidden border-b border-border/70 bg-surface-muted/60 lg:block">

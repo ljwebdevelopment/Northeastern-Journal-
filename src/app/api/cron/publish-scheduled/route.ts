@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       authorName: author?.name ?? null,
       publishedAt: article.published_at ?? new Date().toISOString(),
       categoryName: category?.name ?? null,
+      categorySlug: category?.slug ?? null,
       readingMinutes: article.reading_minutes,
     });
 

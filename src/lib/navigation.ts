@@ -17,6 +17,7 @@ import {
   getBooks,
   getCategories,
   getConversations,
+  getTags,
   getVideos,
 } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
@@ -68,12 +69,13 @@ export async function buildNav(): Promise<NavItem[]> {
 export async function buildFooterColumns(): Promise<
   { title: string; links: NavItem[] }[]
 > {
-  const [categories, books, videos, conversations, cherokeeNana] = await Promise.all([
+  const [categories, books, videos, conversations, cherokeeNana, tags] = await Promise.all([
     activeCategories(),
     getBooks(),
     getVideos(),
     getConversations(),
     getAuthorBySlug("cherokee-nana"),
+    getTags(),
   ]);
 
   const columns: { title: string; links: NavItem[] }[] = [];
@@ -103,6 +105,9 @@ export async function buildFooterColumns(): Promise<
   if (conversations.length > 0) collections.push({ label: "Conversations", href: "/conversations" });
   if (books.length > 0) collections.push({ label: "Books", href: "/books" });
   if (videos.length > 0) collections.push({ label: "Videos", href: "/videos" });
+  // The tag index is only meaningful once articles carry tags; the page says
+  // so gracefully, but there's no reason to advertise an empty room.
+  if (tags.length > 0) collections.push({ label: "Tags", href: "/tag" });
   if (collections.length > 0) columns.push({ title: "Collections", links: collections });
 
   return columns;

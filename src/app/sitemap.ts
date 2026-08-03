@@ -7,20 +7,23 @@ import {
   getCategories,
   getConversations,
   getNewsletterIssues,
+  getTags,
   getVideos,
 } from "@/lib/content/api";
 import { demoContentConfig } from "@/lib/content/demo-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [articles, authors, categories, books, videos, conversations, issues] = await Promise.all([
-    getArticles(),
-    getAuthors(),
-    getCategories(),
-    getBooks(),
-    getVideos(),
-    getConversations(),
-    getNewsletterIssues(),
-  ]);
+  const [articles, authors, categories, books, videos, conversations, issues, tags] =
+    await Promise.all([
+      getArticles(),
+      getAuthors(),
+      getCategories(),
+      getBooks(),
+      getVideos(),
+      getConversations(),
+      getNewsletterIssues(),
+      getTags(),
+    ]);
 
   // Only list collections that have something in them; the pages 404 when
   // empty, and a sitemap entry pointing at a 404 is a crawl error.
@@ -49,6 +52,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteConfig.url}/next-generation`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${siteConfig.url}/newsletter`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteConfig.url}/search`, changeFrequency: "monthly", priority: 0.3 },
+    ...(tags.length > 0
+      ? [{ url: `${siteConfig.url}/tag`, changeFrequency: "weekly" as const, priority: 0.4 }]
+      : []),
   ];
 
   // Category pages 404 while empty, so only list the ones with articles.
@@ -85,6 +91,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.6,
     })),
+    // A tag used once is a page with one story on it — thin, and not worth a
+    // crawl budget. Two is the threshold at which it becomes a real index.
+    ...tags
+      .filter((t) => t.count > 1)
+      .map((t) => ({
+        url: `${siteConfig.url}/tag/${encodeURIComponent(t.slug)}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.4,
+      })),
     ...articles
       .filter((a) => !a.isDemo || demoContentConfig.indexable)
       .map((a) => ({

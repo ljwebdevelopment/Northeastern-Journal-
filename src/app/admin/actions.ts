@@ -60,7 +60,8 @@ const bool = (form: FormData, key: string) => form.get(key) === "on" || form.get
  * `intent`, and that alone decides the resulting status:
  *
  *   save      → keep the current status (draft stays draft, live stays live)
- *   draft     → move back to draft (this is "unpublish")
+ *   draft     → move back to draft (this is "unpublish", and "withdraw")
+ *   submit    → hand it to the desk for review
  *   publish   → live now
  *   schedule  → live at `scheduled_for`
  *   archive   → hidden from the public, kept in the archive
@@ -152,6 +153,12 @@ export async function saveArticle(
       }
       status = "scheduled";
       break;
+    case "submit":
+      if (!plain) {
+        return fail("There's nothing to review yet.", { body: "Write something first." });
+      }
+      status = "in_review";
+      break;
     case "draft":
       status = "draft";
       break;
@@ -226,7 +233,7 @@ export async function saveArticle(
 
   // Publishing an article that was previously live keeps its original date;
   // the DB trigger stamps published_at the first time only.
-  if (status === "draft" || status === "archived") {
+  if (status === "draft" || status === "archived" || status === "in_review") {
     payload.published_at = null;
   }
 
@@ -248,8 +255,34 @@ export async function saveArticle(
 
   await syncTags(supabase, articleId, str(formData, "tags"));
 
+  /*
+   * Snapshot the prose on every save. Cheap (a few kilobytes of text), and it
+   * is the difference between "I pasted over three paragraphs" being an
+   * annoyance and being a rewrite. Autosaves are pruned to the last twenty by
+   * a trigger; these deliberate saves are kept.
+   */
+  await snapshotRevision(supabase, articleId, user.id, status === "published" ? "publish" : "manual", {
+    title,
+    subtitle: payload.subtitle ?? null,
+    excerpt,
+    body_html: bodyHtml,
+    body_markdown: markdown || null,
+    word_count: payload.word_count ?? 0,
+  });
+
+  // Submitting for review opens the thread the desk will answer in.
+  if (status === "in_review") {
+    await supabase.from("editorial_notes").insert({
+      article_id: articleId,
+      author_id: user.id,
+      kind: "submitted",
+      body: str(formData, "review_note"),
+    });
+  }
+
   refreshPublicSite();
   revalidatePath("/admin/articles");
+  revalidatePath("/admin/review");
 
   // --- Optional subscriber announcement ------------------------------------
   let emailNote = "";
@@ -269,9 +302,11 @@ export async function saveArticle(
         ? `Scheduled for ${scheduledFor?.toLocaleString()}`
         : status === "archived"
           ? "Archived"
-          : status === "draft"
-            ? "Moved to drafts"
-            : "Saved";
+          : status === "in_review"
+            ? "Sent to the desk for review"
+            : status === "draft"
+              ? "Moved to drafts"
+              : "Saved";
 
   return ok(`${verb}.${emailNote}`, { articleId });
 }
@@ -375,6 +410,7 @@ async function announceIfUnsent(articleId: string, userId: string) {
     authorName: author?.name ?? null,
     publishedAt: article.published_at ?? new Date().toISOString(),
     categoryName: category?.name ?? null,
+    categorySlug: category?.slug ?? null,
     readingMinutes: article.reading_minutes ?? undefined,
   });
 
@@ -393,6 +429,344 @@ export async function sendAnnouncementForm(formData: FormData) {
   const id = String(formData.get("id"));
   const result = await announceIfUnsent(id, user.id);
   redirect(`/admin/articles/${id}?notice=${encodeURIComponent(result.message)}`);
+}
+
+// ---------------------------------------------------------------------------
+// Review workflow
+// ---------------------------------------------------------------------------
+
+/**
+ * An editor's verdict on a piece sitting in the review queue.
+ *
+ *   publish  — approve it and put it live, recording the approval in the thread
+ *   changes  — send it back to the writer with a note saying why
+ *   comment  — say something without changing the state
+ *
+ * A change request must carry a note. "Send it back" with no reason is the
+ * single most demoralising thing an editor can do to a contributor, and it is
+ * cheap to make impossible.
+ */
+export async function reviewDecisionForm(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user) return;
+
+  const articleId = String(formData.get("id"));
+  const decision = String(formData.get("decision"));
+  const note = String(formData.get("note") ?? "").trim();
+  const back = String(formData.get("return_to") ?? "/admin/review");
+
+  const supabase = await createServerSupabase();
+  if (!supabase) return;
+
+  const staff = canPublish(user.profile.role);
+
+  // A comment is open to anyone who can see the thread — RLS decides that, and
+  // it is how a writer answers a change request.
+  if (decision === "comment") {
+    if (!note) redirect(`${back}?notice=${encodeURIComponent("Write something first.")}`);
+    await supabase.from("editorial_notes").insert({
+      article_id: articleId,
+      author_id: user.id,
+      kind: "comment",
+      body: note,
+    });
+    revalidatePath(back);
+    redirect(back);
+  }
+
+  if (!staff) {
+    redirect(`${back}?notice=${encodeURIComponent("Only editors can approve or return a piece.")}`);
+  }
+
+  if (decision === "changes") {
+    if (!note) {
+      redirect(
+        `${back}?notice=${encodeURIComponent("Say what needs changing — a bare rejection isn't useful.")}`
+      );
+    }
+    await supabase
+      .from("articles")
+      .update({ status: "draft", updated_by: user.id })
+      .eq("id", articleId);
+    await supabase.from("editorial_notes").insert({
+      article_id: articleId,
+      author_id: user.id,
+      kind: "changes_requested",
+      body: note,
+    });
+  } else if (decision === "publish") {
+    await supabase.from("editorial_notes").insert({
+      article_id: articleId,
+      author_id: user.id,
+      kind: "approved",
+      body: note,
+    });
+    const result = await setArticleStatus(articleId, "published");
+    if (!result.ok) {
+      redirect(`${back}?notice=${encodeURIComponent(result.message)}`);
+    }
+  }
+
+  refreshPublicSite();
+  revalidatePath("/admin/review");
+  revalidatePath("/admin/articles");
+  redirect(back);
+}
+
+/** Marks a note as dealt with, so the thread shows what is still outstanding. */
+export async function resolveNoteForm(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user || !canPublish(user.profile.role)) return;
+
+  const supabase = await createServerSupabase();
+  if (!supabase) return;
+
+  await supabase
+    .from("editorial_notes")
+    .update({ resolved_at: new Date().toISOString() })
+    .eq("id", String(formData.get("note_id")));
+
+  revalidatePath(String(formData.get("return_to") ?? "/admin/review"));
+}
+
+// ---------------------------------------------------------------------------
+// Revisions
+// ---------------------------------------------------------------------------
+
+interface RevisionBody {
+  title: string;
+  subtitle: string | null;
+  excerpt: string;
+  body_html: string;
+  body_markdown: string | null;
+  word_count: number;
+}
+
+async function snapshotRevision(
+  supabase: Supa,
+  articleId: string,
+  userId: string,
+  kind: "autosave" | "manual" | "publish",
+  body: RevisionBody
+) {
+  // Best-effort: a failure to record history must never fail the save itself.
+  const { error } = await supabase
+    .from("article_revisions")
+    .insert({ article_id: articleId, created_by: userId, kind, ...body });
+  if (error) console.error("[revisions] snapshot failed:", error.message);
+}
+
+/**
+ * Called by the editor every half minute while there are unsaved changes.
+ *
+ * On a draft or a piece under review it also writes the body back to the
+ * article, which is what "autosave" is expected to mean. On anything the
+ * public can see it records the snapshot and stops there — a background timer
+ * must never rewrite a live story out from under its readers. The editor says
+ * which of the two happened.
+ */
+export async function autosaveArticle(input: {
+  id: string;
+  title: string;
+  subtitle: string;
+  excerpt: string;
+  bodyHtml: string;
+  bodyMarkdown: string;
+}): Promise<{ ok: boolean; savedToArticle: boolean; at: string; message?: string }> {
+  const at = new Date().toISOString();
+  const user = await getSessionUser();
+  if (!user || !canWrite(user.profile.role)) {
+    return { ok: false, savedToArticle: false, at, message: "Not signed in." };
+  }
+
+  const supabase = await createServerSupabase();
+  if (!supabase || !input.id) {
+    return { ok: false, savedToArticle: false, at, message: "Nothing to save yet." };
+  }
+
+  const bodyHtml = sanitizeArticleHtml(input.bodyHtml);
+  const plain = htmlToText(bodyHtml);
+
+  const { data: existing } = await supabase
+    .from("articles")
+    .select("status")
+    .eq("id", input.id)
+    .maybeSingle();
+
+  const body: RevisionBody = {
+    title: input.title,
+    subtitle: input.subtitle || null,
+    excerpt: input.excerpt,
+    body_html: bodyHtml,
+    body_markdown: input.bodyMarkdown || null,
+    word_count: countWords(plain),
+  };
+
+  await snapshotRevision(supabase, input.id, user.id, "autosave", body);
+
+  const editable = existing?.status === "draft" || existing?.status === "in_review";
+  if (!editable) return { ok: true, savedToArticle: false, at };
+
+  const { error } = await supabase
+    .from("articles")
+    .update({
+      title: input.title || "Untitled",
+      subtitle: body.subtitle,
+      excerpt: input.excerpt,
+      body_html: bodyHtml,
+      body_markdown: body.body_markdown,
+      word_count: body.word_count,
+      reading_minutes: readingMinutesFor(bodyHtml),
+      updated_by: user.id,
+    })
+    .eq("id", input.id);
+
+  if (error) return { ok: false, savedToArticle: false, at, message: friendlyDbError(error.message) };
+  return { ok: true, savedToArticle: true, at };
+}
+
+/**
+ * Puts an old version back. The current text is snapshotted first, so
+ * restoring is itself undoable — the operation people reach for when something
+ * has already gone wrong should not be able to make it worse.
+ */
+export async function restoreRevisionForm(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user || !canWrite(user.profile.role)) return;
+
+  const supabase = await createServerSupabase();
+  if (!supabase) return;
+
+  const revisionId = String(formData.get("revision_id"));
+  const articleId = String(formData.get("id"));
+
+  const [{ data: revision }, { data: current }] = await Promise.all([
+    supabase.from("article_revisions").select("*").eq("id", revisionId).maybeSingle(),
+    supabase
+      .from("articles")
+      .select("title, subtitle, excerpt, body_html, body_markdown, word_count")
+      .eq("id", articleId)
+      .maybeSingle(),
+  ]);
+
+  if (!revision || revision.article_id !== articleId) {
+    redirect(`/admin/articles/${articleId}?notice=${encodeURIComponent("That version is gone.")}`);
+  }
+
+  if (current) {
+    await snapshotRevision(supabase, articleId, user.id, "manual", {
+      title: current.title,
+      subtitle: current.subtitle,
+      excerpt: current.excerpt,
+      body_html: current.body_html,
+      body_markdown: current.body_markdown,
+      word_count: current.word_count,
+    });
+  }
+
+  const { error } = await supabase
+    .from("articles")
+    .update({
+      title: revision.title,
+      subtitle: revision.subtitle,
+      excerpt: revision.excerpt,
+      body_html: revision.body_html,
+      body_markdown: revision.body_markdown,
+      word_count: revision.word_count,
+      reading_minutes: readingMinutesFor(revision.body_html),
+      updated_by: user.id,
+    })
+    .eq("id", articleId);
+
+  refreshPublicSite();
+  redirect(
+    `/admin/articles/${articleId}?notice=${encodeURIComponent(
+      error
+        ? friendlyDbError(error.message)
+        : `Restored the version from ${new Date(revision.created_at).toLocaleString()}. The text you replaced is still in the history.`
+    )}`
+  );
+}
+
+/** Invalidates every preview link that has been shared for this article. */
+export async function rotatePreviewTokenForm(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user || !canWrite(user.profile.role)) return;
+
+  const supabase = await createServerSupabase();
+  if (!supabase) return;
+
+  const articleId = String(formData.get("id"));
+  await supabase
+    .from("articles")
+    .update({ preview_token: crypto.randomUUID() })
+    .eq("id", articleId);
+
+  redirect(
+    `/admin/articles/${articleId}?notice=${encodeURIComponent(
+      "New preview link generated. The old one no longer works."
+    )}`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Media library
+// ---------------------------------------------------------------------------
+
+/**
+ * Rewrites an image's alt text.
+ *
+ * Only the description, deliberately: the file, its URL, and its storage path
+ * are what other articles already point at, and letting the library edit those
+ * would break pages that are already published.
+ */
+export async function updateMediaAltText(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const user = await getSessionUser();
+  if (!user || !canWrite(user.profile.role)) return fail("You don't have permission.");
+
+  const supabase = await createServerSupabase();
+  if (!supabase) return fail("Supabase is not configured.");
+
+  const { error } = await supabase
+    .from("media")
+    .update({ alt_text: str(formData, "alt_text").slice(0, 500) })
+    .eq("id", str(formData, "id"));
+
+  if (error) return fail(friendlyDbError(error.message));
+
+  revalidatePath("/admin/media");
+  return ok("Saved.");
+}
+
+// ---------------------------------------------------------------------------
+// Letters to the editor (moderation)
+// ---------------------------------------------------------------------------
+
+export async function moderateLetterForm(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user || !canPublish(user.profile.role)) return;
+
+  const supabase = await createServerSupabase();
+  if (!supabase) return;
+
+  const status = String(formData.get("status"));
+  if (!["pending", "approved", "rejected"].includes(status)) return;
+
+  await supabase
+    .from("letters")
+    .update({
+      status: status as "pending" | "approved" | "rejected",
+      moderated_by: user.id,
+      moderated_at: new Date().toISOString(),
+      editor_note: String(formData.get("editor_note") ?? "").trim() || null,
+    })
+    .eq("id", String(formData.get("id")));
+
+  refreshPublicSite();
+  revalidatePath("/admin/letters");
 }
 
 // ---------------------------------------------------------------------------

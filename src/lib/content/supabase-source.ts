@@ -4,27 +4,38 @@ import { createPublicSupabase } from "@/lib/supabase/server";
 import type {
   ArticleWithRelations,
   AuthorRow,
+  BookRow,
   CategoryRow,
+  ConversationRow,
+  ConversationTurn,
   NewsletterIssueRow,
   NewsletterItem,
   PublicCommentRow,
+  VideoRow,
 } from "@/lib/supabase/types";
 import { htmlToParagraphs } from "@/lib/richtext";
 import type {
   Article,
   Author,
+  Book,
   Category,
   CategorySlug,
+  Conversation,
   NewsletterIssue,
   NewsletterIssueItem,
+  Video,
 } from "./types";
 import { categories as fallbackCategories } from "./data";
 
 /**
  * Reads published content out of Supabase and maps it onto the app's domain
- * types. Every function is failure-tolerant: if Supabase is unreachable or
- * unconfigured it returns an empty array, and `api.ts` falls back to the
- * built-in placeholder archive rather than showing an error page.
+ * types — articles, bylines, sections, and the collections (books, videos,
+ * conversations). Newsletter issues have their own reader above.
+ *
+ * Every function is failure-tolerant: if Supabase is unreachable, unconfigured,
+ * or missing a migration, it returns an empty array. `api.ts` then serves the
+ * (now empty) fallback arrays from `data.ts`, and the affected section hides
+ * itself rather than showing an error page.
  */
 
 /**
@@ -159,6 +170,81 @@ export async function fetchPublishedArticles(): Promise<Article[]> {
   return (data as unknown as ArticleWithRelations[]).map(mapArticle);
 }
 
+/**
+ * Articles matching a search, found by Postgres.
+ *
+ * `websearch` is the parser that behaves the way people already expect from a
+ * search box: bare words are ANDed, "a phrase" in quotes stays together, and a
+ * leading `-` excludes. It also can't throw on malformed input, unlike the
+ * `plainto`/`to_tsquery` family — a stray parenthesis from a reader is a
+ * no-match, not a 500.
+ *
+ * Matching happens in Postgres against the GIN index; ranking happens in
+ * `api.ts`, because results from the live archive and the placeholder archive
+ * have to be ordered against each other by the same rule.
+ */
+export async function fetchArticleSearch(query: string, limit = 200): Promise<Article[]> {
+  const supabase = createPublicSupabase();
+  if (!supabase) return [];
+
+  /*
+   * Two columns here can be absent on a database that is behind on migrations,
+   * and each fails the whole query if requested: `like_count` (0009) and
+   * `search_vector` (0013). They are independent, so this degrades in two
+   * steps rather than giving up at the first error — a site missing a like
+   * count should still have a working search box, and vice versa.
+   */
+  const run = (select: string, ranked: boolean) => {
+    const base = supabase
+      .from("articles")
+      .select(select)
+      .eq("status", "published")
+      .lte("published_at", new Date().toISOString());
+
+    const filtered = ranked
+      ? base.textSearch("search_vector", query, { type: "websearch", config: "english" })
+      : base.or(
+          // The old behaviour: headline and summary only, no full-body scan.
+          `title.ilike.%${likeTerm}%,excerpt.ilike.%${likeTerm}%,subtitle.ilike.%${likeTerm}%`
+        );
+
+    return filtered.order("published_at", { ascending: false }).limit(limit);
+  };
+
+  const likeTerm = query.replace(/[%_,]/g, " ").trim();
+  if (!likeTerm) return [];
+
+  let select = ARTICLE_SELECT;
+  let ranked = true;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await run(select, ranked);
+
+    if (!error && data) {
+      return (data as unknown as ArticleWithRelations[]).map(mapArticle);
+    }
+    if (!error) return [];
+
+    if (/like_count/.test(error.message) && select !== ARTICLE_SELECT_BASE) {
+      console.warn("[content] like_count missing — run migration 0009. Searching without likes.");
+      select = ARTICLE_SELECT_BASE;
+      continue;
+    }
+    if (/search_vector/.test(error.message) && ranked) {
+      console.warn(
+        "[content] falling back to basic search — run migration 0013 to enable full-text search."
+      );
+      ranked = false;
+      continue;
+    }
+
+    console.error("[content] search failed:", error.message);
+    return [];
+  }
+
+  return [];
+}
+
 export async function fetchAuthors(): Promise<Author[]> {
   const supabase = createPublicSupabase();
   if (!supabase) return [];
@@ -260,6 +346,135 @@ export async function fetchAuthorSubscriberCount(slug: string): Promise<number> 
   });
   if (error) return 0;
   return typeof data === "number" ? data : 0;
+}
+
+// ---------------------------------------------------------------------------
+// Collections: books, videos, conversations, newsletter issues
+// ---------------------------------------------------------------------------
+// Each is one query with no joins beyond a slug lookup, and each returns an
+// empty array on failure so a missing table (migration 0014 not yet run) hides
+// the section rather than breaking the page that lists it.
+
+const PUBLISHED = <T>(rows: T[] | null) => rows ?? [];
+
+/**
+ * Reports a collection query that failed, without shouting about a migration
+ * that simply hasn't been run yet.
+ *
+ * A missing table or column is a setup step, not a fault, and logging it as an
+ * error once per collection per page render buries the failures that do need
+ * attention. Anything else is a real error and is logged as one.
+ */
+function reportCollectionError(what: string, message: string) {
+  const notMigrated =
+    message.includes("does not exist") || message.includes("schema cache");
+
+  if (notMigrated) {
+    console.warn(`[content] ${what} unavailable — run migration 0014_collections.sql.`);
+  } else {
+    console.error(`[content] failed to load ${what}:`, message);
+  }
+}
+
+export async function fetchBooks(): Promise<Book[]> {
+  const supabase = createPublicSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("books")
+    .select("*, author:authors(slug)")
+    .eq("is_published", true)
+    .lte("published_at", new Date().toISOString())
+    .order("sort_order")
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    reportCollectionError("books", error.message);
+    return [];
+  }
+
+  return PUBLISHED(data as unknown as (BookRow & { author: { slug: string } | null })[]).map(
+    (row) => ({
+      slug: row.slug,
+      title: row.title,
+      authorSlug: row.author?.slug ?? "",
+      cover: row.cover_url ?? PLACEHOLDER_IMAGE,
+      synopsis: row.synopsis,
+      reviewExcerpt: row.review_excerpt,
+      buyUrl: row.buy_url ?? "",
+      publishedAt: row.published_at,
+      readingGuideUrl: row.reading_guide_url ?? undefined,
+    })
+  );
+}
+
+export async function fetchVideos(): Promise<Video[]> {
+  const supabase = createPublicSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("videos")
+    .select("*, category:categories(slug)")
+    .eq("is_published", true)
+    .lte("published_at", new Date().toISOString())
+    .order("sort_order")
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    reportCollectionError("videos", error.message);
+    return [];
+  }
+
+  return PUBLISHED(
+    data as unknown as (VideoRow & { category: { slug: string } | null })[]
+  ).map((row) => ({
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    youtubeId: row.youtube_id,
+    // YouTube serves a thumbnail for every video, so an editor who didn't
+    // upload one still gets a picture rather than a grey box.
+    thumbnail: row.thumbnail_url || `https://i.ytimg.com/vi/${row.youtube_id}/hqdefault.jpg`,
+    category: asCategorySlug(row.category?.slug),
+    publishedAt: row.published_at,
+    playlist: row.playlist ?? undefined,
+  }));
+}
+
+export async function fetchConversations(): Promise<Conversation[]> {
+  const supabase = createPublicSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("*")
+    .eq("is_published", true)
+    .lte("published_at", new Date().toISOString())
+    .order("sort_order")
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    reportCollectionError("conversations", error.message);
+    return [];
+  }
+
+  return PUBLISHED(data as unknown as ConversationRow[]).map((row) => ({
+    slug: row.slug,
+    title: row.title,
+    format: row.format,
+    participants: row.participants ?? [],
+    excerpt: row.excerpt,
+    // JSONB is `unknown` as far as the type system is concerned, and this is
+    // rendered as text, so drop anything that isn't a well-formed turn rather
+    // than trusting the column's shape.
+    body: Array.isArray(row.body)
+      ? (row.body as ConversationTurn[]).filter(
+          (turn) => turn && typeof turn.speaker === "string" && typeof turn.text === "string"
+        )
+      : [],
+    publishedAt: row.published_at,
+    image: row.image_url ?? PLACEHOLDER_IMAGE,
+  }));
 }
 
 /** Follower counts for the whole roster, keyed by author slug. */

@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { requireNewsroomUser, canPublish } from "@/lib/auth/roles";
 import { ArticleEditor, type EditorArticle } from "@/components/admin/article-editor";
+import { ReviewThread } from "@/components/admin/review-thread";
+import { RevisionHistory } from "@/components/admin/revision-history";
 import { loadEditorContext } from "../editor-data";
 
 export const metadata = { title: "Edit Article" };
@@ -65,6 +67,7 @@ export default async function EditArticlePage({
     notifySubscribers: row.notify_subscribers,
     notifiedAt: row.notified_at,
     updatedAt: row.updated_at,
+    previewToken: row.preview_token,
   };
 
   const context = await loadEditorContext(user.profile.role === "admin");
@@ -84,6 +87,20 @@ export default async function EditArticlePage({
         subscriberCount={context.subscriberCount}
         emailReady={context.emailReady}
       />
+
+      {/*
+        Both live outside the editor's form: their buttons are forms of their
+        own, and nesting one form inside another is invalid HTML that browsers
+        resolve by dropping the inner one — the Restore button would silently
+        submit the article instead.
+      */}
+      <ReviewThread
+        articleId={row.id}
+        canDecide={canPublish(user.profile.role)}
+        inReview={row.status === "in_review"}
+        returnTo={`/admin/articles/${row.id}`}
+      />
+      <RevisionHistory articleId={row.id} />
     </>
   );
 }

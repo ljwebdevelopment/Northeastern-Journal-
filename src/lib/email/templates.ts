@@ -32,6 +32,21 @@ interface LayoutOptions {
   unsubscribeUrl?: string;
 }
 
+/**
+ * The preferences page for whoever this message is addressed to.
+ *
+ * Both links are keyed by the same token, so rather than thread a second URL
+ * through every template this reads it back off the unsubscribe link. Falls
+ * back to the bare page — which explains that it needs a link from an email —
+ * if the URL ever arrives without one.
+ */
+function preferencesUrlFrom(unsubscribeUrl: string): string {
+  const token = /[?&]token=([^&]+)/.exec(unsubscribeUrl)?.[1];
+  return token
+    ? `${emailConfig.siteUrl}/newsletter/preferences?token=${token}`
+    : `${emailConfig.siteUrl}/newsletter/preferences`;
+}
+
 function layout({ preheader, body, unsubscribeUrl }: LayoutOptions): string {
   return `<!doctype html>
 <html lang="en">
@@ -78,6 +93,8 @@ function layout({ preheader, body, unsubscribeUrl }: LayoutOptions): string {
                 unsubscribeUrl
                   ? `<p style="margin:0;">
                        You're receiving this because you subscribed to the Northeastern Journal newsletter.<br />
+                       <a href="${preferencesUrlFrom(unsubscribeUrl)}" style="color:${MUTED};text-decoration:underline;">Email preferences</a>
+                       &nbsp;·&nbsp;
                        <a href="${unsubscribeUrl}" style="color:${BRAND};text-decoration:underline;">Unsubscribe</a>
                        &nbsp;·&nbsp;
                        <a href="${emailConfig.siteUrl}/privacy" style="color:${MUTED};">Privacy</a>

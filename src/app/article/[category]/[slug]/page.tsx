@@ -15,10 +15,13 @@ import { articleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { ShareButtons } from "@/components/article/share-buttons";
+import { ReadingProgress } from "@/components/article/reading-progress";
+import { ReaderControls } from "@/components/article/reader-controls";
 import { LikeButton } from "@/components/article/like-button";
 import { CommentSection } from "@/components/article/comment-section";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
-import { formatDate, readingTime } from "@/lib/utils";
+import { ARTICLE_PROSE_CLASS } from "@/components/article/prose";
+import { cn, formatDate, readingTime } from "@/lib/utils";
 import { formatViews } from "@/lib/format-views";
 import { ViewTracker } from "@/components/article/view-tracker";
 import { demoContentConfig } from "@/lib/content/demo-config";
@@ -109,6 +112,7 @@ export default async function ArticlePage({
 
   return (
     <article className="content-container py-8 sm:py-10">
+      <ReadingProgress targetId="article-body" />
       {/* Placeholder archive entries have no row to count against. */}
       {!article.isDemo && <ViewTracker slug={article.slug} />}
       <Breadcrumbs
@@ -190,7 +194,10 @@ export default async function ArticlePage({
             )}
           </div>
 
-          <ShareButtons url={url} title={article.title} />
+          <div className="flex items-center gap-2">
+            <ReaderControls />
+            <ShareButtons url={url} title={article.title} />
+          </div>
         </div>
 
         {updatedLater && (
@@ -227,15 +234,8 @@ export default async function ArticlePage({
       {/* Body                                                              */}
       {/* ---------------------------------------------------------------- */}
       <div
-        className="prose prose-neutral dark:prose-invert mx-auto mt-10 max-w-[38rem]
-                   prose-headings:font-serif prose-headings:tracking-tight
-                   prose-h2:mt-12 prose-h2:text-2xl prose-h3:text-xl
-                   prose-p:text-[1.0625rem] prose-p:leading-[1.75]
-                   prose-a:text-accent prose-a:underline-offset-2
-                   prose-blockquote:border-l-brand prose-blockquote:font-serif
-                   prose-blockquote:not-italic prose-blockquote:text-foreground
-                   prose-img:rounded-xl
-                   prose-figcaption:text-sm prose-figcaption:text-muted"
+        id="article-body"
+        className={cn(ARTICLE_PROSE_CLASS, "mt-10")}
         // Sanitized on write in `sanitizeArticleHtml` — see lib/richtext.ts.
         dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
       />
@@ -248,7 +248,7 @@ export default async function ArticlePage({
           {article.tags.map((t) => (
             <Link
               key={t}
-              href={`/search?q=${encodeURIComponent(t)}`}
+              href={`/tag/${encodeURIComponent(t)}`}
               className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted transition-colors hover:border-brand hover:text-brand"
             >
               #{t}
@@ -260,6 +260,12 @@ export default async function ArticlePage({
       <div className="mx-auto mt-8 flex max-w-[38rem] flex-wrap items-center justify-center gap-4 border-t border-border pt-8">
         <LikeButton slug={article.slug} initialCount={article.likeCount ?? 0} />
         <ShareButtons url={url} title={article.title} />
+        <Link
+          href={`/letters/new?article=${encodeURIComponent(article.slug)}`}
+          className="text-sm font-semibold text-accent hover:underline"
+        >
+          Write to the editor about this →
+        </Link>
       </div>
 
       {/* ---------------------------------------------------------------- */}
@@ -294,7 +300,7 @@ export default async function ArticlePage({
       {/* Related                                                           */}
       {/* ---------------------------------------------------------------- */}
       {related.length > 0 && (
-        <section className="mx-auto mt-16 max-w-5xl border-t border-border pt-10">
+        <section data-print-hide className="mx-auto mt-16 max-w-5xl border-t border-border pt-10">
           <h2 className="font-serif text-2xl font-bold">Related Reading</h2>
           <div className="mt-6 grid gap-8 sm:grid-cols-3">
             {related.map((a) => (

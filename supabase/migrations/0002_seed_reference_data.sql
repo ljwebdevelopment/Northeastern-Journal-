@@ -19,6 +19,14 @@ insert into public.categories (slug, name, description, sort_order) values
   ('history',          'History',          'The long memory of a place and its people.',                             70),
   ('opinion',          'Opinion',          'Argued perspectives from our contributors.',                             80),
   ('editorial',        'Editorial',        'The Journal''s institutional voice.',                                    90),
+  -- The essay family. Opinion argues a position and Editorial speaks for the
+  -- Journal; these are the sections for writing that thinks out loud instead.
+  ('essays',           'Essays',           'Long-form inquiry — an idea followed wherever it leads.',                91),
+  ('personal-essay',   'Personal Essay',   'First-person writing on a life as it was actually lived.',               92),
+  ('reflections',      'Reflections',      'Shorter meditations on place, season, and the passage of time.',         93),
+  ('memoir',           'Memoir',           'Remembered lives, told by the people who lived them.',                   94),
+  ('criticism',        'Criticism',        'Close readings of the art, books, and ideas in circulation.',            95),
+  ('poetry',           'Poetry',           'Verse from our contributors and the wider community.',                   96),
   ('generations',      'Generations',      'Viewpoints across age and era, from longtime residents to first-time voters.', 100),
   ('interviews',       'Interviews',       'Conversations with the people making news.',                            110),
   ('books',            'Books',            'Reviews, excerpts, and reading recommendations.',                       120),

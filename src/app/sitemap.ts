@@ -60,6 +60,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Category pages 404 while empty, so only list the ones with articles.
   const usedCategories = new Set(articles.map((a) => a.category));
 
+  // Most recent publish date per category/author, so the sitemap gives
+  // crawlers an accurate freshness signal instead of no date at all.
+  const latestByCategory = new Map<string, string>();
+  const latestByAuthor = new Map<string, string>();
+  for (const a of articles) {
+    const date = a.updatedAt ?? a.publishedAt;
+    if (!latestByCategory.has(a.category) || date > latestByCategory.get(a.category)!) {
+      latestByCategory.set(a.category, date);
+    }
+    if (!latestByAuthor.has(a.authorSlug) || date > latestByAuthor.get(a.authorSlug)!) {
+      latestByAuthor.set(a.authorSlug, date);
+    }
+  }
+
   return [
     ...staticRoutes,
     ...collectionRoutes,
@@ -67,11 +81,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((c) => usedCategories.has(c.slug))
       .map((c) => ({
         url: `${siteConfig.url}/category/${c.slug}`,
+        lastModified: latestByCategory.get(c.slug),
         changeFrequency: "daily" as const,
         priority: 0.7,
       })),
     ...authors.map((a) => ({
       url: `${siteConfig.url}/author/${a.slug}`,
+      lastModified: latestByAuthor.get(a.slug),
       changeFrequency: "weekly" as const,
       priority: 0.6,
     })),

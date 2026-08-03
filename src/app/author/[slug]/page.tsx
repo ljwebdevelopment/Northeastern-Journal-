@@ -37,13 +37,25 @@ export async function generateMetadata({
   const { slug } = await params;
   const author = await getAuthorBySlug(slug);
   if (!author) return {};
+  const title = `${author.name} — ${author.role}`;
+  const url = `${siteConfig.url}/author/${author.slug}`;
+
   return {
-    title: `${author.name} — ${author.role}`,
+    title,
     description: author.bio,
-    alternates: { canonical: `${siteConfig.url}/author/${author.slug}` },
+    keywords: author.relatedTopics,
+    alternates: { canonical: url },
     openGraph: {
       type: "profile",
-      title: `${author.name} — ${author.role}`,
+      siteName: siteConfig.name,
+      title,
+      description: author.bio,
+      url,
+      images: [{ url: author.photo, width: 800, height: 1000, alt: `Portrait of ${author.name}` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
       description: author.bio,
       images: [author.photo],
     },
@@ -147,7 +159,7 @@ export default async function AuthorPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify([
-            personJsonLd(author),
+            personJsonLd(author, beats.map((c) => c.name)),
             breadcrumbJsonLd([
               { name: "Home", url: siteConfig.url },
               { name: author.name, url: `${siteConfig.url}/author/${author.slug}` },

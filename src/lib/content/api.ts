@@ -27,16 +27,16 @@ import {
 } from "./data";
 import { resolveContent } from "./demo-config";
 import {
-  fetchArticleSearch,
+  fetchArticleComments,
   fetchAuthorSubscriberCount,
   fetchAuthors,
   fetchBooks,
   fetchCategories,
-  fetchConversations,
   fetchNewsletterIssues,
   fetchPublishedArticles,
   fetchVideos,
 } from "./supabase-source";
+import type { PublicCommentRow } from "@/lib/supabase/types";
 import type {
   Article,
   Author,
@@ -319,6 +319,16 @@ export async function getAuthorSubscriberCount(slug: string): Promise<number> {
   return fetchAuthorSubscriberCount(slug);
 }
 
+// --- Comments ---------------------------------------------------------------
+
+/**
+ * The public comment thread for an article, oldest first. Placeholder archive
+ * entries have no row in Supabase, so they always come back empty.
+ */
+export async function getArticleComments(slug: string): Promise<PublicCommentRow[]> {
+  return fetchArticleComments(slug);
+}
+
 // --- Books, videos, conversations, newsletter --------------------------------
 // All four now come from Supabase, edited at /admin/collections. The arrays in
 // `data.ts` remain as the empty fallback for a database that isn't reachable
@@ -372,12 +382,24 @@ export async function getConversationBySlug(slug: string): Promise<Conversation 
   return (await allConversationsMerged()).find((c) => c.slug === slug);
 }
 
+/**
+ * Sent newsletter issues, newest first.
+ *
+ * Real issues supersede the placeholder archive outright rather than merging
+ * with it — issue numbers have to run in one unbroken sequence, and
+ * interleaving two sources would produce duplicates.
+ */
+const allNewsletterIssuesMerged = cache(async (): Promise<NewsletterIssue[]> => {
+  const live = await fetchNewsletterIssues();
+  return live.length > 0 ? live : allNewsletterIssues;
+});
+
 export async function getNewsletterIssues(): Promise<NewsletterIssue[]> {
-  return allIssuesMerged();
+  return byDateDesc(await allNewsletterIssuesMerged());
 }
 
 export async function getNewsletterIssueBySlug(
   slug: string
 ): Promise<NewsletterIssue | undefined> {
-  return (await allIssuesMerged()).find((n) => n.slug === slug);
+  return (await allNewsletterIssuesMerged()).find((n) => n.slug === slug);
 }

@@ -4,23 +4,19 @@ import { createPublicSupabase } from "@/lib/supabase/server";
 import type {
   ArticleWithRelations,
   AuthorRow,
-  BookRow,
   CategoryRow,
-  ConversationRow,
-  ConversationTurn,
   NewsletterIssueRow,
-  VideoRow,
+  NewsletterItem,
+  PublicCommentRow,
 } from "@/lib/supabase/types";
 import { htmlToParagraphs } from "@/lib/richtext";
 import type {
   Article,
   Author,
-  Book,
   Category,
   CategorySlug,
-  Conversation,
   NewsletterIssue,
-  Video,
+  NewsletterIssueItem,
 } from "./types";
 import { categories as fallbackCategories } from "./data";
 
@@ -35,7 +31,13 @@ import { categories as fallbackCategories } from "./data";
  * itself rather than showing an error page.
  */
 
-const ARTICLE_SELECT = `
+/**
+ * `like_count` arrives with migration 0009. Requesting a column that doesn't
+ * exist fails the whole query, which would empty the site of every real
+ * article — so it is kept separate and dropped on the retry below. Once the
+ * migration has run everywhere, it can be folded into the main list.
+ */
+const ARTICLE_SELECT_BASE = `
   id, slug, title, subtitle, excerpt, body_html, status, published_at, updated_at,
   featured_image_url, featured_image_alt, featured_image_caption,
   seo_title, meta_description, canonical_url,
@@ -45,6 +47,8 @@ const ARTICLE_SELECT = `
   author:authors(slug, name, role, photo_url, bio),
   article_tags(tag:tags(slug, name))
 `;
+
+const ARTICLE_SELECT = `${ARTICLE_SELECT_BASE}, like_count`;
 
 const knownCategorySlugs = new Set(fallbackCategories.map((c) => c.slug));
 
@@ -83,6 +87,7 @@ export function mapArticle(row: ArticleWithRelations): Article {
     readingMinutes: row.reading_minutes ?? undefined,
     wordCount: row.word_count ?? undefined,
     viewCount: row.view_count ?? 0,
+    likeCount: row.like_count ?? 0,
     featured: row.is_featured,
     trending: row.is_trending,
     breaking: row.is_breaking,
@@ -132,13 +137,24 @@ export async function fetchPublishedArticles(): Promise<Article[]> {
   const supabase = createPublicSupabase();
   if (!supabase) return [];
 
-  const { data, error } = await supabase
-    .from("articles")
-    .select(ARTICLE_SELECT)
-    .eq("status", "published")
-    .lte("published_at", new Date().toISOString())
-    .order("published_at", { ascending: false })
-    .limit(500);
+  const run = (select: string) =>
+    supabase
+      .from("articles")
+      .select(select)
+      .eq("status", "published")
+      .lte("published_at", new Date().toISOString())
+      .order("published_at", { ascending: false })
+      .limit(500);
+
+  let { data, error } = await run(ARTICLE_SELECT);
+
+  // Migration 0009 hasn't run on this database yet. Retry without the column
+  // rather than returning nothing: a missing like count is a cosmetic gap,
+  // but an empty article list takes down the whole site.
+  if (error && /like_count/.test(error.message)) {
+    console.warn("[content] like_count missing — run migration 0009. Serving without likes.");
+    ({ data, error } = await run(ARTICLE_SELECT_BASE));
+  }
 
   if (error || !data) {
     if (error) console.error("[content] failed to load articles:", error.message);
@@ -238,6 +254,64 @@ export async function fetchCategories(): Promise<Category[]> {
 
   if (error || !data) return [];
   return data.map(mapCategory);
+}
+
+/**
+ * Sent newsletter issues, newest first, for the public archive.
+ *
+ * Renders from each issue's `snapshot` — the copy written at send time — not
+ * from the article ids it was assembled from. An archived issue is a record of
+ * what subscribers received, so it must not drift when an article is later
+ * edited or unpublished. Drafts are invisible here: the anon policy on
+ * `newsletter_issues` only exposes rows with status 'sent'.
+ */
+export async function fetchNewsletterIssues(): Promise<NewsletterIssue[]> {
+  const supabase = createPublicSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("newsletter_issues")
+    .select("slug, title, summary, intro, issue_number, sent_at, snapshot")
+    .eq("status", "sent")
+    .order("sent_at", { ascending: false })
+    .limit(100);
+
+  if (error || !data) return [];
+  return data.map(mapNewsletterIssue);
+}
+
+const mapNewsletterItem = (item: NewsletterItem): NewsletterIssueItem => ({
+  slug: item.slug,
+  title: item.title,
+  excerpt: item.excerpt,
+  url: item.url,
+  imageUrl: item.imageUrl ?? undefined,
+  imageAlt: item.imageAlt || item.title,
+  categoryName: item.categoryName ?? undefined,
+  authorName: item.authorName ?? undefined,
+  publishedAt: item.publishedAt,
+  readingMinutes: item.readingMinutes ?? undefined,
+  viewCount: item.viewCount ?? undefined,
+});
+
+function mapNewsletterIssue(
+  row: Pick<
+    NewsletterIssueRow,
+    "slug" | "title" | "summary" | "intro" | "issue_number" | "sent_at" | "snapshot"
+  >
+): NewsletterIssue {
+  const snapshot = row.snapshot;
+  return {
+    slug: row.slug,
+    title: row.title,
+    summary: row.summary,
+    intro: row.intro,
+    issueNumber: row.issue_number,
+    publishedAt: row.sent_at ?? new Date().toISOString(),
+    lead: snapshot?.lead ? mapNewsletterItem(snapshot.lead) : null,
+    latest: (snapshot?.latest ?? []).map(mapNewsletterItem),
+    trending: (snapshot?.trending ?? []).map(mapNewsletterItem),
+  };
 }
 
 /**
@@ -427,4 +501,23 @@ export async function fetchAuthorSubscriberCounts(): Promise<Record<string, numb
       row.subscribers,
     ])
   );
+}
+
+/**
+ * The public comment thread for an article, oldest first.
+ *
+ * Reads through `get_article_comments`, which omits `delete_token` and the
+ * stored IP/user-agent — so nothing this returns is unsafe to render. Read
+ * uncached: a reader who posts a comment should see the thread they just
+ * joined, not a snapshot from five minutes ago.
+ */
+export async function fetchArticleComments(slug: string): Promise<PublicCommentRow[]> {
+  const supabase = createPublicSupabase(0);
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.rpc("get_article_comments", {
+    article_slug: slug,
+  });
+  if (error || !data) return [];
+  return data;
 }

@@ -2,12 +2,15 @@ import "server-only";
 
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { hasServiceRole } from "@/lib/supabase/env";
+import { isSendableEmail } from "@/lib/security/email-validation";
 import { emailConfig, getResend, isResendConfigured } from "./resend";
 import {
   articleAnnouncementEmail,
   confirmSubscriptionEmail,
+  newsletterIssueEmail,
   welcomeEmail,
   type ArticleAnnouncement,
+  type NewsletterIssueView,
 } from "./templates";
 
 /**
@@ -97,24 +100,32 @@ export async function sendWelcomeEmail(
 // Broadcast
 // ---------------------------------------------------------------------------
 
+/** One rendered message, before it is addressed to anybody. */
+type Rendered = { subject: string; html: string; text: string };
+
+interface BroadcastOptions {
+  /** Rendered per recipient, because the unsubscribe link differs for each. */
+  render: (unsubscribeUrl: string) => Rendered;
+  /** Subject recorded on the audit row. */
+  subject: string;
+  articleId?: string | null;
+  newsletterIssueId?: string | null;
+  sentBy?: string | null;
+  /** Wording for the success message: "Announcement sent to 40 subscribers." */
+  noun: string;
+}
+
 /**
- * Emails a published article to every confirmed subscriber.
+ * Emails every confirmed subscriber, one message each.
  *
- * Each recipient gets their own message with their own unsubscribe token —
- * no shared "To" line, no exposed addresses. Sent through Resend's batch
- * endpoint, 100 at a time.
+ * Each recipient gets their own message with their own unsubscribe token — no
+ * shared "To" line, no exposed addresses. Sent through Resend's batch endpoint,
+ * 100 at a time, and logged to `email_sends` either way.
  *
- * Idempotency is the caller's job: `articles.notified_at` is checked and
- * stamped in `publishAndNotify` so an article is never announced twice.
+ * Idempotency is the caller's job. Articles guard on `notified_at`; newsletter
+ * issues guard on `status`.
  */
-export async function sendArticleAnnouncement(
-  article: ArticleAnnouncement & {
-    articleId?: string;
-    sentBy?: string;
-    /** Used to respect section follows. Omit and everyone eligible gets it. */
-    categorySlug?: string | null;
-  }
-): Promise<SendResult> {
+async function broadcast(options: BroadcastOptions): Promise<SendResult> {
   if (!isResendConfigured) {
     return { ok: false, sent: 0, failed: 0, message: "RESEND_API_KEY is not set — no email sent." };
   }
@@ -140,62 +151,47 @@ export async function sendArticleAnnouncement(
     return { ok: true, sent: 0, failed: 0, message: "No confirmed subscribers yet." };
   }
 
-  /*
-   * Honour what readers asked for (migration 0011).
-   *
-   *   - 'daily' and 'weekly' don't want a message per article. They are not
-   *     dropped, they are simply not part of *this* send.
-   *   - Section follows are a filter, not a subscription: a reader with no
-   *     sections chosen has not opted out of anything, so they get everything.
-   *     Treating "no rows" as "nothing" would silently mute the whole list.
-   */
-  const immediate = allSubscribers.filter((s) => (s.frequency ?? "immediate") === "immediate");
+  // Resend's batch endpoint rejects the entire batch if a single `to` is
+  // invalid, so a leftover placeholder row would take every valid address
+  // beside it down with it. Drop the undeliverable ones up front and count
+  // them as failures rather than letting them poison the send.
+  const sendable = subscribers.filter((sub) => isSendableEmail(sub.email));
+  const skipped = subscribers.length - sendable.length;
+  const skippedNote = skipped
+    ? `${skipped} address${skipped === 1 ? "" : "es"} skipped (placeholder or malformed).`
+    : "";
 
-  let subscribers = immediate;
-  if (article.categorySlug) {
-    const { data: follows } = await supabase
-      .from("subscriber_categories")
-      .select("subscriber_id, category:categories(slug)")
-      .in(
-        "subscriber_id",
-        immediate.map((s) => s.id)
-      );
-
-    const chosen = new Map<string, Set<string>>();
-    for (const row of follows ?? []) {
-      const slug = (row.category as unknown as { slug: string } | null)?.slug;
-      if (!slug) continue;
-      const set = chosen.get(row.subscriber_id) ?? new Set<string>();
-      set.add(slug);
-      chosen.set(row.subscriber_id, set);
-    }
-
-    subscribers = immediate.filter((s) => {
-      const set = chosen.get(s.id);
-      return !set || set.size === 0 || set.has(article.categorySlug!);
+  if (sendable.length === 0) {
+    await supabase.from("email_sends").insert({
+      article_id: options.articleId ?? null,
+      newsletter_issue_id: options.newsletterIssueId ?? null,
+      subject: options.subject,
+      recipients: subscribers.length,
+      succeeded: 0,
+      failed: subscribers.length,
+      sent_by: options.sentBy ?? null,
+      error: `No deliverable addresses. ${skippedNote}`.trim(),
     });
-  }
 
-  if (subscribers.length === 0) {
     return {
-      ok: true,
+      ok: false,
       sent: 0,
-      failed: 0,
-      message: "No subscribers are set to receive this one.",
+      failed: subscribers.length,
+      message: `No deliverable addresses. ${skippedNote}`.trim(),
     };
   }
 
   const resend = getResend();
   let sent = 0;
-  let failed = 0;
+  let failed = skipped;
   let firstError = "";
 
-  for (let i = 0; i < subscribers.length; i += RESEND_BATCH_LIMIT) {
-    const chunk = subscribers.slice(i, i + RESEND_BATCH_LIMIT);
+  for (let i = 0; i < sendable.length; i += RESEND_BATCH_LIMIT) {
+    const chunk = sendable.slice(i, i + RESEND_BATCH_LIMIT);
 
     const payload = chunk.map((sub) => {
       const unsubscribeUrl = unsubscribeUrlFor(sub.unsubscribe_token);
-      const mail = articleAnnouncementEmail(article, unsubscribeUrl);
+      const mail = options.render(unsubscribeUrl);
       return {
         from: emailConfig.from,
         replyTo: emailConfig.replyTo,
@@ -218,13 +214,14 @@ export async function sendArticleAnnouncement(
 
   // Audit row so /admin can show what went out and when.
   await supabase.from("email_sends").insert({
-    article_id: article.articleId ?? null,
-    subject: article.title,
+    article_id: options.articleId ?? null,
+    newsletter_issue_id: options.newsletterIssueId ?? null,
+    subject: options.subject,
     recipients: subscribers.length,
     succeeded: sent,
     failed,
-    sent_by: article.sentBy ?? null,
-    error: firstError || null,
+    sent_by: options.sentBy ?? null,
+    error: [firstError, skippedNote].filter(Boolean).join(" ") || null,
   });
 
   return {
@@ -232,7 +229,78 @@ export async function sendArticleAnnouncement(
     sent,
     failed,
     message: failed
-      ? `Sent to ${sent} subscriber${sent === 1 ? "" : "s"}, ${failed} failed. ${firstError}`
-      : `Announcement sent to ${sent} subscriber${sent === 1 ? "" : "s"}.`,
+      ? [
+          `Sent to ${sent} subscriber${sent === 1 ? "" : "s"}, ${failed} failed.`,
+          firstError,
+          skippedNote,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      : `${options.noun} sent to ${sent} subscriber${sent === 1 ? "" : "s"}.`,
   };
+}
+
+/** Emails a published article to every confirmed subscriber. */
+export async function sendArticleAnnouncement(
+  article: ArticleAnnouncement & { articleId?: string; sentBy?: string }
+): Promise<SendResult> {
+  return broadcast({
+    render: (unsubscribeUrl) => articleAnnouncementEmail(article, unsubscribeUrl),
+    subject: article.title,
+    articleId: article.articleId ?? null,
+    sentBy: article.sentBy ?? null,
+    noun: "Announcement",
+  });
+}
+
+/**
+ * Emails one issue of the weekly newsletter to every confirmed subscriber.
+ *
+ * The caller flips the issue to `sent` before calling — see `sendIssue` in
+ * `app/admin/newsletter/actions.ts` — so a double-submit cannot produce two
+ * blasts.
+ */
+export async function sendNewsletterIssue(
+  issue: NewsletterIssueView & { issueId?: string; sentBy?: string }
+): Promise<SendResult> {
+  return broadcast({
+    render: (unsubscribeUrl) => newsletterIssueEmail(issue, unsubscribeUrl),
+    subject: issue.title,
+    newsletterIssueId: issue.issueId ?? null,
+    sentBy: issue.sentBy ?? null,
+    noun: `Issue No. ${issue.issueNumber}`,
+  });
+}
+
+/**
+ * Sends one copy of an issue to a single address so an editor can see it in a
+ * real inbox before it goes out.
+ *
+ * Deliberately does not touch `email_sends` or the subscriber table: a test is
+ * not a send, and showing it in the audit log would make it harder to tell what
+ * subscribers actually received. The unsubscribe link points at a token that
+ * matches nobody, so clicking it in a test cannot unsubscribe a real reader.
+ */
+export async function sendNewsletterTest(
+  to: string,
+  issue: NewsletterIssueView
+): Promise<SendResult> {
+  if (!isResendConfigured) {
+    return { ok: false, sent: 0, failed: 1, message: "RESEND_API_KEY is not set." };
+  }
+
+  const unsubscribeUrl = unsubscribeUrlFor("test-send-not-a-real-token");
+  const mail = newsletterIssueEmail(issue, unsubscribeUrl);
+
+  const { error } = await getResend().emails.send({
+    from: emailConfig.from,
+    replyTo: emailConfig.replyTo,
+    to,
+    subject: `[Test] ${mail.subject}`,
+    html: mail.html,
+    text: mail.text,
+  });
+
+  if (error) return { ok: false, sent: 0, failed: 1, message: error.message };
+  return { ok: true, sent: 1, failed: 0, message: `Test issue sent to ${to}.` };
 }

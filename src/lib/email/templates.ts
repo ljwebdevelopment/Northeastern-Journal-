@@ -248,3 +248,293 @@ export function articleAnnouncementEmail(
     text: `${article.title}\n\n${article.excerpt}\n\nRead: ${article.url}\n\nUnsubscribe: ${unsubscribeUrl}`,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Weekly issue — the Sunday Letter
+// ---------------------------------------------------------------------------
+
+/**
+ * The recurring newsletter: an editor's note, one lead story, the week's new
+ * reporting, and what readers are actually reading.
+ *
+ * Structurally this is three stacked sections separated by ruled headings. Each
+ * one degrades to nothing if the editor selected no articles for it, so a
+ * lead-only issue still renders as a finished piece of mail rather than a page
+ * of empty headings.
+ */
+
+export interface NewsletterItemView {
+  title: string;
+  excerpt: string;
+  url: string;
+  imageUrl?: string | null;
+  imageAlt?: string;
+  categoryName?: string | null;
+  authorName?: string | null;
+  publishedAt: string;
+  readingMinutes?: number | null;
+  viewCount?: number | null;
+}
+
+export interface NewsletterIssueView {
+  issueNumber: number;
+  title: string;
+  /** Editor's note. Blank lines split paragraphs. */
+  intro: string;
+  /** Preheader text and archive blurb. */
+  summary: string;
+  sentAt: string;
+  lead: NewsletterItemView | null;
+  latest: NewsletterItemView[];
+  trending: NewsletterItemView[];
+}
+
+const longDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+/** A ruled small-caps heading that opens each section. */
+const sectionHeading = (label: string) => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:34px 0 20px 0;">
+    <tr>
+      <td style="border-top:2px solid ${INK};padding-top:10px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${INK};">
+        ${escapeHtml(label)}
+      </td>
+    </tr>
+  </table>`;
+
+/**
+ * One story in the "new this week" list: thumbnail left, text right.
+ *
+ * The image cell is dropped entirely when there's no image rather than left
+ * empty — Outlook renders an empty fixed-width cell as a visible gap.
+ */
+function listItem(item: NewsletterItemView, isLast: boolean): string {
+  const meta = [
+    item.categoryName ? escapeHtml(item.categoryName) : null,
+    shortDate(item.publishedAt),
+    item.readingMinutes ? `${item.readingMinutes} min` : null,
+  ]
+    .filter(Boolean)
+    .join(" &nbsp;·&nbsp; ");
+
+  const thumb = item.imageUrl
+    ? `<td width="104" valign="top" style="width:104px;padding-right:16px;">
+         <a href="${item.url}" style="display:block;">
+           <img src="${item.imageUrl}" alt="${escapeHtml(item.imageAlt ?? "")}" width="104" height="78"
+                style="display:block;width:104px;height:78px;object-fit:cover;border-radius:6px;border:0;" />
+         </a>
+       </td>`
+    : "";
+
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="${isLast ? "" : `border-bottom:1px solid ${BORDER};`}">
+      <tr>
+        <td style="padding:16px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              ${thumb}
+              <td valign="top">
+                <div style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:${BRAND};margin:0 0 6px 0;">
+                  ${meta}
+                </div>
+                <a href="${item.url}"
+                   style="font-family:Georgia,serif;font-size:17px;line-height:1.32;font-weight:700;color:${INK};text-decoration:none;">
+                  ${escapeHtml(item.title)}
+                </a>
+                <div style="margin:7px 0 0 0;font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.55;color:${MUTED};">
+                  ${escapeHtml(truncate(item.excerpt, 130))}
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
+}
+
+/** A ranked trending row: oversized numeral, headline, read count. */
+function trendingItem(item: NewsletterItemView, rank: number, isLast: boolean): string {
+  const reads =
+    item.viewCount && item.viewCount > 0
+      ? `<div style="margin:5px 0 0 0;font-family:Helvetica,Arial,sans-serif;font-size:12px;color:${MUTED};">
+           ${item.viewCount.toLocaleString()} reads
+         </div>`
+      : "";
+
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="${isLast ? "" : `border-bottom:1px solid ${BORDER};`}">
+      <tr>
+        <td width="44" valign="top" style="width:44px;padding:15px 0;font-family:Georgia,serif;font-size:30px;font-weight:700;line-height:1;color:${BORDER};">
+          ${rank}
+        </td>
+        <td valign="top" style="padding:15px 0;">
+          <a href="${item.url}"
+             style="font-family:Georgia,serif;font-size:16px;line-height:1.35;font-weight:700;color:${INK};text-decoration:none;">
+            ${escapeHtml(item.title)}
+          </a>
+          ${reads}
+        </td>
+      </tr>
+    </table>`;
+}
+
+function truncate(value: string, max: number): string {
+  const clean = value.trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, max).replace(/\s+\S*$/, "")}…`;
+}
+
+/** Plain-text paragraphs from the editor's note. */
+const introParagraphs = (intro: string) =>
+  intro
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map(
+      (p) =>
+        `<p style="margin:0 0 14px 0;font-family:Georgia,serif;font-size:16px;line-height:1.7;color:${INK};">${escapeHtml(
+          p
+        ).replace(/\n/g, "<br />")}</p>`
+    )
+    .join("");
+
+export function newsletterIssueEmail(
+  issue: NewsletterIssueView,
+  unsubscribeUrl: string
+) {
+  // --- Masthead line: issue number and date --------------------------------
+  const dateline = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding:0 0 22px 0;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:${MUTED};">
+          The Sunday Letter &nbsp;·&nbsp; Issue No. ${issue.issueNumber}
+          <div style="margin-top:5px;font-weight:400;letter-spacing:0.06em;">
+            ${longDate(issue.sentAt)}
+          </div>
+        </td>
+      </tr>
+    </table>`;
+
+  // --- Editor's note --------------------------------------------------------
+  const note = issue.intro.trim()
+    ? `<div style="padding:0 0 4px 0;">${introParagraphs(issue.intro)}</div>`
+    : "";
+
+  // --- Lead story -----------------------------------------------------------
+  const lead = issue.lead
+    ? (() => {
+        const item = issue.lead!;
+        const byline = [
+          item.authorName ? `By ${escapeHtml(item.authorName)}` : null,
+          shortDate(item.publishedAt),
+          item.readingMinutes ? `${item.readingMinutes} min read` : null,
+        ]
+          .filter(Boolean)
+          .join(" &nbsp;·&nbsp; ");
+
+        const image = item.imageUrl
+          ? `<a href="${item.url}" style="display:block;">
+               <img src="${item.imageUrl}" alt="${escapeHtml(item.imageAlt ?? "")}" width="536"
+                    style="display:block;width:100%;max-width:536px;height:auto;border-radius:8px;border:0;margin:0 0 20px 0;" />
+             </a>`
+          : "";
+
+        return `
+          ${sectionHeading("The Lead")}
+          ${
+            item.categoryName
+              ? `<div style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:${BRAND};margin:0 0 10px 0;">${escapeHtml(
+                  item.categoryName
+                )}</div>`
+              : ""
+          }
+          ${image}
+          <h2 style="margin:0 0 10px 0;font-family:Georgia,serif;font-size:26px;line-height:1.24;font-weight:700;color:${INK};">
+            <a href="${item.url}" style="color:${INK};text-decoration:none;">${escapeHtml(item.title)}</a>
+          </h2>
+          <div style="font-family:Helvetica,Arial,sans-serif;font-size:13px;color:${MUTED};margin:0 0 16px 0;">
+            ${byline}
+          </div>
+          <p style="margin:0;font-family:Georgia,serif;font-size:16px;line-height:1.7;color:${INK};">
+            ${escapeHtml(item.excerpt)}
+          </p>
+          ${button(item.url, "Read the Full Story")}`;
+      })()
+    : "";
+
+  // --- New this week --------------------------------------------------------
+  const latest = issue.latest.length
+    ? sectionHeading("New This Week") +
+      issue.latest
+        .map((item, i) => listItem(item, i === issue.latest.length - 1))
+        .join("")
+    : "";
+
+  // --- Trending -------------------------------------------------------------
+  const trending = issue.trending.length
+    ? sectionHeading("What Readers Are Reading") +
+      issue.trending
+        .map((item, i) => trendingItem(item, i + 1, i === issue.trending.length - 1))
+        .join("")
+    : "";
+
+  // --- Sign-off -------------------------------------------------------------
+  const signoff = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:34px 0 0 0;">
+      <tr>
+        <td style="border-top:1px solid ${BORDER};padding-top:20px;font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.65;color:${MUTED};text-align:center;">
+          Thanks for reading the Northeastern Journal.<br />
+          Know someone who'd want this?
+          <a href="${emailConfig.siteUrl}/newsletter" style="color:${BRAND};text-decoration:underline;">Forward it along.</a>
+        </td>
+      </tr>
+    </table>`;
+
+  const body = `${dateline}${note}${lead}${latest}${trending}${signoff}`;
+
+  // --- Plain-text alternative ----------------------------------------------
+  const textLines = [
+    `THE SUNDAY LETTER — ISSUE NO. ${issue.issueNumber}`,
+    longDate(issue.sentAt),
+    "",
+    issue.intro.trim(),
+    "",
+  ];
+
+  if (issue.lead) {
+    textLines.push("THE LEAD", "", issue.lead.title, issue.lead.excerpt, issue.lead.url, "");
+  }
+  if (issue.latest.length) {
+    textLines.push("NEW THIS WEEK", "");
+    for (const item of issue.latest) textLines.push(`• ${item.title}`, `  ${item.url}`);
+    textLines.push("");
+  }
+  if (issue.trending.length) {
+    textLines.push("WHAT READERS ARE READING", "");
+    issue.trending.forEach((item, i) => {
+      textLines.push(`${i + 1}. ${item.title}`, `   ${item.url}`);
+    });
+    textLines.push("");
+  }
+  textLines.push(`Unsubscribe: ${unsubscribeUrl}`);
+
+  return {
+    subject: issue.title,
+    html: layout({
+      preheader: issue.summary || truncate(issue.intro, 140),
+      body,
+      unsubscribeUrl,
+    }),
+    text: textLines.join("\n"),
+  };
+}

@@ -11,15 +11,21 @@ export function ConfirmSubmit({
   message,
   children,
   className,
+  disabled,
+  title,
 }: {
   message: string;
   children: React.ReactNode;
   className?: string;
+  disabled?: boolean;
+  title?: string;
 }) {
   return (
     <button
       type="submit"
       className={className}
+      disabled={disabled}
+      title={title}
       onClick={(event) => {
         if (!window.confirm(message)) event.preventDefault();
       }}

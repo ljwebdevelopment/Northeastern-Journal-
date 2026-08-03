@@ -482,7 +482,7 @@ export function ArticleEditor({
             <div className="mt-3 space-y-2">
               <Check name="is_featured" label="Feature on the homepage" defaultChecked={article.isFeatured} />
               <Check name="is_trending" label="Show in Trending" defaultChecked={article.isTrending} />
-              <Check name="is_breaking" label="Breaking news ticker" defaultChecked={article.isBreaking} />
+              <Check name="is_breaking" label="Lead the headline ticker" defaultChecked={article.isBreaking} />
             </div>
           </Panel>
 

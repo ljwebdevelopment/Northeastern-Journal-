@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArticleCard } from "@/components/article/article-card";
-import { BreakingTicker } from "@/components/home/breaking-ticker";
+import { LatestTicker } from "@/components/home/latest-ticker";
 import { SectionHeader } from "@/components/shared/section-header";
 import { siteConfig } from "@/lib/site-config";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
@@ -14,7 +14,6 @@ import {
   getArticlesByRegion,
   getAuthors,
   getBooks,
-  getBreakingArticles,
   getCategories,
   getConversations,
   getFeaturedArticles,
@@ -26,7 +25,6 @@ import {
 export default async function HomePage() {
   const [
     articles,
-    breaking,
     featured,
     trending,
     mostRead,
@@ -43,7 +41,6 @@ export default async function HomePage() {
     categories,
   ] = await Promise.all([
     getArticles(),
-    getBreakingArticles(),
     getFeaturedArticles(),
     getTrendingArticles(),
     getMostReadArticles(),
@@ -107,7 +104,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <BreakingTicker articles={breaking} />
+      <LatestTicker articles={articles} />
 
       {/* Hero */}
       <section className="content-container py-10 lg:py-14">

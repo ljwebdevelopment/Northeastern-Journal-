@@ -94,9 +94,21 @@ export function ArticleCard({
   }
 
   if (variant === "hero") {
+    /**
+     * The image is absolutely positioned rather than sized by an aspect ratio
+     * on the link itself.
+     *
+     * The hero sits in a grid row beside the "More Top Stories" rail, and grid
+     * items stretch to the tallest cell. When the rail ran longer than a 16:9
+     * image, the card grew but the picture didn't — leaving a bare strip below
+     * it, with the caption (white text, meant to sit on the photograph) pinned
+     * to the bottom of the card and effectively invisible. Filling the card
+     * means the photo covers whatever height the row settles on, so the text
+     * always has an image behind it.
+     */
     return (
-      <article className="group relative overflow-hidden rounded-2xl border border-border card-shadow-lg">
-        <Link href={href} className="relative block aspect-[16/10] w-full sm:aspect-[16/9]">
+      <article className="group relative isolate aspect-[16/10] overflow-hidden rounded-2xl border border-border bg-surface-muted card-shadow-lg sm:aspect-[16/9]">
+        <Link href={href} className="absolute inset-0 block">
           {article.isDemo && <DemoBadge />}
           <Image
             src={article.image}
@@ -108,12 +120,16 @@ export function ArticleCard({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
         </Link>
-        <div className="absolute inset-x-0 bottom-0 p-6 sm:p-10">
+        {/* `pointer-events-none` so the caption doesn't punch a dead zone in
+            the link behind it; the headline re-enables them for itself. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-6 sm:p-10">
           <p className="kicker-inverted">{categoryName(article.category)}</p>
           <h1 className="mt-3 max-w-2xl text-balance font-serif text-3xl font-bold leading-[1.05] text-white sm:text-5xl">
-            <Link href={href}>{article.title}</Link>
+            <Link href={href} className="pointer-events-auto">
+              {article.title}
+            </Link>
           </h1>
-          <p className="mt-4 hidden max-w-xl text-base text-white/85 sm:block">
+          <p className="mt-4 hidden max-w-xl text-base text-white/85 sm:line-clamp-2">
             {article.excerpt}
           </p>
           <time dateTime={article.publishedAt} className="mt-4 block text-xs font-medium uppercase tracking-wide text-white/70">

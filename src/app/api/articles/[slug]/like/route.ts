@@ -41,6 +41,32 @@ const NO_STORE = { "Cache-Control": "no-store, max-age=0" };
 type Supabase = NonNullable<Awaited<ReturnType<typeof createServerSupabase>>>;
 
 /**
+ * Whether the database simply doesn't have the like feature yet.
+ *
+ * Migrations are applied by hand in the Supabase SQL editor, so a deployment
+ * can be running this code against a database where 0009 was never run:
+ * `set_article_like` doesn't exist and `articles.like_count` doesn't either.
+ * PostgREST reports the missing function as PGRST202 and a missing column as
+ * 42703. Worth separating from a genuine fault — one is "run the migration",
+ * the other is "something is broken".
+ */
+function isMissingFeature(error: { code?: string; message?: string }): boolean {
+  if (error.code && ["PGRST202", "42883", "42703"].includes(error.code)) return true;
+  return /set_article_like|like_count|schema cache/i.test(error.message ?? "");
+}
+
+const notInstalled = () => {
+  console.error(
+    "[likes] set_article_like/like_count missing — apply supabase/migrations/" +
+      "0009_article_engagement.sql in the Supabase SQL editor. Likes are inert until then."
+  );
+  return NextResponse.json(
+    { ok: false, reason: "not-installed" },
+    { status: 501, headers: NO_STORE }
+  );
+};
+
+/**
  * The article's current like total, or null when the slug matches nothing
  * published. Read directly rather than through the cached content client so
  * it reflects writes from a second ago.
@@ -54,8 +80,7 @@ async function readLikeCount(supabase: Supabase, slug: string): Promise<number |
     .maybeSingle();
 
   if (error) {
-    // Migration 0009 not run yet: the column is missing. Not fatal — the page
-    // keeps its server-rendered number.
+    // Not fatal on the read path — the page keeps its server-rendered number.
     console.error("[likes] count read failed", error.message);
     return null;
   }
@@ -103,6 +128,7 @@ export async function POST(
   });
 
   if (error) {
+    if (isMissingFeature(error)) return notInstalled();
     console.error("[likes] toggle failed", error.message);
     return NextResponse.json({ ok: false }, { status: 500, headers: NO_STORE });
   }

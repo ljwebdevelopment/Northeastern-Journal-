@@ -6,8 +6,7 @@ import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
-import { ARTICLE_PROSE_CLASS } from "@/components/article/prose";
-import { cn, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 export async function generateStaticParams() {
   const issues = await getNewsletterIssues();

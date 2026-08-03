@@ -113,6 +113,20 @@ interface BroadcastOptions {
   sentBy?: string | null;
   /** Wording for the success message: "Announcement sent to 40 subscribers." */
   noun: string;
+  /**
+   * The section this is about, when it is about one (migration 0013).
+   *
+   * Set for a single-article announcement, so readers who follow specific
+   * sections only hear about those. Omitted for a newsletter issue, which
+   * spans the whole paper and goes to everyone who takes it.
+   */
+  categorySlug?: string | null;
+  /**
+   * Whether per-reader cadence applies. An article announcement is the thing
+   * "as it publishes" means, so digest subscribers are skipped. A newsletter
+   * issue *is* the digest, so it goes to everyone regardless.
+   */
+  respectFrequency?: boolean;
 }
 
 /**
@@ -149,6 +163,48 @@ async function broadcast(options: BroadcastOptions): Promise<SendResult> {
   }
   if (!allSubscribers || allSubscribers.length === 0) {
     return { ok: true, sent: 0, failed: 0, message: "No confirmed subscribers yet." };
+  }
+
+  /*
+   * Honour what readers asked for (migration 0013).
+   *
+   *   - 'daily' and 'weekly' don't want a message per article. They are not
+   *     dropped, they are simply not part of *this* send — the newsletter
+   *     issue is what they signed up for, and it sets respectFrequency false.
+   *   - Section follows are a filter, not a subscription: a reader with no
+   *     sections chosen has not opted out of anything, so they get everything.
+   *     Treating "no rows" as "nothing" would silently mute the whole list.
+   */
+  let subscribers = options.respectFrequency
+    ? allSubscribers.filter((s) => (s.frequency ?? "immediate") === "immediate")
+    : allSubscribers;
+
+  if (options.categorySlug && subscribers.length > 0) {
+    const { data: follows } = await supabase
+      .from("subscriber_categories")
+      .select("subscriber_id, category:categories(slug)")
+      .in(
+        "subscriber_id",
+        subscribers.map((s) => s.id)
+      );
+
+    const chosen = new Map<string, Set<string>>();
+    for (const row of follows ?? []) {
+      const slug = (row.category as unknown as { slug: string } | null)?.slug;
+      if (!slug) continue;
+      const set = chosen.get(row.subscriber_id) ?? new Set<string>();
+      set.add(slug);
+      chosen.set(row.subscriber_id, set);
+    }
+
+    subscribers = subscribers.filter((s) => {
+      const set = chosen.get(s.id);
+      return !set || set.size === 0 || set.has(options.categorySlug!);
+    });
+  }
+
+  if (subscribers.length === 0) {
+    return { ok: true, sent: 0, failed: 0, message: "No subscribers are set to receive this one." };
   }
 
   // Resend's batch endpoint rejects the entire batch if a single `to` is
@@ -242,7 +298,12 @@ async function broadcast(options: BroadcastOptions): Promise<SendResult> {
 
 /** Emails a published article to every confirmed subscriber. */
 export async function sendArticleAnnouncement(
-  article: ArticleAnnouncement & { articleId?: string; sentBy?: string }
+  article: ArticleAnnouncement & {
+    articleId?: string;
+    sentBy?: string;
+    /** Used to respect section follows. Omit and everyone eligible gets it. */
+    categorySlug?: string | null;
+  }
 ): Promise<SendResult> {
   return broadcast({
     render: (unsubscribeUrl) => articleAnnouncementEmail(article, unsubscribeUrl),
@@ -250,6 +311,8 @@ export async function sendArticleAnnouncement(
     articleId: article.articleId ?? null,
     sentBy: article.sentBy ?? null,
     noun: "Announcement",
+    categorySlug: article.categorySlug ?? null,
+    respectFrequency: true,
   });
 }
 

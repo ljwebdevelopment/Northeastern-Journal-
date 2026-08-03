@@ -1,11 +1,16 @@
 /**
- * What the four collections are made of.
+ * What the collections are made of.
  *
- * Books, videos, conversations, and newsletter issues are the same screen with
+ * Books, videos, and conversations are the same screen with
  * different fields: a list, a form, a publish toggle, a delete. Describing them
- * as data rather than writing four near-identical CRUD screens means the list
+ * as data rather than writing three near-identical CRUD screens means the list
  * page, the editor, the save action, and the delete action each exist once —
- * and adding a fifth collection later is an entry in this file.
+ * and adding a fourth collection later is an entry in this file.
+ *
+ * Newsletter issues are deliberately NOT here. They have their own composer at
+ * /admin/newsletter (migration 0010), which selects articles, sends the issue,
+ * and freezes a snapshot of what shipped. A generic form over a body field
+ * would be a worse tool for the same job.
  *
  * Deliberately not used for articles. An article has drafts, review,
  * scheduling, announcements, SEO, and tags; forcing it through a generic form
@@ -36,11 +41,11 @@ export interface Field {
   options?: { value: string; label: string }[];
 }
 
-export type CollectionType = "books" | "videos" | "conversations" | "newsletter";
+export type CollectionType = "books" | "videos" | "conversations";
 
 export interface CollectionDef {
   type: CollectionType;
-  table: "books" | "videos" | "conversations" | "newsletter_issues";
+  table: "books" | "videos" | "conversations";
   /** Plural, for headings. */
   label: string;
   /** Singular and lowercase, for sentences: "Add a book". */
@@ -166,26 +171,6 @@ export const COLLECTIONS: Record<CollectionType, CollectionDef> = {
     ],
   },
 
-  newsletter: {
-    type: "newsletter",
-    table: "newsletter_issues",
-    label: "Newsletter issues",
-    singular: "issue",
-    publicPath: "/newsletter",
-    subtitleColumn: "summary",
-    fields: [
-      { name: "title", label: "Title", kind: "text", required: true },
-      { name: "issue_number", label: "Issue number", kind: "number" },
-      {
-        name: "summary",
-        label: "Summary",
-        kind: "textarea",
-        hint: "Shown in the archive listing and used as the page description.",
-      },
-      { name: "body_html", label: "What went out", kind: "html" },
-      PUBLISHED_AT,
-    ],
-  },
 };
 
 export const COLLECTION_TYPES = Object.keys(COLLECTIONS) as CollectionType[];

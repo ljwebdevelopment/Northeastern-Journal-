@@ -15,6 +15,8 @@ import { articleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { ShareButtons } from "@/components/article/share-buttons";
+import { ReadingProgress } from "@/components/article/reading-progress";
+import { ReaderControls } from "@/components/article/reader-controls";
 import { LikeButton } from "@/components/article/like-button";
 import { CommentSection } from "@/components/article/comment-section";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";

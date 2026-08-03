@@ -217,7 +217,7 @@ async function uniqueSlug(
 
 function friendly(message: string): string {
   if (message.includes("does not exist") || message.includes("schema cache")) {
-    return "These tables don't exist yet — run supabase/migrations/0012_collections.sql.";
+    return "These tables don't exist yet — run supabase/migrations/0014_collections.sql.";
   }
   if (message.includes("duplicate key") && message.includes("slug")) {
     return "Something already uses that URL slug.";

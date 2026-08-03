@@ -28,10 +28,12 @@ import {
 import { resolveContent } from "./demo-config";
 import {
   fetchArticleComments,
+  fetchArticleSearch,
   fetchAuthorSubscriberCount,
   fetchAuthors,
   fetchBooks,
   fetchCategories,
+  fetchConversations,
   fetchNewsletterIssues,
   fetchPublishedArticles,
   fetchVideos,
@@ -351,11 +353,6 @@ const allVideosMerged = cache(async (): Promise<Video[]> => {
 const allConversationsMerged = cache(async (): Promise<Conversation[]> => {
   const live = await fetchConversations();
   return live.length > 0 ? live : byDateDesc(allConversations);
-});
-
-const allIssuesMerged = cache(async (): Promise<NewsletterIssue[]> => {
-  const live = await fetchNewsletterIssues();
-  return live.length > 0 ? live : byDateDesc(allNewsletterIssues);
 });
 
 export async function getBooks(): Promise<Book[]> {

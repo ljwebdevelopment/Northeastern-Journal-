@@ -5,13 +5,13 @@
 --
 --   1. Review    — a contributor can hand a piece to the desk, an editor can
 --                  approve it or send it back with a note. `editorial_notes`
---                  is the conversation; 0009's 'in_review' status is the state.
+--                  is the conversation; 0011's 'in_review' status is the state.
 --   2. Revisions — every save snapshots the body, so a closed tab, a bad paste,
 --                  or a disagreement about an edit is recoverable.
 --   3. Preview   — an unguessable token per article, so a draft can be read
 --                  (and shared with a source or a subeditor) before it is live.
 --
--- Run 0009 first — this file compares against the 'in_review' enum value.
+-- Run 0011 first — this file compares against the 'in_review' enum value.
 --
 -- Additive. Creates two tables and one column; no existing row is modified.
 -- =============================================================================

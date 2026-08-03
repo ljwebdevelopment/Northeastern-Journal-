@@ -149,7 +149,7 @@ export type ArticleRow = {
   notify_subscribers: boolean;
   notified_at: string | null;
 
-  /** Unguessable id behind /preview/<token> (migration 0010). */
+  /** Unguessable id behind /preview/<token> (migration 0012). */
   preview_token: string;
 
   view_count: number;
@@ -283,7 +283,7 @@ export type NewsletterIssueRow = {
 export type EmailSendRow = {
   id: string;
   article_id: string | null;
-  /** Set when the send was a newsletter issue (migration 0010). */
+  /** Set when the send was a newsletter issue (migration 0012). */
   newsletter_issue_id: string | null;
   subject: string;
   recipients: number;
@@ -294,7 +294,66 @@ export type EmailSendRow = {
   created_at: string;
 }
 
-// --- Collections (migration 0012) -------------------------------------------
+export type EditorialNoteRow = {
+  id: string;
+  article_id: string;
+  author_id: string | null;
+  kind: EditorialNoteKind;
+  body: string;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+export type ArticleRevisionRow = {
+  id: string;
+  article_id: string;
+  created_by: string | null;
+  kind: RevisionKind;
+  title: string;
+  subtitle: string | null;
+  excerpt: string;
+  body_html: string;
+  body_markdown: string | null;
+  word_count: number;
+  created_at: string;
+}
+
+export type LetterRow = {
+  id: string;
+  name: string;
+  email: string;
+  location: string | null;
+  subject: string;
+  body: string;
+  article_id: string | null;
+  status: LetterStatus;
+  moderated_by: string | null;
+  moderated_at: string | null;
+  editor_note: string | null;
+  consent_ip: string | null;
+  consent_user_agent: string | null;
+  created_at: string;
+}
+
+/** The public projection of a letter — no address, no moderation trail. */
+export type LetterPublicRow = Pick<
+  LetterRow,
+  "id" | "name" | "location" | "subject" | "body" | "article_id" | "created_at"
+>;
+
+export type SubscriberCategoryRow = {
+  subscriber_id: string;
+  category_id: string;
+  created_at: string;
+}
+
+export type ArticleViewsDailyRow = {
+  article_id: string;
+  day: string;
+  views: number;
+}
+
+// --- Collections (migration 0014) -------------------------------------------
 // Books, videos, conversations, and newsletter issues. All four share the same
 // simple lifecycle — `is_published` plus a date — rather than the article
 // status enum, because none of them are drafted, reviewed, or announced.
@@ -340,11 +399,6 @@ export type ConversationRow = CollectionBase & {
   sort_order: number;
 }
 
-export type NewsletterIssueRow = CollectionBase & {
-  summary: string;
-  body_html: string;
-  issue_number: number;
-}
 
 export type SettingRow = {
   key: string;
@@ -378,6 +432,13 @@ export interface Database {
       subscriber_categories: Table<SubscriberCategoryRow>;
       email_sends: Table<EmailSendRow>;
       newsletter_issues: Table<NewsletterIssueRow>;
+      editorial_notes: Table<EditorialNoteRow>;
+      article_revisions: Table<ArticleRevisionRow>;
+      letters: Table<LetterRow>;
+      article_views_daily: Table<ArticleViewsDailyRow>;
+      books: Table<BookRow>;
+      videos: Table<VideoRow>;
+      conversations: Table<ConversationRow>;
     };
     // `{ [_ in never]: never }` — an empty object type. `Record<string, never>`
     // would make every key resolve to `never` when supabase-js intersects

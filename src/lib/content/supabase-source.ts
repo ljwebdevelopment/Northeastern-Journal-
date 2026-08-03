@@ -4,26 +4,33 @@ import { createPublicSupabase } from "@/lib/supabase/server";
 import type {
   ArticleWithRelations,
   AuthorRow,
+  BookRow,
   CategoryRow,
+  ConversationRow,
+  ConversationTurn,
   NewsletterIssueRow,
   NewsletterItem,
   PublicCommentRow,
+  VideoRow,
 } from "@/lib/supabase/types";
 import { htmlToParagraphs } from "@/lib/richtext";
 import type {
   Article,
   Author,
+  Book,
   Category,
   CategorySlug,
+  Conversation,
   NewsletterIssue,
   NewsletterIssueItem,
+  Video,
 } from "./types";
 import { categories as fallbackCategories } from "./data";
 
 /**
  * Reads published content out of Supabase and maps it onto the app's domain
- * types — articles, bylines, sections, and the four collections (books,
- * videos, conversations, newsletter issues).
+ * types — articles, bylines, sections, and the collections (books, videos,
+ * conversations). Newsletter issues have their own reader above.
  *
  * Every function is failure-tolerant: if Supabase is unreachable, unconfigured,
  * or missing a migration, it returns an empty array. `api.ts` then serves the
@@ -180,53 +187,62 @@ export async function fetchArticleSearch(query: string, limit = 200): Promise<Ar
   const supabase = createPublicSupabase();
   if (!supabase) return [];
 
-  const live = supabase
-    .from("articles")
-    .select(ARTICLE_SELECT)
-    .eq("status", "published")
-    .lte("published_at", new Date().toISOString());
-
-  const { data, error } = await live
-    .textSearch("search_vector", query, { type: "websearch", config: "english" })
-    .order("published_at", { ascending: false })
-    .limit(limit);
-
-  if (!error && data) {
-    return (data as unknown as ArticleWithRelations[]).map(mapArticle);
-  }
-
   /*
-   * `search_vector` arrives with migration 0011. Until that has been run
-   * against the database — a fresh deploy, or an upgrade where the SQL hasn't
-   * been applied yet — the column genuinely isn't there, and returning nothing
-   * would make the site look like it has no archive at all.
-   *
-   * So fall back to a headline-and-summary LIKE. It is the old behaviour,
-   * minus the full-body scan: worse than the index, far better than an empty
-   * page, and it disappears on its own the moment the migration lands.
+   * Two columns here can be absent on a database that is behind on migrations,
+   * and each fails the whole query if requested: `like_count` (0009) and
+   * `search_vector` (0013). They are independent, so this degrades in two
+   * steps rather than giving up at the first error — a site missing a like
+   * count should still have a working search box, and vice versa.
    */
-  const missingColumn = error?.message.includes("search_vector");
-  if (!missingColumn) {
-    console.error("[content] search failed:", error?.message);
+  const run = (select: string, ranked: boolean) => {
+    const base = supabase
+      .from("articles")
+      .select(select)
+      .eq("status", "published")
+      .lte("published_at", new Date().toISOString());
+
+    const filtered = ranked
+      ? base.textSearch("search_vector", query, { type: "websearch", config: "english" })
+      : base.or(
+          // The old behaviour: headline and summary only, no full-body scan.
+          `title.ilike.%${likeTerm}%,excerpt.ilike.%${likeTerm}%,subtitle.ilike.%${likeTerm}%`
+        );
+
+    return filtered.order("published_at", { ascending: false }).limit(limit);
+  };
+
+  const likeTerm = query.replace(/[%_,]/g, " ").trim();
+  if (!likeTerm) return [];
+
+  let select = ARTICLE_SELECT;
+  let ranked = true;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await run(select, ranked);
+
+    if (!error && data) {
+      return (data as unknown as ArticleWithRelations[]).map(mapArticle);
+    }
+    if (!error) return [];
+
+    if (/like_count/.test(error.message) && select !== ARTICLE_SELECT_BASE) {
+      console.warn("[content] like_count missing — run migration 0009. Searching without likes.");
+      select = ARTICLE_SELECT_BASE;
+      continue;
+    }
+    if (/search_vector/.test(error.message) && ranked) {
+      console.warn(
+        "[content] falling back to basic search — run migration 0013 to enable full-text search."
+      );
+      ranked = false;
+      continue;
+    }
+
+    console.error("[content] search failed:", error.message);
     return [];
   }
-  console.warn(
-    "[content] falling back to basic search — run migration 0011 to enable full-text search."
-  );
 
-  const like = query.replace(/[%_,]/g, " ").trim();
-  if (!like) return [];
-
-  const { data: rough } = await supabase
-    .from("articles")
-    .select(ARTICLE_SELECT)
-    .eq("status", "published")
-    .lte("published_at", new Date().toISOString())
-    .or(`title.ilike.%${like}%,excerpt.ilike.%${like}%,subtitle.ilike.%${like}%`)
-    .order("published_at", { ascending: false })
-    .limit(limit);
-
-  return ((rough ?? []) as unknown as ArticleWithRelations[]).map(mapArticle);
+  return [];
 }
 
 export async function fetchAuthors(): Promise<Author[]> {
@@ -336,7 +352,7 @@ export async function fetchAuthorSubscriberCount(slug: string): Promise<number> 
 // Collections: books, videos, conversations, newsletter issues
 // ---------------------------------------------------------------------------
 // Each is one query with no joins beyond a slug lookup, and each returns an
-// empty array on failure so a missing table (migration 0012 not yet run) hides
+// empty array on failure so a missing table (migration 0014 not yet run) hides
 // the section rather than breaking the page that lists it.
 
 const PUBLISHED = <T>(rows: T[] | null) => rows ?? [];
@@ -354,7 +370,7 @@ function reportCollectionError(what: string, message: string) {
     message.includes("does not exist") || message.includes("schema cache");
 
   if (notMigrated) {
-    console.warn(`[content] ${what} unavailable — run migration 0012_collections.sql.`);
+    console.warn(`[content] ${what} unavailable — run migration 0014_collections.sql.`);
   } else {
     console.error(`[content] failed to load ${what}:`, message);
   }
@@ -458,32 +474,6 @@ export async function fetchConversations(): Promise<Conversation[]> {
       : [],
     publishedAt: row.published_at,
     image: row.image_url ?? PLACEHOLDER_IMAGE,
-  }));
-}
-
-export async function fetchNewsletterIssues(): Promise<NewsletterIssue[]> {
-  const supabase = createPublicSupabase();
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
-    .from("newsletter_issues")
-    .select("*")
-    .eq("is_published", true)
-    .lte("published_at", new Date().toISOString())
-    .order("published_at", { ascending: false });
-
-  if (error) {
-    reportCollectionError("newsletter issues", error.message);
-    return [];
-  }
-
-  return PUBLISHED(data as unknown as NewsletterIssueRow[]).map((row) => ({
-    slug: row.slug,
-    title: row.title,
-    summary: row.summary,
-    publishedAt: row.published_at,
-    issueNumber: row.issue_number,
-    bodyHtml: row.body_html || undefined,
   }));
 }
 

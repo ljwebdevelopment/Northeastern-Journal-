@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getArticlesByCategory, getAuthors, getCategories, getCategory } from "@/lib/content/api";
+import {
+  getArticlesByCategory,
+  getAuthors,
+  getCategories,
+  getCategory,
+  paginate,
+} from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { AuthorCard } from "@/components/shared/author-card";
 import { SectionHeader } from "@/components/shared/section-header";
+import { Pagination } from "@/components/shared/pagination";
 import type { CategorySlug } from "@/lib/content/types";
 
 export async function generateStaticParams() {
@@ -49,6 +56,8 @@ export default async function CategoryPage({
   // reachable by URL either.
   if (articles.length === 0) notFound();
 
+  const pageData = paginate(articles, Number(page));
+
   // Ties the category back to the people who cover it — a beat page reads
   // as a hub for both the stories and the bylines behind them.
   const contributors = authors.filter(
@@ -77,17 +86,17 @@ export default async function CategoryPage({
         <p className="mt-3 text-base text-muted">{category.description}</p>
       </header>
 
-      {articles.length === 0 ? (
-        <p className="mt-12 text-sm text-muted">
-          No articles are published in this category yet. Check back soon.
-        </p>
-      ) : (
-        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {articles.map((a) => (
-            <ArticleCard key={a.slug} article={a} />
-          ))}
-        </div>
-      )}
+      <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {pageData.items.map((a) => (
+          <ArticleCard key={a.slug} article={a} />
+        ))}
+      </div>
+
+      <Pagination
+        page={pageData.page}
+        pageCount={pageData.pageCount}
+        basePath={`/category/${slug}`}
+      />
 
       {contributors.length > 0 && (
         <section className="mt-16 border-t border-border pt-10">

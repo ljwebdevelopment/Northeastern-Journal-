@@ -78,7 +78,7 @@ export default async function CollectionListPage({
       {error && (
         <p className="mt-6 rounded-lg bg-brand/10 px-4 py-3 text-sm text-brand">
           {error.message.includes("does not exist") || error.message.includes("schema cache")
-            ? "These tables don't exist yet — run supabase/migrations/0012_collections.sql, then reload."
+            ? "These tables don't exist yet — run supabase/migrations/0014_collections.sql, then reload."
             : `Couldn't load ${def.label.toLowerCase()}: ${error.message}`}
         </p>
       )}

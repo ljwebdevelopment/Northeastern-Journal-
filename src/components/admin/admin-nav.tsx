@@ -3,9 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3,
+  CalendarDays,
   FileText,
+  Images,
+  Inbox,
   LayoutDashboard,
+  Library,
   Mail,
+  MessageSquareQuote,
   Newspaper,
   PenSquare,
   Settings,
@@ -20,13 +26,29 @@ import type { UserRole } from "@/lib/supabase/types";
  * `staffOnly` hides an item from contributors; `adminOnly` narrows it further
  * to administrators. The routes enforce the same thing server-side — this only
  * keeps the sidebar honest about where a link would actually lead.
+ *
+ * Order follows the working day: what you write, then what's waiting on you,
+ * then the things you maintain, then administration.
  */
-const items = [
+const items: {
+  href: string;
+  label: string;
+  icon: typeof FileText;
+  exact: boolean;
+  staffOnly?: boolean;
+  adminOnly?: boolean;
+}[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/articles", label: "Articles", icon: FileText, exact: false },
   { href: "/admin/articles/new", label: "Write", icon: PenSquare, exact: true },
-  { href: "/admin/profile", label: "Edit Profile", icon: UserCog, exact: false },
+  { href: "/admin/review", label: "Review", icon: Inbox, exact: false },
+  { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, exact: false },
+  { href: "/admin/collections", label: "Collections", icon: Library, exact: false },
+  { href: "/admin/media", label: "Media", icon: Images, exact: false },
+  { href: "/admin/letters", label: "Letters", icon: MessageSquareQuote, exact: false, staffOnly: true },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3, exact: false, staffOnly: true },
   { href: "/admin/newsletter", label: "Newsletter", icon: Newspaper, exact: false, staffOnly: true },
+  { href: "/admin/profile", label: "Edit Profile", icon: UserCog, exact: false },
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail, exact: false, adminOnly: true },
   { href: "/admin/team", label: "Team", icon: Users, exact: false, adminOnly: true },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: false, adminOnly: true },
@@ -34,9 +56,8 @@ const items = [
 
 export function AdminNav({ role }: { role: UserRole }) {
   const pathname = usePathname();
-  const isStaff = role === "admin" || role === "editor";
   const visible = items.filter(
-    (item) => (!item.adminOnly || role === "admin") && (!item.staffOnly || isStaff)
+    (item) => (!item.adminOnly || role === "admin") && (!item.staffOnly || isStaff(role))
   );
 
   return (

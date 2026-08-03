@@ -20,11 +20,25 @@ export async function generateMetadata({
   const { slug } = await params;
   const video = await getVideoBySlug(slug);
   if (!video) return {};
+  const url = `${siteConfig.url}/videos/${slug}`;
   return {
     title: video.title,
     description: video.description,
-    alternates: { canonical: `${siteConfig.url}/videos/${slug}` },
-    openGraph: { images: [video.thumbnail] },
+    alternates: { canonical: url },
+    openGraph: {
+      type: "video.other",
+      siteName: siteConfig.name,
+      title: video.title,
+      description: video.description,
+      url,
+      images: [{ url: video.thumbnail, width: 1280, height: 720, alt: video.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: video.title,
+      description: video.description,
+      images: [video.thumbnail],
+    },
   };
 }
 

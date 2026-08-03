@@ -27,11 +27,14 @@ import {
 } from "./data";
 import { resolveContent } from "./demo-config";
 import {
+  fetchArticleComments,
   fetchAuthorSubscriberCount,
   fetchAuthors,
   fetchCategories,
+  fetchNewsletterIssues,
   fetchPublishedArticles,
 } from "./supabase-source";
+import type { PublicCommentRow } from "@/lib/supabase/types";
 import type {
   Article,
   Author,
@@ -198,6 +201,16 @@ export async function getAuthorSubscriberCount(slug: string): Promise<number> {
   return fetchAuthorSubscriberCount(slug);
 }
 
+// --- Comments ---------------------------------------------------------------
+
+/**
+ * The public comment thread for an article, oldest first. Placeholder archive
+ * entries have no row in Supabase, so they always come back empty.
+ */
+export async function getArticleComments(slug: string): Promise<PublicCommentRow[]> {
+  return fetchArticleComments(slug);
+}
+
 // --- Books, videos, conversations, newsletter --------------------------------
 // Still served from the placeholder dataset. Each has a Supabase table waiting
 // in the roadmap; wiring one up means adding a fetch here, exactly as the
@@ -227,12 +240,24 @@ export async function getConversationBySlug(slug: string): Promise<Conversation 
   return allConversations.find((c) => c.slug === slug);
 }
 
+/**
+ * Sent newsletter issues, newest first.
+ *
+ * Real issues supersede the placeholder archive outright rather than merging
+ * with it — issue numbers have to run in one unbroken sequence, and
+ * interleaving two sources would produce duplicates.
+ */
+const allNewsletterIssuesMerged = cache(async (): Promise<NewsletterIssue[]> => {
+  const live = await fetchNewsletterIssues();
+  return live.length > 0 ? live : allNewsletterIssues;
+});
+
 export async function getNewsletterIssues(): Promise<NewsletterIssue[]> {
-  return byDateDesc(allNewsletterIssues);
+  return byDateDesc(await allNewsletterIssuesMerged());
 }
 
 export async function getNewsletterIssueBySlug(
   slug: string
 ): Promise<NewsletterIssue | undefined> {
-  return allNewsletterIssues.find((n) => n.slug === slug);
+  return (await allNewsletterIssuesMerged()).find((n) => n.slug === slug);
 }

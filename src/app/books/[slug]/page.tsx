@@ -23,11 +23,25 @@ export async function generateMetadata({
   const { slug } = await params;
   const book = await getBookBySlug(slug);
   if (!book) return {};
+  const url = `${siteConfig.url}/books/${slug}`;
   return {
     title: book.title,
     description: book.synopsis,
-    alternates: { canonical: `${siteConfig.url}/books/${slug}` },
-    openGraph: { images: [book.cover] },
+    alternates: { canonical: url },
+    openGraph: {
+      type: "book",
+      siteName: siteConfig.name,
+      title: book.title,
+      description: book.synopsis,
+      url,
+      images: [{ url: book.cover, width: 800, height: 1200, alt: `Cover of ${book.title}` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: book.title,
+      description: book.synopsis,
+      images: [book.cover],
+    },
   };
 }
 

@@ -71,6 +71,12 @@ Run **every file in `supabase/migrations/`, in numerical order**. Today that is:
 | `0002_seed_reference_data.sql` | Sections, founding bylines, default settings |
 | `0003_harden_profile_privileges.sql` | Blocks self-promotion to admin |
 | `0004_grant_table_privileges.sql` | Grants API roles access to the tables |
+| `0005_article_views.sql` | Lets anonymous readers count one view per article |
+| `0006_single_opt_in.sql` | Single opt-in newsletter + durable rate-limit counters |
+| `0007_author_profiles.sql` | Extended contributor profile fields |
+| `0008_author_subscriptions.sql` | Per-journalist follower subscriptions |
+| `0009_article_engagement.sql` | Article likes and reader comments |
+| `0010_newsletter_issues.sql` | Weekly newsletter issues and their archive |
 
 For each one:
 
@@ -455,6 +461,16 @@ almost everything.
       Article** button
 - [ ] Click **Unsubscribe**; the subscriber shows as unsubscribed in the
       dashboard
+
+**Weekly issue**
+- [ ] In `/admin/newsletter`, click **Compose this week's issue**
+- [ ] The lead, *New this week*, and *What readers are reading* are already
+      filled in from your published articles
+- [ ] Write an editor's note; the preview pane updates after **Save draft**
+- [ ] Click **Send test to me** and check it in a real inbox
+- [ ] Click **Send to N** and confirm; the issue flips to *Sent*
+- [ ] The issue appears at `/newsletter/archive` and reads the same as the email
+- [ ] Clicking **Send** again reports that it has already gone out
 
 **Team**
 - [ ] In `/admin/team`, invite a test email as *Contributor*

@@ -133,6 +133,8 @@ export interface Article {
   wordCount?: number;
   /** Reads recorded for this article. Placeholder archive entries have none. */
   viewCount?: number;
+  /** Reader likes. Placeholder archive entries have none. */
+  likeCount?: number;
   featured?: boolean;
   trending?: boolean;
   mostRead?: boolean;
@@ -182,10 +184,35 @@ export interface Conversation {
   image: string;
 }
 
+/** One story as it appeared in a sent issue. */
+export interface NewsletterIssueItem {
+  slug: string;
+  title: string;
+  excerpt: string;
+  url: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  categoryName?: string;
+  authorName?: string;
+  publishedAt: string;
+  readingMinutes?: number;
+  viewCount?: number;
+}
+
 export interface NewsletterIssue {
   slug: string;
   title: string;
   summary: string;
   publishedAt: string;
   issueNumber: number;
+  /** The editor's note that opened the issue. */
+  intro?: string;
+  /**
+   * The contents, as they were sent. Frozen at send time rather than resolved
+   * live, so the archive keeps showing what subscribers actually received even
+   * after an article is retitled or pulled.
+   */
+  lead?: NewsletterIssueItem | null;
+  latest?: NewsletterIssueItem[];
+  trending?: NewsletterIssueItem[];
 }

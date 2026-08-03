@@ -10,6 +10,7 @@ export type UserRole = "admin" | "editor" | "contributor" | "reader";
 export type ArticleStatus = "draft" | "scheduled" | "published" | "archived";
 export type SubscriberStatus = "pending" | "confirmed" | "unsubscribed" | "bounced";
 export type Region = "local" | "national" | "world";
+export type NewsletterStatus = "draft" | "sent";
 
 export type ProfileRow = {
   id: string;
@@ -133,8 +134,38 @@ export type ArticleRow = {
   notified_at: string | null;
 
   view_count: number;
+  like_count: number;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Migration 0009. The public site never selects this table directly — reads go
+ * through `get_article_comments`, which omits `delete_token` and the request
+ * metadata. This shape is the full row, as staff moderation sees it.
+ */
+export type ArticleCommentRow = {
+  id: string;
+  article_id: string;
+  parent_id: string | null;
+  author_name: string;
+  body: string;
+  delete_token: string;
+  deleted_at: string | null;
+  hidden_at: string | null;
+  created_at: string;
+  author_ip: string | null;
+  author_user_agent: string | null;
+}
+
+/** What `get_article_comments` returns — the safe, public projection. */
+export type PublicCommentRow = {
+  id: string;
+  parent_id: string | null;
+  author_name: string;
+  body: string;
+  is_deleted: boolean;
+  created_at: string;
 }
 
 /** An article row joined with its category, author, and tags. */
@@ -176,9 +207,64 @@ export type SubscriberRow = {
   updated_at: string;
 }
 
+/**
+ * Migration 0010. One item as it appears in a rendered issue.
+ *
+ * A flattened copy rather than an article reference: this is what gets frozen
+ * into `newsletter_issues.snapshot` at send time so the archive keeps showing
+ * what subscribers received, even if the article changes later.
+ */
+export type NewsletterItem = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  url: string;
+  imageUrl: string | null;
+  imageAlt: string;
+  categoryName: string | null;
+  authorName: string | null;
+  publishedAt: string;
+  readingMinutes: number | null;
+  viewCount: number | null;
+};
+
+export type NewsletterSnapshot = {
+  lead: NewsletterItem | null;
+  latest: NewsletterItem[];
+  trending: NewsletterItem[];
+};
+
+export type NewsletterIssueRow = {
+  id: string;
+  issue_number: number;
+  slug: string;
+  title: string;
+  summary: string;
+  intro: string;
+  status: NewsletterStatus;
+
+  lead_article_id: string | null;
+  latest_ids: string[];
+  trending_ids: string[];
+
+  snapshot: NewsletterSnapshot | null;
+
+  sent_at: string | null;
+  recipients: number;
+  succeeded: number;
+  failed: number;
+
+  created_by: string | null;
+  sent_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type EmailSendRow = {
   id: string;
   article_id: string | null;
+  /** Set when the send was a newsletter issue (migration 0010). */
+  newsletter_issue_id: string | null;
   subject: string;
   recipients: number;
   succeeded: number;
@@ -213,10 +299,12 @@ export interface Database {
       tags: Table<TagRow>;
       articles: Table<ArticleRow>;
       article_tags: Table<{ article_id: string; tag_id: string }>;
+      article_comments: Table<ArticleCommentRow>;
       media: Table<MediaRow>;
       settings: Table<SettingRow>;
       subscribers: Table<SubscriberRow>;
       email_sends: Table<EmailSendRow>;
+      newsletter_issues: Table<NewsletterIssueRow>;
     };
     // `{ [_ in never]: never }` — an empty object type. `Record<string, never>`
     // would make every key resolve to `never` when supabase-js intersects
@@ -229,6 +317,31 @@ export interface Database {
       is_staff: { Args: Record<string, never>; Returns: boolean };
       can_write: { Args: Record<string, never>; Returns: boolean };
       increment_article_view: { Args: { article_slug: string }; Returns: number | null };
+      set_article_like: {
+        Args: { article_slug: string; liked: boolean };
+        Returns: number | null;
+      };
+      get_article_comments: { Args: { article_slug: string }; Returns: PublicCommentRow[] };
+      add_article_comment: {
+        Args: {
+          article_slug: string;
+          comment_author: string;
+          comment_body: string;
+          reply_to?: string | null;
+          ip?: string | null;
+          user_agent?: string | null;
+        };
+        Returns: {
+          id: string;
+          parent_id: string | null;
+          delete_token: string;
+          created_at: string;
+        }[];
+      };
+      delete_article_comment: {
+        Args: { comment_id: string; token: string };
+        Returns: boolean;
+      };
       author_subscriber_count: { Args: { author_slug: string }; Returns: number };
       author_subscriber_counts: {
         Args: Record<string, never>;
@@ -243,6 +356,7 @@ export interface Database {
       user_role: UserRole;
       article_status: ArticleStatus;
       subscriber_status: SubscriberStatus;
+      newsletter_status: NewsletterStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };

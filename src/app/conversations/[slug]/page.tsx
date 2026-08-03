@@ -20,11 +20,25 @@ export async function generateMetadata({
   const { slug } = await params;
   const conversation = await getConversationBySlug(slug);
   if (!conversation) return {};
+  const url = `${siteConfig.url}/conversations/${slug}`;
   return {
     title: conversation.title,
     description: conversation.excerpt,
-    alternates: { canonical: `${siteConfig.url}/conversations/${slug}` },
-    openGraph: { images: [conversation.image] },
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      siteName: siteConfig.name,
+      title: conversation.title,
+      description: conversation.excerpt,
+      url,
+      images: [{ url: conversation.image, width: 1200, height: 630, alt: conversation.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: conversation.title,
+      description: conversation.excerpt,
+      images: [conversation.image],
+    },
   };
 }
 

@@ -4,8 +4,6 @@ import { LatestTicker } from "@/components/home/latest-ticker";
 import { SectionHeader } from "@/components/shared/section-header";
 import { siteConfig } from "@/lib/site-config";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
-import { VideoCard } from "@/components/shared/video-card";
-import { BookCard } from "@/components/shared/book-card";
 import { AuthorCard } from "@/components/shared/author-card";
 import { ConversationCard } from "@/components/shared/conversation-card";
 import {
@@ -13,14 +11,32 @@ import {
   getArticlesByCategory,
   getArticlesByRegion,
   getAuthors,
-  getBooks,
   getCategories,
   getConversations,
   getFeaturedArticles,
   getMostReadArticles,
   getTrendingArticles,
-  getVideos,
 } from "@/lib/content/api";
+import type { Article } from "@/lib/content/types";
+
+/** A numbered rail of stories — used for both Trending and Most Read. */
+function RankedRail({ title, articles }: { title: string; articles: Article[] }) {
+  return (
+    <div>
+      <SectionHeader title={title} />
+      <ol className="flex flex-col divide-y divide-border">
+        {articles.map((a, i) => (
+          <li key={a.slug} className="flex items-baseline gap-4 py-3">
+            <span className="font-serif text-2xl font-bold text-accent">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <ArticleCard article={a} variant="compact" />
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 export default async function HomePage() {
   const [
@@ -34,8 +50,6 @@ export default async function HomePage() {
     national,
     editorial,
     politics,
-    videos,
-    books,
     authors,
     conversations,
     categories,
@@ -50,8 +64,6 @@ export default async function HomePage() {
     getArticlesByRegion("national"),
     getArticlesByCategory("editorial"),
     getArticlesByCategory("politics"),
-    getVideos(),
-    getBooks(),
     getAuthors(),
     getConversations(),
     getCategories(),
@@ -216,67 +228,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Trending / Most Read */}
-      <section className="bg-surface py-10">
-        <div className="content-container grid gap-10 lg:grid-cols-2">
-          <div>
-            <SectionHeader title="Trending" />
-            <ol className="flex flex-col divide-y divide-border">
-              {trending.slice(0, 5).map((a, i) => (
-                <li key={a.slug} className="flex items-baseline gap-4 py-3">
-                  <span className="font-serif text-2xl font-bold text-accent">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <ArticleCard article={a} variant="compact" />
-                </li>
-              ))}
-            </ol>
+      {/* Trending / Most Read. Most Read is empty until stories have been
+          opened, so each rail carries its own half of the row and the section
+          disappears entirely rather than printing a heading over nothing. */}
+      {(trending.length > 0 || mostRead.length > 0) && (
+        <section className="bg-surface py-10">
+          <div className="content-container grid gap-10 lg:grid-cols-2">
+            {trending.length > 0 && (
+              <RankedRail title="Trending" articles={trending.slice(0, 5)} />
+            )}
+            {mostRead.length > 0 && (
+              <RankedRail title="Most Read" articles={mostRead} />
+            )}
           </div>
-          <div>
-            <SectionHeader title="Most Read" />
-            <ol className="flex flex-col divide-y divide-border">
-              {mostRead.slice(0, 5).map((a, i) => (
-                <li key={a.slug} className="flex items-baseline gap-4 py-3">
-                  <span className="font-serif text-2xl font-bold text-accent">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <ArticleCard article={a} variant="compact" />
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Videos */}
-      <section className="content-container py-10">
-        <SectionHeader
-          title="Featured Videos"
-          description="Watch the Journal's video center."
-          href="/videos"
-        />
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {videos.slice(0, 4).map((v) => (
-            <VideoCard key={v.slug} video={v} />
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Books */}
-      <section className="bg-surface py-10">
-        <div className="content-container">
-          <SectionHeader
-            title="Featured Books"
-            description="From the Journal's Books desk."
-            href="/books"
-          />
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-            {books.slice(0, 4).map((b) => (
-              <BookCard key={b.slug} book={b} authorName={authorName(b.authorSlug)} />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Newsletter */}
       <section className="content-container py-14">

@@ -165,13 +165,28 @@ export async function getTrendingArticles(): Promise<Article[]> {
   return resolved((await allArticlesMerged()).filter((a) => a.trending));
 }
 
-export async function getMostReadArticles(): Promise<Article[]> {
-  const all = await allArticlesMerged();
-  const flagged = resolved(all.filter((a) => a.mostRead));
-  // Real articles don't carry a hand-set "most read" flag; fall back to the
-  // newest live stories so the rail is never empty once placeholders retire.
-  if (flagged.length > 0) return flagged;
-  return resolved(all).slice(0, 5);
+/**
+ * The most-read stories, by actual reads.
+ *
+ * This used to key off a hand-set `mostRead` flag and, finding none — nothing
+ * sets it on a Supabase article — fall back to the newest few. So the rail
+ * said "Most Read" and showed the latest, which is a claim about readers that
+ * wasn't true. `view_count` has been maintained by `increment_article_view`
+ * since migration 0005, so rank on that instead.
+ *
+ * Stories nobody has opened yet are left out rather than padding the list:
+ * an article with zero reads is not among the most read, and a short honest
+ * rail beats a long invented one. That means the section is empty on a site
+ * with no traffic yet, and the homepage hides it until there is some.
+ */
+export async function getMostReadArticles(limit = 5): Promise<Article[]> {
+  const all = resolved(await allArticlesMerged());
+  return all
+    .filter((a) => (a.viewCount ?? 0) > 0)
+    // `all` is newest-first and sort is stable, so equal view counts fall back
+    // to recency rather than an arbitrary order.
+    .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
+    .slice(0, limit);
 }
 
 export async function getBreakingArticles(): Promise<Article[]> {

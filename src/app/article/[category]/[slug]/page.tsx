@@ -194,7 +194,16 @@ export default async function ArticlePage({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Like sits with share rather than at the foot of the story: a
+              reader decides they rate a piece well before they finish it, and
+              the row is already the page's action strip. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <LikeButton
+              slug={article.slug}
+              initialCount={article.likeCount ?? 0}
+              compact
+            />
+            <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
             <ReaderControls />
             <ShareButtons url={url} title={article.title} />
           </div>
@@ -257,9 +266,13 @@ export default async function ArticlePage({
         </div>
       )}
 
+      {/* The heart lives up in the header now; the foot of the story keeps
+          share and the letters link, plus a route into the discussion. */}
       <div className="mx-auto mt-8 flex max-w-[38rem] flex-wrap items-center justify-center gap-4 border-t border-border pt-8">
-        <LikeButton slug={article.slug} initialCount={article.likeCount ?? 0} />
         <ShareButtons url={url} title={article.title} />
+        <a href="#comments" className="text-sm font-semibold text-accent hover:underline">
+          Join the discussion ↓
+        </a>
         <Link
           href={`/letters/new?article=${encodeURIComponent(article.slug)}`}
           className="text-sm font-semibold text-accent hover:underline"

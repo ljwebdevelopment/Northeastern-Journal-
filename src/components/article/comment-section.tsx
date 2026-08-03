@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { MessageSquare, Trash2 } from "lucide-react";
 import type { PublicCommentRow } from "@/lib/supabase/types";
-import { cn, relativeTime } from "@/lib/utils";
+import { CaptchaWidget, captchaEnabled } from "@/components/shared/captcha-widget";
+import { cn, formatDate, relativeTime } from "@/lib/utils";
 
 /**
  * Reader comments for one article.
@@ -21,6 +30,9 @@ import { cn, relativeTime } from "@/lib/utils";
 
 const MAX_NAME = 60;
 const MAX_BODY = 4000;
+
+/** Threads shown before "show all" — a busy story shouldn't cost a long scroll. */
+const VISIBLE_THREADS = 8;
 
 /** localStorage keys: the remembered display name, and the delete tokens. */
 const NAME_KEY = "nj:comment-name";
@@ -70,6 +82,25 @@ function writeRaw(key: string, value: string) {
   }
 }
 
+function parseTokens(raw: string): Tokens {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === "object" ? (parsed as Tokens) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Merges into the stored tokens, re-reading storage first rather than merging
+ * into a value captured in a closure. Two comments posted in quick succession
+ * both render from the same snapshot, and a closure merge would drop the
+ * first token — which is the reader's only claim on their own comment.
+ */
+function updateTokens(mutate: (prev: Tokens) => Tokens) {
+  writeRaw(TOKENS_KEY, JSON.stringify(mutate(parseTokens(readRaw(TOKENS_KEY, "{}")))));
+}
+
 /** The delete tokens this browser holds, keyed by comment id. */
 function useStoredTokens(): Tokens {
   const raw = useSyncExternalStore(
@@ -77,13 +108,7 @@ function useStoredTokens(): Tokens {
     () => readRaw(TOKENS_KEY, "{}"),
     () => "{}"
   );
-  return useMemo(() => {
-    try {
-      return JSON.parse(raw) as Tokens;
-    } catch {
-      return {};
-    }
-  }, [raw]);
+  return useMemo(() => parseTokens(raw), [raw]);
 }
 
 export function CommentSection({
@@ -95,36 +120,65 @@ export function CommentSection({
 }) {
   const [comments, setComments] = useState(initialComments);
   const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  // The comment this reader just wrote, held in a ref: it exists only to
+  // drive one scroll after the list renders, and nothing displays it.
+  const pendingScroll = useRef<string | null>(null);
   const tokens = useStoredTokens();
 
-  // Top-level comments, each with its replies. One level deep — the API
-  // collapses a reply-to-a-reply onto its ancestor, so this never recurses.
-  const threads = useMemo(() => {
-    const roots = comments.filter((c) => !c.parent_id);
+  // Top-level comments, each with its replies, plus the live count. One level
+  // deep — the API collapses a reply-to-a-reply onto its ancestor, so this
+  // never recurses. Deleted comments keep their slot in the thread but aren't
+  // counted as part of the conversation.
+  const { threads, liveCount } = useMemo(() => {
+    const roots: PublicCommentRow[] = [];
     const repliesByParent = new Map<string, PublicCommentRow[]>();
+    let live = 0;
+
     for (const c of comments) {
-      if (!c.parent_id) continue;
-      const list = repliesByParent.get(c.parent_id) ?? [];
-      list.push(c);
-      repliesByParent.set(c.parent_id, list);
+      if (!c.is_deleted) live += 1;
+      if (!c.parent_id) {
+        roots.push(c);
+        continue;
+      }
+      const list = repliesByParent.get(c.parent_id);
+      if (list) list.push(c);
+      else repliesByParent.set(c.parent_id, [c]);
     }
-    return roots.map((root) => ({ root, replies: repliesByParent.get(root.id) ?? [] }));
+
+    return {
+      liveCount: live,
+      threads: roots.map((root) => ({ root, replies: repliesByParent.get(root.id) ?? [] })),
+    };
   }, [comments]);
 
-  // Deleted comments still occupy a slot in the thread, but shouldn't be
-  // counted as part of the conversation.
-  const liveCount = comments.filter((c) => !c.is_deleted).length;
+  const visibleThreads = showAll ? threads : threads.slice(0, VISIBLE_THREADS);
+  const hiddenCount = threads.length - visibleThreads.length;
 
-  function handlePosted(comment: PublicCommentRow, token: string) {
+  // Bring the reader to their own comment — a new top-level one lands at the
+  // bottom of a long thread, well past the form they submitted from.
+  useEffect(() => {
+    const id = pendingScroll.current;
+    if (!id) return;
+    pendingScroll.current = null;
+    document
+      .getElementById(`comment-${id}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [comments]);
+
+  const handlePosted = useCallback((comment: PublicCommentRow, token: string) => {
     setComments((prev) => [...prev, comment]);
     setReplyTo(null);
-    writeRaw(TOKENS_KEY, JSON.stringify({ ...tokens, [comment.id]: token }));
-  }
+    // Once you've contributed, you should be able to see the whole thread
+    // your comment landed in.
+    setShowAll(true);
+    pendingScroll.current = comment.id;
+    if (token) updateTokens((prev) => ({ ...prev, [comment.id]: token }));
+  }, []);
 
-  async function handleDelete(id: string) {
-    const token = tokens[id];
+  const handleDelete = useCallback(async (id: string) => {
+    const token = parseTokens(readRaw(TOKENS_KEY, "{}"))[id];
     if (!token) return;
-    if (!window.confirm("Remove your comment? This can't be undone.")) return;
 
     const res = await fetch(`/api/comments/${id}`, {
       method: "DELETE",
@@ -147,16 +201,24 @@ export function CommentSection({
       )
     );
 
-    const next = { ...tokens };
-    delete next[id];
-    writeRaw(TOKENS_KEY, JSON.stringify(next));
-  }
+    updateTokens((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
+  const handleReply = useCallback((id: string) => {
+    setReplyTo((current) => (current === id ? null : id));
+  }, []);
+
+  const clearReply = useCallback(() => setReplyTo(null), []);
 
   return (
     <section
       id="comments"
       aria-labelledby="comments-heading"
-      className="mx-auto mt-16 max-w-[38rem] border-t border-border pt-10"
+      className="mx-auto mt-16 max-w-[38rem] scroll-mt-24 border-t border-border pt-10"
     >
       <h2 id="comments-heading" className="flex items-center gap-2.5 font-serif text-2xl font-bold">
         <MessageSquare className="h-5 w-5 text-brand" aria-hidden />
@@ -178,52 +240,98 @@ export function CommentSection({
           No comments yet. Be the first to respond.
         </p>
       ) : (
-        <ol className="mt-10 flex flex-col divide-y divide-border border-t border-border">
-          {threads.map(({ root, replies }) => (
-            <li key={root.id} className="py-6">
-              <CommentBody
-                comment={root}
-                canDelete={Boolean(tokens[root.id]) && !root.is_deleted}
-                onDelete={() => handleDelete(root.id)}
-                onReply={() => setReplyTo(replyTo === root.id ? null : root.id)}
-                replying={replyTo === root.id}
-              />
+        <>
+          <ol className="mt-10 flex flex-col divide-y divide-border border-t border-border">
+            {visibleThreads.map(({ root, replies }) => (
+              <li key={root.id} id={`comment-${root.id}`} className="scroll-mt-24 py-6">
+                <CommentBody
+                  comment={root}
+                  canDelete={Boolean(tokens[root.id]) && !root.is_deleted}
+                  onDelete={handleDelete}
+                  onReply={handleReply}
+                  replying={replyTo === root.id}
+                />
 
-              {replies.length > 0 && (
-                <ol className="mt-5 flex flex-col gap-5 border-l-2 border-border pl-5">
-                  {replies.map((reply) => (
-                    <li key={reply.id}>
-                      <CommentBody
-                        comment={reply}
-                        canDelete={Boolean(tokens[reply.id]) && !reply.is_deleted}
-                        onDelete={() => handleDelete(reply.id)}
-                      />
-                    </li>
-                  ))}
-                </ol>
-              )}
+                {replies.length > 0 && (
+                  <ol className="mt-5 flex flex-col gap-5 border-l-2 border-border pl-5">
+                    {replies.map((reply) => (
+                      <li key={reply.id} id={`comment-${reply.id}`} className="scroll-mt-24">
+                        <CommentBody
+                          comment={reply}
+                          canDelete={Boolean(tokens[reply.id]) && !reply.is_deleted}
+                          onDelete={handleDelete}
+                        />
+                      </li>
+                    ))}
+                  </ol>
+                )}
 
-              {replyTo === root.id && (
-                <div className="mt-5 border-l-2 border-brand/40 pl-5">
-                  <CommentForm
-                    slug={slug}
-                    parentId={root.id}
-                    replyingTo={root.author_name}
-                    onPosted={handlePosted}
-                    onCancel={() => setReplyTo(null)}
-                  />
-                </div>
-              )}
-            </li>
-          ))}
-        </ol>
+                {replyTo === root.id && (
+                  <div className="mt-5 border-l-2 border-brand/40 pl-5">
+                    <CommentForm
+                      slug={slug}
+                      parentId={root.id}
+                      replyingTo={root.author_name}
+                      onPosted={handlePosted}
+                      onCancel={clearReply}
+                    />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="mt-6 w-full rounded-full border border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-brand hover:text-brand"
+            >
+              Show {hiddenCount} more {hiddenCount === 1 ? "comment" : "comments"}
+            </button>
+          )}
+        </>
       )}
     </section>
   );
 }
 
-/** One comment: byline, timestamp, text, and its actions. */
-function CommentBody({
+/**
+ * A comment's age.
+ *
+ * Rendered absolute first and swapped to relative after mount. The server's
+ * "3 minutes ago" is computed when the page is generated, not when it is
+ * read, so on a cached page it is both wrong and a hydration mismatch; the
+ * absolute date is stable across both passes.
+ *
+ * The swap is a `useSyncExternalStore` with no store behind it — an age never
+ * changes in response to anything, it just needs a client reading and a
+ * server reading, which is precisely what the two snapshots give.
+ */
+const subscribeToNothing = () => () => {};
+
+function TimeStamp({ iso }: { iso: string }) {
+  const label = useSyncExternalStore(
+    subscribeToNothing,
+    () => relativeTime(iso),
+    () => formatDate(iso)
+  );
+
+  return (
+    <time dateTime={iso} className="text-xs text-muted">
+      {label}
+    </time>
+  );
+}
+
+/**
+ * One comment: byline, timestamp, text, and its actions.
+ *
+ * Memoised, and given id-taking callbacks rather than freshly bound closures,
+ * so typing in the form or opening a reply box doesn't re-render every
+ * comment on the page.
+ */
+const CommentBody = memo(function CommentBody({
   comment,
   canDelete,
   onDelete,
@@ -232,22 +340,30 @@ function CommentBody({
 }: {
   comment: PublicCommentRow;
   canDelete: boolean;
-  onDelete: () => void;
-  onReply?: () => void;
+  onDelete: (id: string) => void;
+  onReply?: (id: string) => void;
   replying?: boolean;
 }) {
+  // Two-step delete instead of `window.confirm`, which blocks the page and
+  // looks like a browser error rather than part of the site.
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    if (!confirming) return;
+    const timer = window.setTimeout(() => setConfirming(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, [confirming]);
+
   return (
     <article className={cn(comment.is_deleted && "opacity-60")}>
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <span className="font-serif text-base font-bold">{comment.author_name}</span>
-        <time dateTime={comment.created_at} className="text-xs text-muted">
-          {relativeTime(comment.created_at)}
-        </time>
+        <TimeStamp iso={comment.created_at} />
       </div>
 
       <p
         className={cn(
-          "mt-2 whitespace-pre-wrap text-[0.9375rem] leading-relaxed",
+          "mt-2 whitespace-pre-wrap break-words text-[0.9375rem] leading-relaxed",
           comment.is_deleted ? "italic text-muted" : "text-foreground/90"
         )}
       >
@@ -259,26 +375,46 @@ function CommentBody({
           {onReply && (
             <button
               type="button"
-              onClick={onReply}
+              onClick={() => onReply(comment.id)}
+              aria-expanded={Boolean(replying)}
               className="text-xs font-semibold text-muted transition-colors hover:text-brand"
             >
               {replying ? "Cancel" : "Reply"}
             </button>
           )}
-          {canDelete && (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-muted transition-colors hover:text-brand"
-            >
-              <Trash2 className="h-3 w-3" aria-hidden /> Delete
-            </button>
-          )}
+          {canDelete &&
+            (confirming ? (
+              <span className="flex items-center gap-3 text-xs">
+                <span className="text-muted">Remove this?</span>
+                <button
+                  type="button"
+                  onClick={() => onDelete(comment.id)}
+                  className="font-semibold text-brand hover:underline"
+                >
+                  Yes, remove
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="font-semibold text-muted hover:text-foreground"
+                >
+                  Keep
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-muted transition-colors hover:text-brand"
+              >
+                <Trash2 className="h-3 w-3" aria-hidden /> Delete
+              </button>
+            ))}
         </div>
       )}
     </article>
   );
-}
+});
 
 /** The write box. Used for both top-level comments and replies. */
 function CommentForm({
@@ -297,6 +433,7 @@ function CommentForm({
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   // Returning readers shouldn't retype their name every time. The saved value
@@ -316,6 +453,11 @@ function CommentForm({
   useEffect(() => {
     if (parentId) bodyRef.current?.focus();
   }, [parentId]);
+
+  const onToken = useCallback((token: string) => setCaptchaToken(token), []);
+
+  const remaining = MAX_BODY - body.length;
+  const empty = !name.trim() || !body.trim();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -343,6 +485,10 @@ function CommentForm({
           body: trimmedBody,
           parentId: parentId ?? null,
           company: honeypot,
+          // The route verifies this whenever Turnstile or reCAPTCHA keys are
+          // configured; without it, every comment is rejected on a site that
+          // has bot protection switched on.
+          captchaToken,
         }),
       });
       const data = await res.json();
@@ -412,6 +558,12 @@ function CommentForm({
         className="absolute left-[-9999px] h-0 w-0 opacity-0"
       />
 
+      {captchaEnabled && (
+        <div className="mt-3">
+          <CaptchaWidget onToken={onToken} action="article_comment" />
+        </div>
+      )}
+
       {error && (
         <p role="alert" className="mt-3 text-sm text-brand">
           {error}
@@ -420,8 +572,8 @@ function CommentForm({
 
       <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted">
-          {body.length > MAX_BODY - 200
-            ? `${(MAX_BODY - body.length).toLocaleString()} characters left`
+          {remaining < 200
+            ? `${remaining.toLocaleString()} characters left`
             : "Your name is shown publicly."}
         </p>
         <div className="flex items-center gap-2">
@@ -436,8 +588,8 @@ function CommentForm({
           )}
           <button
             type="submit"
-            disabled={submitting}
-            className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+            disabled={submitting || empty}
+            className="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? "Posting…" : replyingTo ? "Post reply" : "Post comment"}
           </button>

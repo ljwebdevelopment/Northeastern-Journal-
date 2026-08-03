@@ -163,12 +163,13 @@ async function broadcast(options: BroadcastOptions): Promise<SendResult> {
 
   if (sendable.length === 0) {
     await supabase.from("email_sends").insert({
-      article_id: article.articleId ?? null,
-      subject: article.title,
+      article_id: options.articleId ?? null,
+      newsletter_issue_id: options.newsletterIssueId ?? null,
+      subject: options.subject,
       recipients: subscribers.length,
       succeeded: 0,
       failed: subscribers.length,
-      sent_by: article.sentBy ?? null,
+      sent_by: options.sentBy ?? null,
       error: `No deliverable addresses. ${skippedNote}`.trim(),
     });
 
@@ -220,7 +221,7 @@ async function broadcast(options: BroadcastOptions): Promise<SendResult> {
     succeeded: sent,
     failed,
     sent_by: options.sentBy ?? null,
-    error: firstError || null,
+    error: [firstError, skippedNote].filter(Boolean).join(" ") || null,
   });
 
   return {
@@ -228,7 +229,13 @@ async function broadcast(options: BroadcastOptions): Promise<SendResult> {
     sent,
     failed,
     message: failed
-      ? `Sent to ${sent} subscriber${sent === 1 ? "" : "s"}, ${failed} failed. ${firstError}`
+      ? [
+          `Sent to ${sent} subscriber${sent === 1 ? "" : "s"}, ${failed} failed.`,
+          firstError,
+          skippedNote,
+        ]
+          .filter(Boolean)
+          .join(" ")
       : `${options.noun} sent to ${sent} subscriber${sent === 1 ? "" : "s"}.`,
   };
 }

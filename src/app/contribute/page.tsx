@@ -21,6 +21,10 @@ const paths = [
     body: "Argued perspective grounded in this region. We publish disagreement, including with us — see the Conversations section.",
   },
   {
+    title: "Essays & Reflection",
+    body: "Personal essay, memoir, reflection, criticism, and poetry. Writing that thinks out loud rather than argues a verdict — and doesn't have to be tied to the week's news.",
+  },
+  {
     title: "Photography",
     body: "Assignment work and standalone photo essays. Credit and a byline page of your own on every image.",
   },

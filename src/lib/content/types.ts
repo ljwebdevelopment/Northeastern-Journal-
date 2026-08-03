@@ -15,6 +15,14 @@ export type CategorySlug =
   | "history"
   | "opinion"
   | "editorial"
+  // The essay family. Opinion argues a position and Editorial speaks for the
+  // Journal; these are the sections for writing that thinks out loud instead.
+  | "essays"
+  | "personal-essay"
+  | "reflections"
+  | "memoir"
+  | "criticism"
+  | "poetry"
   | "generations"
   | "interviews"
   | "books"

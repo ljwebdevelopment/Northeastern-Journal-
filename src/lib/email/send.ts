@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { hasServiceRole } from "@/lib/supabase/env";
+import { isSendableEmail } from "@/lib/security/email-validation";
 import { emailConfig, getResend, isResendConfigured } from "./resend";
 import {
   articleAnnouncementEmail,
@@ -135,13 +136,42 @@ export async function sendArticleAnnouncement(
     return { ok: true, sent: 0, failed: 0, message: "No confirmed subscribers yet." };
   }
 
+  // Resend's batch endpoint rejects the entire batch if a single `to` is
+  // invalid, so a leftover placeholder row would take every valid address
+  // beside it down with it. Drop the undeliverable ones up front and count
+  // them as failures rather than letting them poison the send.
+  const sendable = subscribers.filter((sub) => isSendableEmail(sub.email));
+  const skipped = subscribers.length - sendable.length;
+  const skippedNote = skipped
+    ? `${skipped} address${skipped === 1 ? "" : "es"} skipped (placeholder or malformed).`
+    : "";
+
+  if (sendable.length === 0) {
+    await supabase.from("email_sends").insert({
+      article_id: article.articleId ?? null,
+      subject: article.title,
+      recipients: subscribers.length,
+      succeeded: 0,
+      failed: subscribers.length,
+      sent_by: article.sentBy ?? null,
+      error: `No deliverable addresses. ${skippedNote}`.trim(),
+    });
+
+    return {
+      ok: false,
+      sent: 0,
+      failed: subscribers.length,
+      message: `No deliverable addresses. ${skippedNote}`.trim(),
+    };
+  }
+
   const resend = getResend();
   let sent = 0;
-  let failed = 0;
+  let failed = skipped;
   let firstError = "";
 
-  for (let i = 0; i < subscribers.length; i += RESEND_BATCH_LIMIT) {
-    const chunk = subscribers.slice(i, i + RESEND_BATCH_LIMIT);
+  for (let i = 0; i < sendable.length; i += RESEND_BATCH_LIMIT) {
+    const chunk = sendable.slice(i, i + RESEND_BATCH_LIMIT);
 
     const payload = chunk.map((sub) => {
       const unsubscribeUrl = unsubscribeUrlFor(sub.unsubscribe_token);
@@ -174,7 +204,7 @@ export async function sendArticleAnnouncement(
     succeeded: sent,
     failed,
     sent_by: article.sentBy ?? null,
-    error: firstError || null,
+    error: [firstError, skippedNote].filter(Boolean).join(" ") || null,
   });
 
   return {
@@ -182,7 +212,13 @@ export async function sendArticleAnnouncement(
     sent,
     failed,
     message: failed
-      ? `Sent to ${sent} subscriber${sent === 1 ? "" : "s"}, ${failed} failed. ${firstError}`
+      ? [
+          `Sent to ${sent} subscriber${sent === 1 ? "" : "s"}, ${failed} failed.`,
+          firstError,
+          skippedNote,
+        ]
+          .filter(Boolean)
+          .join(" ")
       : `Announcement sent to ${sent} subscriber${sent === 1 ? "" : "s"}.`,
   };
 }

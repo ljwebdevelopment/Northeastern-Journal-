@@ -27,6 +27,35 @@ const DISPOSABLE = new Set([
   "throwawaymail.com", "trashmail.com", "yopmail.com",
 ]);
 
+/**
+ * Reserved documentation/test domains from RFC 2606. Real mail never reaches
+ * them, but placeholder rows carrying one are easy to leave behind in the
+ * subscriber table.
+ */
+const PLACEHOLDER_DOMAINS = new Set([
+  "example.com", "example.org", "example.net", "example.edu",
+  "test.com", "localhost", "invalid",
+]);
+
+/**
+ * Send-time check: is this address safe to hand to Resend?
+ *
+ * Distinct from `checkEmail`, which guards signup and additionally enforces
+ * length limits and rejects disposable providers. This one only asks whether
+ * an address already on the list can be delivered to — Resend's batch endpoint
+ * rejects the *whole* batch when any single `to` is invalid, so one placeholder
+ * row would otherwise kill the send for every valid subscriber beside it.
+ */
+export function isSendableEmail(raw: string): boolean {
+  const email = (raw ?? "").trim().toLowerCase();
+
+  if (!email) return false;
+  if (!PATTERN.test(email)) return false;
+
+  const domain = email.split("@")[1] as string;
+  return !PLACEHOLDER_DOMAINS.has(domain);
+}
+
 export function checkEmail(raw: string): EmailCheck {
   const email = (raw ?? "").trim().toLowerCase();
 

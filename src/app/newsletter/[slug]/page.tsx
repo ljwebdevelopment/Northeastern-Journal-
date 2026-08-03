@@ -5,7 +5,8 @@ import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
-import { formatDate } from "@/lib/utils";
+import { ARTICLE_PROSE_CLASS } from "@/components/article/prose";
+import { cn, formatDate } from "@/lib/utils";
 
 export async function generateStaticParams() {
   const issues = await getNewsletterIssues();
@@ -64,13 +65,20 @@ export default async function NewsletterIssuePage({
           {formatDate(issue.publishedAt)}
         </time>
         <p className="mt-6 text-base leading-relaxed text-foreground/90">{issue.summary}</p>
-        <p className="mt-4 text-base leading-relaxed text-foreground/90">
-          This is placeholder newsletter body copy prepared for the
-          Northeastern Journal rebuild. In production, this issue would
-          contain the full text sent to subscribers, with links back to
-          featured articles.
-        </p>
       </header>
+
+      {issue.bodyHtml ? (
+        <div
+          className={cn(ARTICLE_PROSE_CLASS, "mt-10")}
+          // Sanitized on write in `sanitizeArticleHtml` — see lib/richtext.ts.
+          dangerouslySetInnerHTML={{ __html: issue.bodyHtml }}
+        />
+      ) : (
+        <p className="mx-auto mt-10 max-w-[38rem] text-center text-sm text-muted">
+          The full text of this issue went out by email and hasn&apos;t been
+          added to the archive.
+        </p>
+      )}
 
       <div className="mx-auto mt-14 max-w-xl">
         <NewsletterSignup compact />

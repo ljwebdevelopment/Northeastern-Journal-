@@ -108,7 +108,12 @@ export async function sendWelcomeEmail(
  * stamped in `publishAndNotify` so an article is never announced twice.
  */
 export async function sendArticleAnnouncement(
-  article: ArticleAnnouncement & { articleId?: string; sentBy?: string }
+  article: ArticleAnnouncement & {
+    articleId?: string;
+    sentBy?: string;
+    /** Used to respect section follows. Omit and everyone eligible gets it. */
+    categorySlug?: string | null;
+  }
 ): Promise<SendResult> {
   if (!isResendConfigured) {
     return { ok: false, sent: 0, failed: 0, message: "RESEND_API_KEY is not set — no email sent." };
@@ -123,16 +128,61 @@ export async function sendArticleAnnouncement(
   }
 
   const supabase = createAdminSupabase();
-  const { data: subscribers, error } = await supabase
+  const { data: allSubscribers, error } = await supabase
     .from("subscribers")
-    .select("email, unsubscribe_token")
+    .select("id, email, unsubscribe_token, frequency")
     .eq("status", "confirmed");
 
   if (error) {
     return { ok: false, sent: 0, failed: 0, message: `Could not load subscribers: ${error.message}` };
   }
-  if (!subscribers || subscribers.length === 0) {
+  if (!allSubscribers || allSubscribers.length === 0) {
     return { ok: true, sent: 0, failed: 0, message: "No confirmed subscribers yet." };
+  }
+
+  /*
+   * Honour what readers asked for (migration 0011).
+   *
+   *   - 'daily' and 'weekly' don't want a message per article. They are not
+   *     dropped, they are simply not part of *this* send.
+   *   - Section follows are a filter, not a subscription: a reader with no
+   *     sections chosen has not opted out of anything, so they get everything.
+   *     Treating "no rows" as "nothing" would silently mute the whole list.
+   */
+  const immediate = allSubscribers.filter((s) => (s.frequency ?? "immediate") === "immediate");
+
+  let subscribers = immediate;
+  if (article.categorySlug) {
+    const { data: follows } = await supabase
+      .from("subscriber_categories")
+      .select("subscriber_id, category:categories(slug)")
+      .in(
+        "subscriber_id",
+        immediate.map((s) => s.id)
+      );
+
+    const chosen = new Map<string, Set<string>>();
+    for (const row of follows ?? []) {
+      const slug = (row.category as unknown as { slug: string } | null)?.slug;
+      if (!slug) continue;
+      const set = chosen.get(row.subscriber_id) ?? new Set<string>();
+      set.add(slug);
+      chosen.set(row.subscriber_id, set);
+    }
+
+    subscribers = immediate.filter((s) => {
+      const set = chosen.get(s.id);
+      return !set || set.size === 0 || set.has(article.categorySlug!);
+    });
+  }
+
+  if (subscribers.length === 0) {
+    return {
+      ok: true,
+      sent: 0,
+      failed: 0,
+      message: "No subscribers are set to receive this one.",
+    };
   }
 
   const resend = getResend();

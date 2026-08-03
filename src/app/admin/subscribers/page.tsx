@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/roles";
 import { isResendConfigured } from "@/lib/email/resend";
@@ -32,7 +33,7 @@ export default async function SubscribersPage() {
     ),
     supabase
       .from("subscribers")
-      .select("email, status, source, created_at, confirmed_at")
+      .select("email, status, source, frequency, created_at, confirmed_at")
       .order("created_at", { ascending: false })
       .limit(50),
     supabase
@@ -46,14 +47,26 @@ export default async function SubscribersPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <header>
-        <p className="kicker">Newsroom</p>
-        <h1 className="mt-1 font-serif text-3xl font-bold">Subscribers</h1>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
-          Every subscriber confirms by email before they receive anything
-          (double opt-in), and every message carries a one-click unsubscribe
-          link. Addresses are never shown to the public or shared.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="kicker">Newsroom</p>
+          <h1 className="mt-1 font-serif text-3xl font-bold">Subscribers</h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
+            Readers are subscribed the moment they submit the form, and every
+            message carries a one-click unsubscribe link. Addresses are never
+            shown to the public or shared.
+          </p>
+        </div>
+
+        {/* A plain link, not a fetch: the browser's own download handling is
+            better than anything reimplemented here. */}
+        <a
+          href="/admin/subscribers/export"
+          download
+          className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-semibold hover:border-brand hover:text-brand"
+        >
+          <Download className="h-4 w-4" /> Export CSV
+        </a>
       </header>
 
       {!isResendConfigured && (
@@ -66,7 +79,9 @@ export default async function SubscribersPage() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-4">
         <Stat label="Confirmed" value={confirmed} emphasis />
-        <Stat label="Awaiting confirmation" value={pending} />
+        {/* Signup is single opt-in now (migration 0006), so anything still
+            'pending' predates that change and never finished the old flow. */}
+        <Stat label="Pending (legacy)" value={pending} />
         <Stat label="Unsubscribed" value={unsubscribed} />
         <Stat label="Bounced" value={bounced} />
       </div>
@@ -80,6 +95,7 @@ export default async function SubscribersPage() {
                 <tr>
                   <th scope="col" className="px-4 py-3 font-bold">Email</th>
                   <th scope="col" className="px-4 py-3 font-bold">Status</th>
+                  <th scope="col" className="px-4 py-3 font-bold">Cadence</th>
                   <th scope="col" className="px-4 py-3 font-bold">Source</th>
                   <th scope="col" className="px-4 py-3 font-bold">Joined</th>
                 </tr>
@@ -98,6 +114,7 @@ export default async function SubscribersPage() {
                         {s.status}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-muted">{s.frequency}</td>
                     <td className="px-4 py-3 text-muted">{s.source}</td>
                     <td className="px-4 py-3 text-muted">
                       {new Date(s.created_at).toLocaleDateString()}

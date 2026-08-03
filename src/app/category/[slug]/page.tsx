@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getArticlesByCategory, getCategories, getCategory } from "@/lib/content/api";
+import { getArticlesByCategory, getCategories, getCategory, paginate } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
+import { Pagination } from "@/components/shared/pagination";
 import type { CategorySlug } from "@/lib/content/types";
 
 export async function generateStaticParams() {
@@ -29,10 +30,13 @@ export async function generateMetadata({
 
 export default async function CategoryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { slug } = await params;
+  const { page = "1" } = await searchParams;
   const category = await getCategory(slug);
   if (!category) notFound();
 
@@ -40,6 +44,8 @@ export default async function CategoryPage({
   // Hidden from navigation and the sitemap while empty, so it shouldn't be
   // reachable by URL either.
   if (articles.length === 0) notFound();
+
+  const pageData = paginate(articles, Number(page));
 
   return (
     <div className="content-container py-10">
@@ -63,17 +69,17 @@ export default async function CategoryPage({
         <p className="mt-3 text-base text-muted">{category.description}</p>
       </header>
 
-      {articles.length === 0 ? (
-        <p className="mt-12 text-sm text-muted">
-          No articles are published in this category yet. Check back soon.
-        </p>
-      ) : (
-        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {articles.map((a) => (
-            <ArticleCard key={a.slug} article={a} />
-          ))}
-        </div>
-      )}
+      <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {pageData.items.map((a) => (
+          <ArticleCard key={a.slug} article={a} />
+        ))}
+      </div>
+
+      <Pagination
+        page={pageData.page}
+        pageCount={pageData.pageCount}
+        basePath={`/category/${slug}`}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import NextImage from "next/image";
 import Link from "next/link";
 import {
@@ -12,11 +12,15 @@ import {
   ImagePlus,
   Loader2,
   Send,
+  SendHorizonal,
   Trash2,
 } from "lucide-react";
 import { saveArticle, sendAnnouncementForm, type ActionState } from "@/app/admin/actions";
 import { RichTextEditor } from "./rich-text-editor";
 import { useImageUpload } from "./use-image-upload";
+import { useAutosave } from "./use-autosave";
+import { CopyLink } from "./copy-link";
+import { StatusBadge } from "./status-badge";
 import { autoExcerpt, htmlToText, readingMinutesFor, slugify } from "@/lib/richtext";
 import { cn } from "@/lib/utils";
 import type { ArticleStatus } from "@/lib/supabase/types";
@@ -47,6 +51,8 @@ export interface EditorArticle {
   notifySubscribers: boolean;
   notifiedAt: string | null;
   updatedAt?: string | null;
+  /** Powers the shareable /preview/<token> link. */
+  previewToken?: string | null;
 }
 
 interface Option {
@@ -105,11 +111,25 @@ export function ArticleEditor({
 
   const { upload, uploading, error: uploadError } = useImageUpload();
 
+  const [subtitle, setSubtitle] = useState(article.subtitle);
+
   const stats = useMemo(() => {
     const text = htmlToText(bodyHtml);
     const words = text ? text.trim().split(/\s+/).length : 0;
     return { words, minutes: readingMinutesFor(bodyHtml) };
   }, [bodyHtml]);
+
+  const autosave = useAutosave(
+    article.id,
+    { title, subtitle, excerpt, bodyHtml, bodyMarkdown: markdownMode ? markdown : "" },
+    { enabled: Boolean(article.id) }
+  );
+
+  // A completed form save makes the pending autosave redundant.
+  const { markSaved } = autosave;
+  useEffect(() => {
+    if (state.ok && state.message) markSaved();
+  }, [state, markSaved]);
 
   const submitWith = (nextIntent: string) => {
     setIntent(nextIntent);
@@ -123,6 +143,7 @@ export function ArticleEditor({
   }
 
   const isLive = article.status === "published";
+  const inReview = article.status === "in_review";
   const publicHref = article.categorySlug
     ? `/article/${article.categorySlug}/${slug}`
     : null;
@@ -182,20 +203,65 @@ export function ArticleEditor({
             </button>
           ) : null}
 
-          <button
-            type="button"
-            disabled={pending || !canPublish}
-            onClick={() => submitWith("publish")}
-            title={canPublish ? undefined : "Contributors can't publish — save a draft for review."}
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand px-5 py-2 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {pending && intent === "publish" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : null}
-            {isLive ? "Update" : "Publish"}
-          </button>
+          {/*
+            The primary action differs by role. A contributor can't publish, so
+            offering them a disabled Publish button as their brightest control
+            was telling them what they can't do. Theirs is "Send to desk".
+          */}
+          {canPublish ? (
+            <>
+              {inReview && (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => submitWith("draft")}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-brand disabled:opacity-60"
+                >
+                  Return to drafts
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => submitWith("publish")}
+                className="inline-flex items-center gap-1.5 rounded-full bg-brand px-5 py-2 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {pending && intent === "publish" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                {isLive ? "Update" : "Publish"}
+              </button>
+            </>
+          ) : inReview ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => submitWith("draft")}
+              title="Pull this back out of the review queue."
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-brand disabled:opacity-60"
+            >
+              Withdraw from review
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => submitWith("submit")}
+              title="An editor reviews it and decides whether it runs."
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand px-5 py-2 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {pending && intent === "submit" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <SendHorizonal className="h-3.5 w-3.5" />
+              )}
+              Send to desk
+            </button>
+          )}
         </div>
       </div>
+
+      <AutosaveIndicator status={autosave} hasId={Boolean(article.id)} />
 
       {state.message && (
         <div
@@ -245,7 +311,8 @@ export function ArticleEditor({
             <input
               id="subtitle"
               name="subtitle"
-              defaultValue={article.subtitle}
+              value={subtitle}
+              onChange={(e) => setSubtitle(e.target.value)}
               placeholder="Standfirst — one line of context under the headline (optional)"
               className="w-full border-0 bg-transparent p-0 text-lg text-muted outline-none placeholder:text-muted/50"
             />
@@ -473,6 +540,37 @@ export function ArticleEditor({
             )}
           </Panel>
 
+          {/* Preview link */}
+          {article.id && article.previewToken && (
+            <Panel title="Preview link">
+              <p className="text-xs leading-relaxed text-muted">
+                Opens the article exactly as it will look, before it is live.
+                Anyone with the link can read it — no sign-in — so treat it like
+                a private link, not a secret.
+              </p>
+              <div className="mt-3">
+                <CopyLink path={`/preview/${article.previewToken}`} />
+              </div>
+            </Panel>
+          )}
+
+          {/* Review */}
+          {!canPublish && !isLive && (
+            <Panel title="Review">
+              <Field
+                label="Note to the desk"
+                hint="Optional. Sent with the piece when you press “Send to desk”."
+              >
+                <textarea
+                  name="review_note"
+                  rows={3}
+                  placeholder="Anything the editor should know — a source to check, a headline you're unsure about."
+                  className={inputClass}
+                />
+              </Field>
+            </Panel>
+          )}
+
           {/* Newsletter */}
           <Panel title="Newsletter">
             <label className="flex cursor-pointer items-start gap-2.5">
@@ -622,38 +720,45 @@ function Check({
   );
 }
 
-export function StatusBadge({
+/**
+ * Autosave is only trustworthy if it says what it did. Two different things
+ * happen behind one word, and conflating them would be a lie an editor could
+ * act on: a draft is written back to the article, a live story is only
+ * snapshotted into the history.
+ */
+function AutosaveIndicator({
   status,
-  scheduledFor,
+  hasId,
 }: {
-  status: ArticleStatus;
-  scheduledFor?: string | null;
+  status: ReturnType<typeof useAutosave>;
+  hasId: boolean;
 }) {
-  const styles: Record<ArticleStatus, string> = {
-    published: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-    scheduled: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
-    draft: "bg-surface-muted text-muted",
-    archived: "bg-surface-muted text-muted line-through",
-  };
-  const label =
-    status === "scheduled" && scheduledFor
-      ? `Scheduled · ${new Date(scheduledFor).toLocaleString(undefined, {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        })}`
-      : status[0].toUpperCase() + status.slice(1);
+  if (!hasId) return null;
+
+  const text =
+    status.state === "saving"
+      ? "Autosaving…"
+      : status.state === "error"
+        ? status.message ?? "Autosave failed."
+        : status.state === "saved" && status.at
+          ? `${status.savedToArticle ? "Autosaved" : "Version captured"} at ${status.at.toLocaleTimeString(
+              undefined,
+              { hour: "numeric", minute: "2-digit" }
+            )}${status.savedToArticle ? "" : " — published text is unchanged until you press Update"}`
+          : null;
+
+  if (!text) return null;
 
   return (
-    <span
+    <p
+      aria-live="polite"
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
-        styles[status]
+        "mt-3 text-xs",
+        status.state === "error" ? "text-brand" : "text-muted"
       )}
     >
-      {label}
-    </span>
+      {text}
+    </p>
   );
 }
 

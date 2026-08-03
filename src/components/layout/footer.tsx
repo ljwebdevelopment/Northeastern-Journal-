@@ -9,7 +9,7 @@ export function Footer({
   columns: { title: string; links: NavItem[] }[];
 }) {
   return (
-    <footer className="border-t border-border bg-surface">
+    <footer data-site-footer className="border-t border-border bg-surface">
       <div className="content-container grid gap-10 py-14 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
         <div>
           <p className="font-serif text-xl font-bold text-foreground">

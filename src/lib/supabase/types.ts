@@ -7,9 +7,25 @@
  */
 
 export type UserRole = "admin" | "editor" | "contributor" | "reader";
-export type ArticleStatus = "draft" | "scheduled" | "published" | "archived";
+export type ArticleStatus =
+  | "draft"
+  | "in_review"
+  | "scheduled"
+  | "published"
+  | "archived";
 export type SubscriberStatus = "pending" | "confirmed" | "unsubscribed" | "bounced";
 export type Region = "local" | "national" | "world";
+
+/** How often a subscriber wants email. */
+export type EmailFrequency = "immediate" | "daily" | "weekly";
+
+export type EditorialNoteKind =
+  | "comment"
+  | "submitted"
+  | "changes_requested"
+  | "approved";
+export type RevisionKind = "autosave" | "manual" | "publish";
+export type LetterStatus = "pending" | "approved" | "rejected";
 
 export type ProfileRow = {
   id: string;
@@ -132,9 +148,71 @@ export type ArticleRow = {
   notify_subscribers: boolean;
   notified_at: string | null;
 
+  /** Unguessable id behind /preview/<token> (migration 0010). */
+  preview_token: string;
+
   view_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export type EditorialNoteRow = {
+  id: string;
+  article_id: string;
+  author_id: string | null;
+  kind: EditorialNoteKind;
+  body: string;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+export type ArticleRevisionRow = {
+  id: string;
+  article_id: string;
+  created_by: string | null;
+  kind: RevisionKind;
+  title: string;
+  subtitle: string | null;
+  excerpt: string;
+  body_html: string;
+  body_markdown: string | null;
+  word_count: number;
+  created_at: string;
+}
+
+export type LetterRow = {
+  id: string;
+  name: string;
+  email: string;
+  location: string | null;
+  subject: string;
+  body: string;
+  article_id: string | null;
+  status: LetterStatus;
+  moderated_by: string | null;
+  moderated_at: string | null;
+  editor_note: string | null;
+  consent_ip: string | null;
+  consent_user_agent: string | null;
+  created_at: string;
+}
+
+/** The public projection of a letter — no address, no moderation trail. */
+export type LetterPublicRow = Pick<
+  LetterRow,
+  "id" | "name" | "location" | "subject" | "body" | "article_id" | "created_at"
+>;
+
+export type SubscriberCategoryRow = {
+  subscriber_id: string;
+  category_id: string;
+  created_at: string;
+}
+
+export type ArticleViewsDailyRow = {
+  article_id: string;
+  day: string;
+  views: number;
 }
 
 /** An article row joined with its category, author, and tags. */
@@ -170,6 +248,7 @@ export type SubscriberRow = {
   confirmed_at: string | null;
   unsubscribed_at: string | null;
   source: string;
+  frequency: EmailFrequency;
   consent_ip: string | null;
   consent_user_agent: string | null;
   created_at: string;
@@ -186,6 +265,58 @@ export type EmailSendRow = {
   sent_by: string | null;
   error: string | null;
   created_at: string;
+}
+
+// --- Collections (migration 0012) -------------------------------------------
+// Books, videos, conversations, and newsletter issues. All four share the same
+// simple lifecycle — `is_published` plus a date — rather than the article
+// status enum, because none of them are drafted, reviewed, or announced.
+
+export type CollectionBase = {
+  id: string;
+  slug: string;
+  title: string;
+  is_published: boolean;
+  published_at: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BookRow = CollectionBase & {
+  author_id: string | null;
+  cover_url: string | null;
+  synopsis: string;
+  review_excerpt: string;
+  buy_url: string | null;
+  reading_guide_url: string | null;
+  sort_order: number;
+}
+
+export type VideoRow = CollectionBase & {
+  description: string;
+  youtube_id: string;
+  thumbnail_url: string | null;
+  category_id: string | null;
+  playlist: string | null;
+  sort_order: number;
+}
+
+export type ConversationTurn = { speaker: string; text: string };
+
+export type ConversationRow = CollectionBase & {
+  format: "point-counterpoint" | "interview" | "roundtable" | "dialogue";
+  participants: string[];
+  excerpt: string;
+  body: ConversationTurn[];
+  image_url: string | null;
+  sort_order: number;
+}
+
+export type NewsletterIssueRow = CollectionBase & {
+  summary: string;
+  body_html: string;
+  issue_number: number;
 }
 
 export type SettingRow = {
@@ -216,12 +347,23 @@ export interface Database {
       media: Table<MediaRow>;
       settings: Table<SettingRow>;
       subscribers: Table<SubscriberRow>;
+      subscriber_categories: Table<SubscriberCategoryRow>;
       email_sends: Table<EmailSendRow>;
+      editorial_notes: Table<EditorialNoteRow>;
+      article_revisions: Table<ArticleRevisionRow>;
+      letters: Table<LetterRow>;
+      article_views_daily: Table<ArticleViewsDailyRow>;
+      books: Table<BookRow>;
+      videos: Table<VideoRow>;
+      conversations: Table<ConversationRow>;
+      newsletter_issues: Table<NewsletterIssueRow>;
     };
     // `{ [_ in never]: never }` — an empty object type. `Record<string, never>`
     // would make every key resolve to `never` when supabase-js intersects
     // Tables with Views, collapsing every query result to `never`.
-    Views: { [_ in never]: never };
+    Views: {
+      letters_public: Table<LetterPublicRow, never, never>;
+    };
     Functions: {
       publish_due_articles: { Args: Record<string, never>; Returns: ArticleRow[] };
       auth_role: { Args: Record<string, never>; Returns: UserRole };
@@ -238,11 +380,48 @@ export interface Database {
         Args: { limit_key: string; max_hits: number; window_seconds: number };
         Returns: boolean;
       };
+      subscriber_preferences: {
+        Args: { token: string };
+        Returns: {
+          email: string;
+          name: string | null;
+          status: SubscriberStatus;
+          frequency: EmailFrequency;
+          category_slugs: string[];
+          author_slugs: string[];
+        }[];
+      };
+      save_subscriber_preferences: {
+        Args: {
+          token: string;
+          new_frequency?: EmailFrequency | null;
+          category_slugs?: string[] | null;
+          author_slugs?: string[] | null;
+        };
+        Returns: boolean;
+      };
+      daily_reads: {
+        Args: { days?: number };
+        Returns: { day: string; views: number }[];
+      };
+      top_articles: {
+        Args: { days?: number; limit_count?: number };
+        Returns: {
+          article_id: string;
+          title: string;
+          slug: string;
+          category_slug: string | null;
+          views: number;
+        }[];
+      };
     };
     Enums: {
       user_role: UserRole;
       article_status: ArticleStatus;
       subscriber_status: SubscriberStatus;
+      editorial_note_kind: EditorialNoteKind;
+      revision_kind: RevisionKind;
+      letter_status: LetterStatus;
     };
     CompositeTypes: { [_ in never]: never };
   };

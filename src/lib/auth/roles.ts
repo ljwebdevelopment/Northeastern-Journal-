@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { canWrite } from "./roles-shared";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { ProfileRow, UserRole } from "@/lib/supabase/types";
 
@@ -40,10 +41,9 @@ export interface SessionUser {
   profile: ProfileRow;
 }
 
-export const isStaff = (role: UserRole) => role === "admin" || role === "editor";
-export const canWrite = (role: UserRole) => isStaff(role) || role === "contributor";
-export const canPublish = (role: UserRole) => isStaff(role);
-export const canManageTeam = (role: UserRole) => role === "admin";
+// Defined in `roles-shared` so client components can use them too — this file
+// is server-only, and importing it from the browser is a build error.
+export { isStaff, canWrite, canPublish, canManageTeam } from "./roles-shared";
 
 /** The signed-in user and their profile, or null. Never throws. */
 export async function getSessionUser(): Promise<SessionUser | null> {

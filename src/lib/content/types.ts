@@ -188,4 +188,6 @@ export interface NewsletterIssue {
   summary: string;
   publishedAt: string;
   issueNumber: number;
+  /** Sanitized HTML of what actually went out. May be empty for old issues. */
+  bodyHtml?: string;
 }

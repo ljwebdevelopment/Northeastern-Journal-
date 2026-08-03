@@ -1,9 +1,18 @@
 import Link from "next/link";
-import { FileText, Mail, PenSquare, Clock, Send } from "lucide-react";
+import {
+  Clock,
+  FileText,
+  Inbox,
+  Mail,
+  MessageSquareQuote,
+  PenSquare,
+  Send,
+} from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { requireNewsroomUser } from "@/lib/auth/roles";
-import { StatusBadge } from "@/components/admin/article-editor";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { isResendConfigured } from "@/lib/email/resend";
+import { cn } from "@/lib/utils";
 import type { ArticleStatus } from "@/lib/supabase/types";
 
 export const metadata = { title: "Dashboard" };
@@ -15,7 +24,7 @@ export default async function AdminDashboard() {
 
   const isAdmin = user.profile.role === "admin";
 
-  const [{ data: recent }, counts, subscriberCount, { data: lastSend }] =
+  const [{ data: recent }, counts, subscriberCount, { data: lastSend }, letterCount] =
     await Promise.all([
       supabase
         .from("articles")
@@ -32,6 +41,13 @@ export default async function AdminDashboard() {
             .limit(1)
             .maybeSingle()
         : Promise.resolve({ data: null }),
+      isAdmin
+        ? supabase
+            .from("letters")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "pending")
+            .then((r) => r.count ?? 0)
+        : Promise.resolve(0),
     ]);
 
   const firstName = (user.profile.full_name || user.email).split(/[\s@]/)[0];
@@ -55,10 +71,28 @@ export default async function AdminDashboard() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Published" value={counts.published} icon={FileText} href="/admin/articles?status=published" />
+        {/* Waiting on the desk is the one number that is somebody's job right
+            now, so it takes the second slot rather than sitting in a filter. */}
+        <Stat
+          label="Waiting on review"
+          value={counts.inReview}
+          icon={Inbox}
+          href="/admin/review"
+          emphasis={counts.inReview > 0}
+        />
         <Stat label="Drafts" value={counts.draft} icon={PenSquare} href="/admin/articles?status=draft" />
         <Stat label="Scheduled" value={counts.scheduled} icon={Clock} href="/admin/articles?status=scheduled" />
         {isAdmin && (
           <Stat label="Subscribers" value={subscriberCount} icon={Mail} href="/admin/subscribers" />
+        )}
+        {isAdmin && letterCount > 0 && (
+          <Stat
+            label="Letters waiting"
+            value={letterCount}
+            icon={MessageSquareQuote}
+            href="/admin/letters"
+            emphasis
+          />
         )}
       </div>
 
@@ -129,7 +163,7 @@ export default async function AdminDashboard() {
 type Supa = NonNullable<Awaited<ReturnType<typeof createServerSupabase>>>;
 
 async function countsByStatus(supabase: Supa) {
-  const statuses: ArticleStatus[] = ["published", "draft", "scheduled"];
+  const statuses: ArticleStatus[] = ["published", "draft", "scheduled", "in_review"];
   const results = await Promise.all(
     statuses.map((status) =>
       supabase
@@ -142,6 +176,7 @@ async function countsByStatus(supabase: Supa) {
     published: results[0].count ?? 0,
     draft: results[1].count ?? 0,
     scheduled: results[2].count ?? 0,
+    inReview: results[3].count ?? 0,
   };
 }
 
@@ -158,16 +193,22 @@ function Stat({
   value,
   icon: Icon,
   href,
+  emphasis,
 }: {
   label: string;
   value: number;
   icon: React.ComponentType<{ className?: string }>;
   href: string;
+  /** Something is waiting on a person; make it look like it. */
+  emphasis?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className="rounded-xl border border-border bg-surface p-5 transition-colors hover:border-brand"
+      className={cn(
+        "rounded-xl border p-5 transition-colors hover:border-brand",
+        emphasis ? "border-brand/40 bg-brand/5" : "border-border bg-surface"
+      )}
     >
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold uppercase tracking-wider text-muted">{label}</span>

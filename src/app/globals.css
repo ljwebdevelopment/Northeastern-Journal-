@@ -141,6 +141,89 @@
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Reader text size
+   ---------------------------------------------------------------------------
+   Set by ReaderControls as a data attribute on <html>, and scoped to the
+   article body so enlarging the prose never disturbs the masthead, the nav, or
+   the furniture around it. Scaling the body copy and its leading together is
+   what keeps long text readable at size; scaling the font alone makes it
+   cramped.                                                                   */
+
+html[data-text-size="sm"] .prose :where(p, li) {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+html[data-text-size="lg"] .prose :where(p, li) {
+  font-size: 1.1875rem;
+  line-height: 1.8;
+}
+html[data-text-size="xl"] .prose :where(p, li) {
+  font-size: 1.3125rem;
+  line-height: 1.85;
+}
+
+/* ---------------------------------------------------------------------------
+   Print
+   ---------------------------------------------------------------------------
+   Readers print articles to keep them, to mark them up, and to give them to
+   people who aren't online. Serve a clean page: black on white, no navigation,
+   no calls to action, and every link's destination spelled out — a printed
+   underline points nowhere.                                                  */
+
+@media print {
+  :root {
+    --color-background: #fff;
+    --color-foreground: #000;
+    --color-surface: #fff;
+    --color-muted: #333;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Scoped to the site chrome by attribute: an <article> has its own <header>
+     holding the headline, and a blanket `header { display: none }` would print
+     the story without its title. */
+  header[data-site-header],
+  footer[data-site-footer],
+  nav,
+  form,
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  article {
+    max-width: none;
+    padding: 0;
+  }
+
+  .prose :where(p, li) {
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  /* Spell out where a link went. Skip in-page anchors, which say nothing. */
+  .prose a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    word-break: break-all;
+  }
+
+  /* Don't strand a heading or a caption at the foot of a page. */
+  h1, h2, h3, figure {
+    break-inside: avoid;
+    break-after: avoid-page;
+  }
+
+  img {
+    max-width: 100% !important;
+  }
+}
+
 @keyframes ticker {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }

@@ -3,7 +3,7 @@ import { PenSquare } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { formatViews } from "@/lib/format-views";
 import { requireNewsroomUser, canPublish } from "@/lib/auth/roles";
-import { StatusBadge } from "@/components/admin/article-editor";
+import { StatusBadge } from "@/components/admin/status-badge";
 import { ConfirmSubmit } from "@/components/admin/confirm-submit";
 import { deleteArticleForm, setArticleStatusForm } from "@/app/admin/actions";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ export const metadata = { title: "Articles" };
 const FILTERS: { value: string; label: string }[] = [
   { value: "all", label: "All" },
   { value: "published", label: "Published" },
+  { value: "in_review", label: "In review" },
   { value: "draft", label: "Drafts" },
   { value: "scheduled", label: "Scheduled" },
   { value: "archived", label: "Archived" },

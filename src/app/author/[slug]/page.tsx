@@ -9,6 +9,7 @@ import {
   getAuthorSubscriberCount,
   getAuthors,
   getCategories,
+  paginate,
 } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, personJsonLd } from "@/lib/jsonld";
@@ -17,6 +18,7 @@ import { ArticleCard } from "@/components/article/article-card";
 import { AuthorSocial } from "@/components/shared/author-social";
 import { AuthorSubscribe } from "@/components/shared/author-subscribe";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
+import { Pagination } from "@/components/shared/pagination";
 import { SubstackIcon } from "@/components/icons/brand-icons";
 import { formatViews } from "@/lib/format-views";
 import { formatDate } from "@/lib/utils";
@@ -70,10 +72,13 @@ function StatTile({ value, label }: { value: string | number; label: string }) {
 
 export default async function AuthorPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { slug } = await params;
+  const { page = "1" } = await searchParams;
   const author = await getAuthorBySlug(slug);
   if (!author) notFound();
 
@@ -92,6 +97,9 @@ export default async function AuthorPage({
   );
   const featured = articles.filter((a) => a.featured).slice(0, 3);
   const recent = articles.slice(0, 6);
+  // The archive below the fold is everything the cards above don't already
+  // show, paged so a prolific byline doesn't render four hundred rows.
+  const archive = paginate(articles.slice(recent.length), Number(page), 25);
   const totalViews = articles.reduce((sum, a) => sum + (a.viewCount ?? 0), 0);
   const awards = (author.professionalLinks ?? []).filter((l) => l.kind === "award").length;
   const outsideWork = (author.professionalLinks ?? []).filter((l) => l.kind !== "award").length;
@@ -512,7 +520,7 @@ export default async function AuthorPage({
           <section className="border-t border-border py-12">
             <h2 className="rule-red font-serif text-2xl font-bold">Full Archive</h2>
             <ul className="mt-8 flex flex-col divide-y divide-border">
-              {articles.slice(recent.length).map((a) => (
+              {archive.items.map((a) => (
                 <li key={a.slug} className="py-3.5">
                   <Link
                     href={`/article/${a.category}/${a.slug}`}
@@ -526,6 +534,11 @@ export default async function AuthorPage({
                 </li>
               ))}
             </ul>
+            <Pagination
+              page={archive.page}
+              pageCount={archive.pageCount}
+              basePath={`/author/${author.slug}`}
+            />
           </section>
         )}
 

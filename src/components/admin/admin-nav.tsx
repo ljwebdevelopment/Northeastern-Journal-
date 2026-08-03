@@ -2,23 +2,60 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, LayoutDashboard, Mail, PenSquare, Settings, UserCog, Users } from "lucide-react";
+import {
+  BarChart3,
+  CalendarDays,
+  FileText,
+  Images,
+  Inbox,
+  LayoutDashboard,
+  Library,
+  Mail,
+  MessageSquareQuote,
+  PenSquare,
+  Settings,
+  UserCog,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isStaff } from "@/lib/auth/roles-shared";
 import type { UserRole } from "@/lib/supabase/types";
 
-const items = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, adminOnly: false },
-  { href: "/admin/articles", label: "Articles", icon: FileText, exact: false, adminOnly: false },
-  { href: "/admin/articles/new", label: "Write", icon: PenSquare, exact: true, adminOnly: false },
-  { href: "/admin/profile", label: "Edit Profile", icon: UserCog, exact: false, adminOnly: false },
-  { href: "/admin/subscribers", label: "Subscribers", icon: Mail, exact: false, adminOnly: true },
-  { href: "/admin/team", label: "Team", icon: Users, exact: false, adminOnly: true },
-  { href: "/admin/settings", label: "Settings", icon: Settings, exact: false, adminOnly: true },
+/**
+ * `access` mirrors the role model rather than a bag of booleans:
+ *   all   — anyone who can write, contributors included
+ *   staff — editors and administrators
+ *   admin — administrators only
+ */
+type Access = "all" | "staff" | "admin";
+
+const items: {
+  href: string;
+  label: string;
+  icon: typeof FileText;
+  exact: boolean;
+  access: Access;
+}[] = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, access: "all" },
+  { href: "/admin/articles", label: "Articles", icon: FileText, exact: false, access: "all" },
+  { href: "/admin/articles/new", label: "Write", icon: PenSquare, exact: true, access: "all" },
+  { href: "/admin/review", label: "Review", icon: Inbox, exact: false, access: "all" },
+  { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, exact: false, access: "all" },
+  { href: "/admin/collections", label: "Collections", icon: Library, exact: false, access: "all" },
+  { href: "/admin/media", label: "Media", icon: Images, exact: false, access: "all" },
+  { href: "/admin/letters", label: "Letters", icon: MessageSquareQuote, exact: false, access: "staff" },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3, exact: false, access: "staff" },
+  { href: "/admin/profile", label: "Edit Profile", icon: UserCog, exact: false, access: "all" },
+  { href: "/admin/subscribers", label: "Subscribers", icon: Mail, exact: false, access: "admin" },
+  { href: "/admin/team", label: "Team", icon: Users, exact: false, access: "admin" },
+  { href: "/admin/settings", label: "Settings", icon: Settings, exact: false, access: "admin" },
 ];
 
 export function AdminNav({ role }: { role: UserRole }) {
   const pathname = usePathname();
-  const visible = items.filter((item) => !item.adminOnly || role === "admin");
+  const visible = items.filter(({ access }) =>
+    access === "admin" ? role === "admin" : access === "staff" ? isStaff(role) : true
+  );
 
   return (
     <nav aria-label="Newsroom" className="mt-6 flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">

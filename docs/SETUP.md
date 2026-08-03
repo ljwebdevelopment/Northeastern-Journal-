@@ -71,6 +71,14 @@ Run **every file in `supabase/migrations/`, in numerical order**. Today that is:
 | `0002_seed_reference_data.sql` | Sections, founding bylines, default settings |
 | `0003_harden_profile_privileges.sql` | Blocks self-promotion to admin |
 | `0004_grant_table_privileges.sql` | Grants API roles access to the tables |
+| `0005_article_views.sql` | Lets readers increment an article's view count |
+| `0006_single_opt_in.sql` | Rate-limit counters for public forms |
+| `0007_author_profiles.sql` | The extended journalist profile fields |
+| `0008_author_subscriptions.sql` | Following an individual writer |
+| `0009_in_review_status.sql` | Adds the `in_review` article status |
+| `0010_editorial_workflow.sql` | Review queue, revisions, preview tokens |
+| `0011_reader_platform.sql` | Full-text search, letters, preferences, daily reads |
+| `0012_collections.sql` | Books, videos, conversations, newsletter issues |
 
 For each one:
 
@@ -84,8 +92,38 @@ For each one:
 > **0003 and 0004 are already included in 0001 for a fresh project.** They
 > exist separately so a database created before those fixes can be patched
 > without a rebuild. Running them anyway is harmless — every statement is
-> idempotent. If you're setting up for the first time, run all four and don't
-> think about it.
+> idempotent. If you're setting up for the first time, run them all in order
+> and don't think about it.
+
+> **0009 must be run on its own, as its own query, before 0010.** It contains
+> a single statement, and that is deliberate: Postgres will not let a new enum
+> value be used in the same transaction that created it, and the SQL Editor
+> runs each script as one transaction. Paste 0009, run it, then start a new
+> query for 0010. If you see `unsafe use of new value "in_review"`, you pasted
+> them together — run them separately and it will go through.
+
+### What happens if you skip 0009–0011
+
+Nothing breaks, but features quietly stay switched off:
+
+- Without **0009/0010**: "Send to desk" fails, and the review queue, version
+  history, and preview links are unavailable.
+- Without **0011**: search falls back to matching headlines and summaries only
+  (the site logs a warning saying so), the letters page stays empty, the
+  preferences link in emails goes nowhere useful, and Analytics has no daily
+  figures to chart.
+- Without **0012**: `/admin/collections` says so on screen, and `/books`,
+  `/videos`, `/conversations`, and the newsletter archive stay hidden — which
+  is also what they do when they're simply empty, so nothing looks broken.
+
+> **0012 touches a table you may already have.** This project's live database
+> has a hand-made `newsletter_issues` table, and `create table if not exists`
+> would skip it and leave it missing the columns the app now reads. The
+> migration therefore restates every column as `add column if not exists`, so
+> it fills in the gaps without altering a single existing row. Run the
+> inspection query in the file's header first if you want to see what you have
+> before changing it — and afterwards, check that any pre-existing rows have a
+> `slug` and `title`, since the archive pages key on the slug.
 
 **What just happened:** you created tables for articles, authors, categories,
 tags, subscribers, media, and settings; enabled Row Level Security on all of

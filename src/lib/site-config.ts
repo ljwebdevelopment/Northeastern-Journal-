@@ -16,11 +16,16 @@ export const siteConfig = {
     { name: "Cheryl Leeds", role: "Co-Founder & Editor" },
     { name: "Luke Johnson", role: "Co-Founder & Publisher" },
   ],
+  /**
+   * Official accounts. Every value is rendered in the footer and emitted as
+   * `sameAs` in the Organization JSON-LD, so only add a platform here once
+   * the account actually exists.
+   */
   links: {
-    twitter: "https://twitter.com/example",
-    facebook: "https://facebook.com/example",
-    instagram: "https://instagram.com/example",
-    youtube: "https://youtube.com/@example",
+    substack: "https://open.substack.com/pub/northeasternjournal",
+    bluesky: "https://bsky.app/profile/northeasternj.bsky.social",
+    facebook: "https://www.facebook.com/share/19GKdQA5Q5/?mibextid=wwXIfr",
+    x: "https://x.com/northeastjou",
   },
   /**
    * Fallback navigation, used only before anything is published. Every entry

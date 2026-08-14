@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import { Facebook } from "lucide-react";
+import {
+  BlueskyIcon,
+  SubstackIcon,
+  XIcon,
+} from "@/components/icons/brand-icons";
 import { siteConfig } from "@/lib/site-config";
 import type { NavItem } from "@/lib/navigation";
 
@@ -20,10 +25,10 @@ export function Footer({
           </p>
           <div className="mt-5 flex gap-3">
             {[
-              { href: siteConfig.links.twitter, icon: Twitter, label: "Twitter" },
+              { href: siteConfig.links.substack, icon: SubstackIcon, label: "Substack" },
+              { href: siteConfig.links.bluesky, icon: BlueskyIcon, label: "Bluesky" },
               { href: siteConfig.links.facebook, icon: Facebook, label: "Facebook" },
-              { href: siteConfig.links.instagram, icon: Instagram, label: "Instagram" },
-              { href: siteConfig.links.youtube, icon: Youtube, label: "YouTube" },
+              { href: siteConfig.links.x, icon: XIcon, label: "X" },
             ].map(({ href, icon: Icon, label }) => (
               <a
                 key={label}

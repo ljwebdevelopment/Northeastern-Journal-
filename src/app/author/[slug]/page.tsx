@@ -12,6 +12,7 @@ import {
   paginate,
 } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
+import { socialImage, twitterMetadata, xHandle } from "@/lib/social-image";
 import { breadcrumbJsonLd, personJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
@@ -39,6 +40,10 @@ export async function generateMetadata({
   if (!author) return {};
   const title = `${author.name} — ${author.role}`;
   const url = `${siteConfig.url}/author/${author.slug}`;
+  const portrait = socialImage(author.photo, `Portrait of ${author.name}`, {
+    width: 800,
+    height: 1000,
+  });
 
   return {
     title,
@@ -51,13 +56,17 @@ export async function generateMetadata({
       title,
       description: author.bio,
       url,
-      images: [{ url: author.photo, width: 800, height: 1000, alt: `Portrait of ${author.name}` }],
+      images: [portrait],
     },
     twitter: {
-      card: "summary_large_image",
-      title,
-      description: author.bio,
-      images: [author.photo],
+      ...twitterMetadata({
+        title,
+        description: author.bio,
+        image: portrait,
+        creator: xHandle(author.social.twitter),
+      }),
+      // Portrait crops lose the face in a wide card.
+      card: "summary" as const,
     },
   };
 }

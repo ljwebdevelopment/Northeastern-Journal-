@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { siteConfig } from "@/lib/site-config";
+import { socialImage, twitterMetadata } from "@/lib/social-image";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/jsonld";
 import { buildFooterColumns, buildNav } from "@/lib/navigation";
 
@@ -20,6 +21,8 @@ const sourceSerif = Source_Serif_4({
   display: "swap",
 });
 
+const defaultShareImage = socialImage(siteConfig.ogImage, `${siteConfig.name} — ${siteConfig.tagline}`);
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
@@ -33,14 +36,13 @@ export const metadata: Metadata = {
     title: siteConfig.name,
     description: siteConfig.description,
     url: siteConfig.url,
-    images: [{ url: siteConfig.ogImage, width: 1200, height: 630 }],
+    images: [defaultShareImage],
   },
-  twitter: {
-    card: "summary_large_image",
+  twitter: twitterMetadata({
     title: siteConfig.name,
     description: siteConfig.description,
-    images: [siteConfig.ogImage],
-  },
+    image: defaultShareImage,
+  }),
   alternates: {
     canonical: siteConfig.url,
     types: {

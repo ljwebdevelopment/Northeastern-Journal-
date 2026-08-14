@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getArticlesByAuthor, getAuthorBySlug, getBookBySlug, getBooks } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
+import { socialImage, twitterMetadata } from "@/lib/social-image";
 import { bookJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
@@ -24,6 +25,7 @@ export async function generateMetadata({
   const book = await getBookBySlug(slug);
   if (!book) return {};
   const url = `${siteConfig.url}/books/${slug}`;
+  const cover = socialImage(book.cover, `Cover of ${book.title}`, { width: 800, height: 1200 });
   return {
     title: book.title,
     description: book.synopsis,
@@ -34,13 +36,13 @@ export async function generateMetadata({
       title: book.title,
       description: book.synopsis,
       url,
-      images: [{ url: book.cover, width: 800, height: 1200, alt: `Cover of ${book.title}` }],
+      images: [cover],
     },
+    // A portrait cover is letterboxed badly in a large card, so books use the
+    // compact one.
     twitter: {
-      card: "summary_large_image",
-      title: book.title,
-      description: book.synopsis,
-      images: [book.cover],
+      ...twitterMetadata({ title: book.title, description: book.synopsis, image: cover }),
+      card: "summary" as const,
     },
   };
 }

@@ -11,6 +11,7 @@ import {
   getRelatedArticles,
 } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
+import { socialImage, twitterMetadata, xHandle } from "@/lib/social-image";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
@@ -52,9 +53,16 @@ export async function generateMetadata({
     ?? `${siteConfig.url}/article/${article.category}/${article.slug}`;
   const noindex = Boolean(article.isDemo) && !demoContentConfig.indexable;
   const description = article.metaDescription || article.excerpt;
+  const title = article.seoTitle || article.title;
+  // Lead images are stored at 3:2; anything unusable as a card (missing,
+  // SVG placeholder) is swapped for the generated OG image inside the helper.
+  const image = socialImage(article.image, article.imageAlt || article.title, {
+    width: 1200,
+    height: 800,
+  });
 
   return {
-    title: article.seoTitle || article.title,
+    title,
     description,
     authors: author ? [{ name: author.name, url: `${siteConfig.url}/author/${author.slug}` }] : undefined,
     keywords: article.tags,
@@ -63,22 +71,22 @@ export async function generateMetadata({
     openGraph: {
       type: "article",
       siteName: siteConfig.name,
-      title: article.seoTitle || article.title,
+      title,
       description,
       url,
-      images: [{ url: article.image, width: 1200, height: 800, alt: article.imageAlt }],
+      images: [image],
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt ?? article.publishedAt,
       authors: author ? [author.name] : undefined,
       section: article.category,
       tags: article.tags,
     },
-    twitter: {
-      card: "summary_large_image",
-      title: article.seoTitle || article.title,
+    twitter: twitterMetadata({
+      title,
       description,
-      images: [article.image],
-    },
+      image,
+      creator: xHandle(author?.social.twitter),
+    }),
   };
 }
 

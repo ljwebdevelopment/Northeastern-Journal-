@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getVideoBySlug, getVideos } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
+import { socialImage, twitterMetadata } from "@/lib/social-image";
 import { breadcrumbJsonLd, videoJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { VideoCard } from "@/components/shared/video-card";
@@ -21,6 +22,7 @@ export async function generateMetadata({
   const video = await getVideoBySlug(slug);
   if (!video) return {};
   const url = `${siteConfig.url}/videos/${slug}`;
+  const image = socialImage(video.thumbnail, video.title, { width: 1280, height: 720 });
   return {
     title: video.title,
     description: video.description,
@@ -31,14 +33,9 @@ export async function generateMetadata({
       title: video.title,
       description: video.description,
       url,
-      images: [{ url: video.thumbnail, width: 1280, height: 720, alt: video.title }],
+      images: [image],
     },
-    twitter: {
-      card: "summary_large_image",
-      title: video.title,
-      description: video.description,
-      images: [video.thumbnail],
-    },
+    twitter: twitterMetadata({ title: video.title, description: video.description, image }),
   };
 }
 

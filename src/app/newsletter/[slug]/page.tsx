@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getNewsletterIssueBySlug, getNewsletterIssues } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
+import { socialImage, twitterMetadata } from "@/lib/social-image";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
@@ -21,10 +22,25 @@ export async function generateMetadata({
   const { slug } = await params;
   const issue = await getNewsletterIssueBySlug(slug);
   if (!issue) return {};
+  const url = `${siteConfig.url}/newsletter/${slug}`;
+  // An issue has no artwork of its own — the lead story's photo stands in,
+  // and anything unusable resolves to the generated OG card rather than
+  // leaving the share preview blank.
+  const image = socialImage(issue.lead?.imageUrl, issue.lead?.imageAlt || issue.title);
   return {
     title: issue.title,
     description: issue.summary,
-    alternates: { canonical: `${siteConfig.url}/newsletter/${slug}` },
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      siteName: siteConfig.name,
+      title: issue.title,
+      description: issue.summary,
+      url,
+      images: [image],
+      publishedTime: issue.publishedAt,
+    },
+    twitter: twitterMetadata({ title: issue.title, description: issue.summary, image }),
   };
 }
 

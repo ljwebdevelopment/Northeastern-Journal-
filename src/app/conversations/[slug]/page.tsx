@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getAuthorBySlug, getConversationBySlug, getConversations } from "@/lib/content/api";
 import { siteConfig } from "@/lib/site-config";
+import { socialImage, twitterMetadata } from "@/lib/social-image";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { formatDate, cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ export async function generateMetadata({
   const conversation = await getConversationBySlug(slug);
   if (!conversation) return {};
   const url = `${siteConfig.url}/conversations/${slug}`;
+  const image = socialImage(conversation.image, conversation.title);
   return {
     title: conversation.title,
     description: conversation.excerpt,
@@ -31,14 +33,13 @@ export async function generateMetadata({
       title: conversation.title,
       description: conversation.excerpt,
       url,
-      images: [{ url: conversation.image, width: 1200, height: 630, alt: conversation.title }],
+      images: [image],
     },
-    twitter: {
-      card: "summary_large_image",
+    twitter: twitterMetadata({
       title: conversation.title,
       description: conversation.excerpt,
-      images: [conversation.image],
-    },
+      image,
+    }),
   };
 }
 

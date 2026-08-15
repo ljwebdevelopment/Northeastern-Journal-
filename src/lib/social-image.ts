@@ -74,10 +74,20 @@ function absolute(src: string | null | undefined): URL | null {
 export function socialImage(
   src: string | null | undefined,
   alt: string,
-  dimensions?: { width: number; height: number }
+  dimensions?: { width: number; height: number },
+  /**
+   * Card to use when `src` is unusable. Pages that can generate something
+   * specific to the content (articles render their own headline card) pass it
+   * here so a share preview is never the generic site image.
+   */
+  fallback?: { url: string; alt: string }
 ): SocialImage {
   const url = absolute(src);
-  if (!url) return { ...FALLBACK };
+  if (!url) {
+    return fallback
+      ? { ...FALLBACK, url: fallback.url, alt: fallback.alt }
+      : { ...FALLBACK };
+  }
 
   const dot = url.pathname.lastIndexOf(".");
   const ext = dot === -1 ? "" : url.pathname.slice(dot).toLowerCase();
@@ -103,6 +113,24 @@ export function xHandle(profileUrl: string | undefined): string | undefined {
 
 /** The Journal's own account, used as `twitter:site` on every page. */
 export const SITE_X_HANDLE = xHandle(siteConfig.links.x);
+
+/**
+ * Worth being explicit about what reads what, because it is not five
+ * standards — it is one:
+ *
+ *   - **Facebook** — Open Graph (it defined it). Note it only honours `og:*`
+ *     and `article:*` on `<meta property=…>`; `name=` is ignored, which is
+ *     why these go through Next's typed `openGraph` field and not `other`.
+ *   - **Bluesky, Substack, LinkedIn, Slack, Discord** — plain Open Graph.
+ *     None define tags of their own; `og:image` is the whole story.
+ *   - **X** — Open Graph, overridden by `twitter:*` where present.
+ *   - **Instagram** — renders no link previews at all. Links aren't tappable
+ *     in captions; profile and Story links use Open Graph when they preview.
+ *
+ * So the coverage question is never "which tags" — every one of them reads
+ * the same `og:image`. It's whether that one URL is absolute, public, and in
+ * a format the crawlers accept, which is what `socialImage` guarantees.
+ */
 
 /**
  * The `twitter` metadata block. Every page routes through this so the card

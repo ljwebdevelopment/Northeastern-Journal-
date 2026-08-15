@@ -33,6 +33,7 @@ export async function generateMetadata({
     alternates: { canonical: url },
     openGraph: {
       type: "article",
+      locale: "en_US",
       siteName: siteConfig.name,
       title: issue.title,
       description: issue.summary,

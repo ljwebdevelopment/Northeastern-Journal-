@@ -54,12 +54,20 @@ export async function generateMetadata({
   const noindex = Boolean(article.isDemo) && !demoContentConfig.indexable;
   const description = article.metaDescription || article.excerpt;
   const title = article.seoTitle || article.title;
-  // Lead images are stored at 3:2; anything unusable as a card (missing,
-  // SVG placeholder) is swapped for the generated OG image inside the helper.
-  const image = socialImage(article.image, article.imageAlt || article.title, {
-    width: 1200,
-    height: 800,
-  });
+  // Lead images are stored at 3:2. A story with no usable photo falls back to
+  // its own generated headline card (see `opengraph-image.tsx`) rather than
+  // the site-wide image, so no two articles share a preview.
+  const image = socialImage(
+    article.image,
+    article.imageAlt || article.title,
+    { width: 1200, height: 800 },
+    // Built from the site URL, not `url` — a syndicated story's canonicalUrl
+    // points at another domain, which has no such route.
+    {
+      url: `${siteConfig.url}/article/${article.category}/${article.slug}/opengraph-image`,
+      alt: article.title,
+    }
+  );
 
   return {
     title,
@@ -70,6 +78,7 @@ export async function generateMetadata({
     robots: noindex ? { index: false, follow: true } : undefined,
     openGraph: {
       type: "article",
+      locale: "en_US",
       siteName: siteConfig.name,
       title,
       description,

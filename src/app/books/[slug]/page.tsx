@@ -32,6 +32,7 @@ export async function generateMetadata({
     alternates: { canonical: url },
     openGraph: {
       type: "book",
+      locale: "en_US",
       siteName: siteConfig.name,
       title: book.title,
       description: book.synopsis,

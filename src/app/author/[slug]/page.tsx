@@ -52,6 +52,7 @@ export async function generateMetadata({
     alternates: { canonical: url },
     openGraph: {
       type: "profile",
+      locale: "en_US",
       siteName: siteConfig.name,
       title,
       description: author.bio,

@@ -26,6 +26,7 @@ import type {
   Video,
 } from "./types";
 import { categories as fallbackCategories } from "./data";
+import { markContentDegraded } from "./outage";
 
 /**
  * Reads published content out of Supabase and maps it onto the app's domain
@@ -165,6 +166,7 @@ export async function fetchPublishedArticles(): Promise<Article[]> {
 
   if (error || !data) {
     if (error) console.error("[content] failed to load articles:", error.message);
+    markContentDegraded();
     return [];
   }
   return (data as unknown as ArticleWithRelations[]).map(mapArticle);
@@ -255,7 +257,10 @@ export async function fetchAuthors(): Promise<Author[]> {
     .eq("is_active", true)
     .order("name");
 
-  if (error || !data) return [];
+  if (error || !data) {
+    markContentDegraded();
+    return [];
+  }
   return data.map(mapAuthor);
 }
 
@@ -268,7 +273,10 @@ export async function fetchCategories(): Promise<Category[]> {
     .select("*")
     .order("sort_order");
 
-  if (error || !data) return [];
+  if (error || !data) {
+    markContentDegraded();
+    return [];
+  }
   return data.map(mapCategory);
 }
 
@@ -292,7 +300,10 @@ export async function fetchNewsletterIssues(): Promise<NewsletterIssue[]> {
     .order("sent_at", { ascending: false })
     .limit(100);
 
-  if (error || !data) return [];
+  if (error || !data) {
+    markContentDegraded();
+    return [];
+  }
   return data.map(mapNewsletterIssue);
 }
 
@@ -389,6 +400,7 @@ export async function fetchBooks(): Promise<Book[]> {
     .order("published_at", { ascending: false });
 
   if (error) {
+    markContentDegraded();
     reportCollectionError("books", error.message);
     return [];
   }
@@ -421,6 +433,7 @@ export async function fetchVideos(): Promise<Video[]> {
     .order("published_at", { ascending: false });
 
   if (error) {
+    markContentDegraded();
     reportCollectionError("videos", error.message);
     return [];
   }
@@ -454,6 +467,7 @@ export async function fetchConversations(): Promise<Conversation[]> {
     .order("published_at", { ascending: false });
 
   if (error) {
+    markContentDegraded();
     reportCollectionError("conversations", error.message);
     return [];
   }
@@ -508,6 +522,9 @@ export async function fetchArticleComments(slug: string): Promise<PublicCommentR
   const { data, error } = await supabase.rpc("get_article_comments", {
     article_slug: slug,
   });
-  if (error || !data) return [];
+  if (error || !data) {
+    markContentDegraded();
+    return [];
+  }
   return data;
 }

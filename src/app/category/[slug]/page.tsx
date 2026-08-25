@@ -15,6 +15,15 @@ import { AuthorCard } from "@/components/shared/author-card";
 import { SectionHeader } from "@/components/shared/section-header";
 import { Pagination } from "@/components/shared/pagination";
 import type { CategorySlug } from "@/lib/content/types";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
+
+// Pagination reads `searchParams`, which cannot be accessed while Next is
+// statically generating. Any slug not covered by `generateStaticParams`
+// otherwise fails with DYNAMIC_SERVER_USAGE instead of rendering — and
+// during a backend outage that is *every* slug, which would replace the
+// service notice with a 500.
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   const categories = await getCategories();
@@ -54,6 +63,7 @@ export default async function CategoryPage({
   ]);
   // Hidden from navigation and the sitemap while empty, so it shouldn't be
   // reachable by URL either.
+  if (articles.length === 0 && isContentDegraded()) return <ServiceNotice />;
   if (articles.length === 0) notFound();
 
   const pageData = paginate(articles, Number(page));

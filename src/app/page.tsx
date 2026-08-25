@@ -17,6 +17,8 @@ import {
   getMostReadArticles,
   getTrendingArticles,
 } from "@/lib/content/api";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 import type { Article } from "@/lib/content/types";
 
 /** A numbered rail of stories — used for both Trending and Most Read. */
@@ -37,6 +39,10 @@ function RankedRail({ title, articles }: { title: string; articles: Article[] })
     </div>
   );
 }
+
+// Short revalidate so the outage notice retires itself once the backend
+// recovers — no redeploy needed.
+export const revalidate = 300;
 
 export default async function HomePage() {
   const [
@@ -74,6 +80,13 @@ export default async function HomePage() {
     ? articles.filter((a) => a.slug !== hero.slug).slice(0, 4)
     : [];
   const authorName = (slug: string) => authors.find((a) => a.slug === slug)?.name;
+
+  // The archive is unreachable, not empty. Saying "the first edition is on
+  // its way" to readers who have been reading for months is worse than
+  // saying nothing.
+  if (!hero && isContentDegraded()) {
+    return <ServiceNotice />;
+  }
 
   // Nothing published yet — a front page with no front is worse than a
   // deliberate holding page.

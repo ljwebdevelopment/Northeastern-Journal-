@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { slugify } from "@/lib/richtext";
+import { downscaleImage } from "./downscale-image";
 
 const MAX_BYTES = 10 * 1024 * 1024; // matches the bucket's file_size_limit
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"];
@@ -26,8 +27,13 @@ export function useImageUpload() {
       setError("Use a JPEG, PNG, WebP, AVIF, or GIF image.");
       return null;
     }
-    if (file.size > MAX_BYTES) {
-      setError(`That image is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`);
+    // Shrink before measuring: a 12 MP phone photo lands well under the limit
+    // once resized, so this both saves egress for the life of the article and
+    // stops the editor rejecting a picture it can perfectly well store.
+    const { file: toUpload } = await downscaleImage(file);
+
+    if (toUpload.size > MAX_BYTES) {
+      setError(`That image is ${(toUpload.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`);
       return null;
     }
 
@@ -39,14 +45,14 @@ export function useImageUpload() {
 
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-      const base = slugify(file.name.replace(/\.[^.]+$/, "")) || "image";
+      const ext = toUpload.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const base = slugify(toUpload.name.replace(/\.[^.]+$/, "")) || "image";
       const now = new Date();
       const path = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}/${base}-${Date.now()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("media")
-        .upload(path, file, { cacheControl: "31536000", upsert: false });
+        .upload(path, toUpload, { cacheControl: "31536000", upsert: false });
 
       if (uploadError) {
         setError(uploadError.message);
@@ -65,9 +71,9 @@ export function useImageUpload() {
       await supabase.from("media").insert({
         storage_path: path,
         public_url: publicUrl,
-        file_name: file.name,
-        mime_type: file.type,
-        size_bytes: file.size,
+        file_name: toUpload.name,
+        mime_type: toUpload.type,
+        size_bytes: toUpload.size,
         uploaded_by: user?.id ?? null,
       });
 

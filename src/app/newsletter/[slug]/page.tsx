@@ -8,6 +8,8 @@ import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { formatDate } from "@/lib/utils";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 
 export async function generateStaticParams() {
   const issues = await getNewsletterIssues();
@@ -51,6 +53,7 @@ export default async function NewsletterIssuePage({
 }) {
   const { slug } = await params;
   const issue = await getNewsletterIssueBySlug(slug);
+  if (!issue && isContentDegraded()) return <ServiceNotice />;
   if (!issue) notFound();
 
   return (

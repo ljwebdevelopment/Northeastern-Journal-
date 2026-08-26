@@ -5,6 +5,8 @@ import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { VideoCard } from "@/components/shared/video-card";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 
 export const metadata: Metadata = {
   title: "Videos",
@@ -15,6 +17,7 @@ export const metadata: Metadata = {
 export default async function VideosPage() {
   const videos = await getVideos();
   // Nothing published here yet — hide the page rather than show an empty one.
+  if (videos.length === 0 && isContentDegraded()) return <ServiceNotice />;
   if (videos.length === 0) notFound();
   const playlists = Array.from(new Set(videos.map((v) => v.playlist).filter(Boolean)));
 

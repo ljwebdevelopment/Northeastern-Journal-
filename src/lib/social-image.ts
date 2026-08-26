@@ -1,4 +1,5 @@
 import { siteConfig } from "@/lib/site-config";
+import { cdnImage } from "@/lib/image-cdn";
 
 /**
  * Share-card imagery, normalised for the crawlers that actually fetch it.
@@ -81,8 +82,14 @@ export function socialImage(
 
   const dot = url.pathname.lastIndexOf(".");
   const ext = dot === -1 ? "" : url.pathname.slice(dot).toLowerCase();
+  // Crawlers refetch card images far more often than readers load a page, and
+  // every one of those fetches used to come straight off Supabase Storage at
+  // full resolution. Serve the card through the image optimizer instead: the
+  // crawler sends `Accept: */*` and gets the original format back at card
+  // width, so the picture is unchanged and the bytes are the CDN's.
+  const optimized = cdnImage(url.toString(), dimensions?.width ?? 1200) ?? url.toString();
   return {
-    url: url.toString(),
+    url: optimized,
     width: dimensions?.width ?? 1200,
     height: dimensions?.height ?? 630,
     alt: alt.trim() || FALLBACK.alt,

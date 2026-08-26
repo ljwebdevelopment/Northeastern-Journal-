@@ -7,6 +7,8 @@ import { socialImage, twitterMetadata } from "@/lib/social-image";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { formatDate, cn } from "@/lib/utils";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 
 export async function generateStaticParams() {
   const conversations = await getConversations();
@@ -57,6 +59,7 @@ export default async function ConversationPage({
 }) {
   const { slug } = await params;
   const conversation = await getConversationBySlug(slug);
+  if (!conversation && isContentDegraded()) return <ServiceNotice />;
   if (!conversation) notFound();
 
   const speakers = await Promise.all(

@@ -10,6 +10,8 @@ import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { formatDate } from "@/lib/utils";
 import { BookOpen, ExternalLink } from "lucide-react";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 
 export async function generateStaticParams() {
   const books = await getBooks();
@@ -54,6 +56,7 @@ export default async function BookPage({
 }) {
   const { slug } = await params;
   const book = await getBookBySlug(slug);
+  if (!book && isContentDegraded()) return <ServiceNotice />;
   if (!book) notFound();
 
   const author = await getAuthorBySlug(book.authorSlug);

@@ -5,6 +5,8 @@ import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ConversationCard } from "@/components/shared/conversation-card";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 
 export const metadata: Metadata = {
   title: "Conversations",
@@ -16,6 +18,7 @@ export const metadata: Metadata = {
 export default async function ConversationsPage() {
   const [conversations, authors] = await Promise.all([getConversations(), getAuthors()]);
   // Nothing published here yet — hide the page rather than show an empty one.
+  if (conversations.length === 0 && isContentDegraded()) return <ServiceNotice />;
   if (conversations.length === 0) notFound();
   const [featured, ...rest] = conversations;
   const namesFor = (slugs: string[]) =>

@@ -24,6 +24,15 @@ import { SubstackIcon } from "@/components/icons/brand-icons";
 import { formatViews } from "@/lib/format-views";
 import { formatDate } from "@/lib/utils";
 import type { ProfessionalLinkKind } from "@/lib/content/types";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
+
+// Pagination reads `searchParams`, which cannot be accessed while Next is
+// statically generating. Any slug not covered by `generateStaticParams`
+// otherwise fails with DYNAMIC_SERVER_USAGE instead of rendering — and
+// during a backend outage that is *every* slug, which would replace the
+// service notice with a 500.
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   const authors = await getAuthors();
@@ -101,6 +110,7 @@ export default async function AuthorPage({
   const { slug } = await params;
   const { page = "1" } = await searchParams;
   const author = await getAuthorBySlug(slug);
+  if (!author && isContentDegraded()) return <ServiceNotice />;
   if (!author) notFound();
 
   // Reached via the author's handle — send them to the canonical URL.

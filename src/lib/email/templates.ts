@@ -2,6 +2,7 @@ import "server-only";
 
 import { emailConfig } from "./resend";
 import { siteConfig } from "@/lib/site-config";
+import { cdnImage } from "@/lib/image-cdn";
 
 /**
  * Hand-written email HTML.
@@ -214,9 +215,12 @@ export function articleAnnouncementEmail(
     .filter(Boolean)
     .join(" &nbsp;·&nbsp; ");
 
+  // Sized for the width it is displayed at rather than shipped at full
+  // resolution: mail clients prefetch these per-recipient, so the original
+  // was being pulled out of Supabase Storage once per subscriber.
   const image = article.imageUrl
     ? `<a href="${article.url}" style="display:block;">
-         <img src="${article.imageUrl}" alt="${escapeHtml(article.imageAlt ?? "")}"
+         <img src="${cdnImage(article.imageUrl, 1080)}" alt="${escapeHtml(article.imageAlt ?? "")}"
               width="536"
               style="display:block;width:100%;max-width:536px;height:auto;border-radius:8px;border:0;margin:0 0 22px 0;" />
        </a>`
@@ -328,7 +332,7 @@ function listItem(item: NewsletterItemView, isLast: boolean): string {
   const thumb = item.imageUrl
     ? `<td width="104" valign="top" style="width:104px;padding-right:16px;">
          <a href="${item.url}" style="display:block;">
-           <img src="${item.imageUrl}" alt="${escapeHtml(item.imageAlt ?? "")}" width="104" height="78"
+           <img src="${cdnImage(item.imageUrl, 256)}" alt="${escapeHtml(item.imageAlt ?? "")}" width="104" height="78"
                 style="display:block;width:104px;height:78px;object-fit:cover;border-radius:6px;border:0;" />
          </a>
        </td>`
@@ -444,7 +448,7 @@ export function newsletterIssueEmail(
 
         const image = item.imageUrl
           ? `<a href="${item.url}" style="display:block;">
-               <img src="${item.imageUrl}" alt="${escapeHtml(item.imageAlt ?? "")}" width="536"
+               <img src="${cdnImage(item.imageUrl, 1080)}" alt="${escapeHtml(item.imageAlt ?? "")}" width="536"
                     style="display:block;width:100%;max-width:536px;height:auto;border-radius:8px;border:0;margin:0 0 20px 0;" />
              </a>`
           : "";

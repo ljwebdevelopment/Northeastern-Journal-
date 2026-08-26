@@ -7,6 +7,8 @@ import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { Pagination } from "@/components/shared/pagination";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 
 /**
  * Tags were a dead end before this route existed: every article printed them,
@@ -15,7 +17,12 @@ import { Pagination } from "@/components/shared/pagination";
  * a real page rather than a search query in disguise.
  */
 
-export const revalidate = 300;
+// Pagination reads `searchParams`, which cannot be accessed while Next is
+// statically generating. Any slug not covered by `generateStaticParams`
+// otherwise fails with DYNAMIC_SERVER_USAGE instead of rendering — and
+// during a backend outage that is *every* slug, which would replace the
+// service notice with a 500.
+export const dynamic = "force-dynamic";
 export const dynamicParams = true;
 
 /** Only the well-used tags are prebuilt; the long tail renders on demand. */
@@ -52,6 +59,7 @@ export default async function TagPage({
   const tag = decodeURIComponent(slug);
 
   const articles = await getArticlesByTag(tag);
+  if (articles.length === 0 && isContentDegraded()) return <ServiceNotice />;
   if (articles.length === 0) notFound();
 
   const pageData = paginate(articles, Number(page));

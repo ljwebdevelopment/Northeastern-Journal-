@@ -6,6 +6,8 @@ import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { formatDate } from "@/lib/utils";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 
 export const metadata: Metadata = {
   title: "Newsletter Archive",
@@ -16,6 +18,7 @@ export const metadata: Metadata = {
 export default async function NewsletterArchivePage() {
   const issues = await getNewsletterIssues();
   // Nothing published here yet — hide the page rather than show an empty one.
+  if (issues.length === 0 && isContentDegraded()) return <ServiceNotice />;
   if (issues.length === 0) notFound();
 
   return (

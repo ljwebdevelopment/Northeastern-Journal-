@@ -26,6 +26,8 @@ import { cn, formatDate, readingTime } from "@/lib/utils";
 import { formatViews } from "@/lib/format-views";
 import { ViewTracker } from "@/components/article/view-tracker";
 import { demoContentConfig } from "@/lib/content/demo-config";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 
 /**
  * Published articles are static until something changes; `revalidateTag` in
@@ -97,6 +99,7 @@ export default async function ArticlePage({
 }) {
   const { category: categorySlug, slug } = await params;
   const article = await getArticleBySlug(slug);
+  if (!article && isContentDegraded()) return <ServiceNotice />;
   if (!article || article.category !== categorySlug) notFound();
 
   const [author, category, related, comments] = await Promise.all([

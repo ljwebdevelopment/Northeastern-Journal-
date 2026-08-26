@@ -7,6 +7,8 @@ import { breadcrumbJsonLd, videoJsonLd } from "@/lib/jsonld";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { VideoCard } from "@/components/shared/video-card";
 import { formatDate } from "@/lib/utils";
+import { isContentDegraded } from "@/lib/content/outage";
+import { ServiceNotice } from "@/components/shared/service-notice";
 
 export async function generateStaticParams() {
   const videos = await getVideos();
@@ -46,6 +48,7 @@ export default async function VideoPage({
 }) {
   const { slug } = await params;
   const video = await getVideoBySlug(slug);
+  if (!video && isContentDegraded()) return <ServiceNotice />;
   if (!video) notFound();
 
   const all = await getVideos();

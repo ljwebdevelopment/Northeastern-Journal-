@@ -33,9 +33,42 @@ const subscribe = (onChange: () => void) => {
   };
 };
 
+/*
+ * Every touch of localStorage is guarded.
+ *
+ * Reading it is not merely allowed to come back empty — the accessor itself
+ * throws a SecurityError in a browser configured to block site data (Safari
+ * with cross-site tracking prevention, private windows, most in-app browsers).
+ * This one runs during render, as `useSyncExternalStore`'s snapshot, so an
+ * unguarded read does not degrade the type-size control: it throws through the
+ * article's render and the reader is left with an error page in place of the
+ * story. A preference nobody can store is a missing preference, not a missing
+ * article.
+ *
+ * `sessionSize` is the fallback that keeps the control working anyway: where
+ * the preference cannot be persisted it still applies for as long as the
+ * reader is on the page, rather than leaving two buttons that do nothing.
+ */
+let sessionSize: Size | null = null;
+
 const readSize = (): Size => {
-  const stored = localStorage.getItem(STORAGE_KEY) as Size | null;
-  return stored && SIZES.includes(stored) ? stored : "md";
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY) as Size | null;
+    if (stored && SIZES.includes(stored)) return stored;
+  } catch {
+    // Storage blocked — fall through to whatever this page view has set.
+  }
+  return sessionSize ?? "md";
+};
+
+const writeSize = (size: Size) => {
+  sessionSize = size;
+  try {
+    localStorage.setItem(STORAGE_KEY, size);
+  } catch {
+    // Storage blocked. The size still applies while the reader is here; it
+    // just won't be waiting for them on the next article.
+  }
 };
 
 /** Text size and print, for the readers who need them. */
@@ -57,7 +90,7 @@ export function ReaderControls() {
     (direction: 1 | -1) => {
       const next = SIZES[SIZES.indexOf(size) + direction];
       if (!next) return;
-      localStorage.setItem(STORAGE_KEY, next);
+      writeSize(next);
       window.dispatchEvent(new Event(CHANGED));
     },
     [size]

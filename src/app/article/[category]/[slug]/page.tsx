@@ -28,6 +28,7 @@ import { ViewTracker } from "@/components/article/view-tracker";
 import { demoContentConfig } from "@/lib/content/demo-config";
 import { isContentDegraded } from "@/lib/content/outage";
 import { ServiceNotice } from "@/components/shared/service-notice";
+import { WidgetBoundary } from "@/components/shared/widget-boundary";
 
 /**
  * Published articles are static until something changes; `revalidateTag` in
@@ -123,9 +124,15 @@ export default async function ArticlePage({
 
   return (
     <article className="content-container py-8 sm:py-10">
-      <ReadingProgress targetId="article-body" />
+      <WidgetBoundary>
+        <ReadingProgress targetId="article-body" />
+      </WidgetBoundary>
       {/* Placeholder archive entries have no row to count against. */}
-      {!article.isDemo && <ViewTracker slug={article.slug} />}
+      {!article.isDemo && (
+        <WidgetBoundary>
+          <ViewTracker slug={article.slug} />
+        </WidgetBoundary>
+      )}
       <Breadcrumbs
         items={[
           ...(category ? [{ name: category.name, href: `/category/${category.slug}` }] : []),
@@ -209,14 +216,20 @@ export default async function ArticlePage({
               reader decides they rate a piece well before they finish it, and
               the row is already the page's action strip. */}
           <div className="flex flex-wrap items-center gap-2">
-            <LikeButton
-              slug={article.slug}
-              initialCount={article.likeCount ?? 0}
-              compact
-            />
+            <WidgetBoundary>
+              <LikeButton
+                slug={article.slug}
+                initialCount={article.likeCount ?? 0}
+                compact
+              />
+            </WidgetBoundary>
             <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
-            <ReaderControls />
-            <ShareButtons url={url} title={article.title} />
+            <WidgetBoundary>
+              <ReaderControls />
+            </WidgetBoundary>
+            <WidgetBoundary>
+              <ShareButtons url={url} title={article.title} />
+            </WidgetBoundary>
           </div>
         </div>
 
@@ -280,7 +293,9 @@ export default async function ArticlePage({
       {/* The heart lives up in the header now; the foot of the story keeps
           share and the letters link, plus a route into the discussion. */}
       <div className="mx-auto mt-8 flex max-w-[38rem] flex-wrap items-center justify-center gap-4 border-t border-border pt-8">
-        <ShareButtons url={url} title={article.title} />
+        <WidgetBoundary>
+          <ShareButtons url={url} title={article.title} />
+        </WidgetBoundary>
         <a href="#comments" className="text-sm font-semibold text-accent hover:underline">
           Join the discussion ↓
         </a>
@@ -334,10 +349,14 @@ export default async function ArticlePage({
         </section>
       )}
 
-      <CommentSection slug={article.slug} initialComments={comments} />
+      <WidgetBoundary>
+        <CommentSection slug={article.slug} initialComments={comments} />
+      </WidgetBoundary>
 
       <div className="mx-auto mt-16 max-w-3xl">
-        <NewsletterSignup compact source="article" />
+        <WidgetBoundary>
+          <NewsletterSignup compact source="article" />
+        </WidgetBoundary>
       </div>
     </article>
   );

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { BellRing, CheckCircle2, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { CaptchaWidget } from "./captcha-widget";
 
 /**
@@ -14,12 +15,15 @@ export function AuthorSubscribe({
   subscriberCount,
   showCount = true,
   inverted = false,
+  compact = false,
 }: {
   authorSlug: string;
   authorName: string;
   subscriberCount: number;
   showCount?: boolean;
   inverted?: boolean;
+  /** Smaller pill, for sitting inline next to a byline rather than in a hero. */
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -78,13 +82,13 @@ export function AuthorSubscribe({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={
-            inverted
-              ? "inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-brand transition-opacity hover:opacity-90"
-              : "inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90"
-          }
+          className={cn(
+            "inline-flex items-center font-semibold transition-opacity hover:opacity-90",
+            compact ? "gap-1.5 rounded-full px-3.5 py-1.5 text-xs" : "gap-2 rounded-full px-6 py-2.5 text-sm",
+            inverted ? "bg-white text-brand" : "bg-brand text-brand-foreground"
+          )}
         >
-          <BellRing className="h-4 w-4" aria-hidden />
+          <BellRing className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
           Subscribe
         </button>
         {showCount && (

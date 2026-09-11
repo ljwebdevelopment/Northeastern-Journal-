@@ -7,6 +7,7 @@ import {
   getArticleComments,
   getArticles,
   getAuthorBySlug,
+  getAuthorSubscriberCount,
   getCategory,
   getRelatedArticles,
 } from "@/lib/content/api";
@@ -19,6 +20,7 @@ import { ShareButtons } from "@/components/article/share-buttons";
 import { ReadingProgress } from "@/components/article/reading-progress";
 import { ReaderControls } from "@/components/article/reader-controls";
 import { LikeButton } from "@/components/article/like-button";
+import { AuthorSubscribe } from "@/components/shared/author-subscribe";
 import { CommentSection } from "@/components/article/comment-section";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { ARTICLE_PROSE_CLASS } from "@/components/article/prose";
@@ -103,13 +105,14 @@ export default async function ArticlePage({
   if (!article && isContentDegraded()) return <ServiceNotice />;
   if (!article || article.category !== categorySlug) notFound();
 
-  const [author, category, related, comments] = await Promise.all([
+  const [author, category, related, comments, subscriberCount] = await Promise.all([
     getAuthorBySlug(article.authorSlug),
     getCategory(article.category),
     getRelatedArticles(article, 3),
     // Placeholder archive entries have no Supabase row, so this is empty for
     // them and the section renders its "be the first" state.
     getArticleComments(article.slug),
+    getAuthorSubscriberCount(article.authorSlug),
   ]);
 
   const url = `${siteConfig.url}/article/${article.category}/${article.slug}`;
@@ -178,7 +181,7 @@ export default async function ArticlePage({
         <p className="mt-4 text-lg leading-relaxed text-muted">{article.excerpt}</p>
 
         <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             {author && (
               <>
                 <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-surface-muted">
@@ -191,12 +194,23 @@ export default async function ArticlePage({
                   />
                 </div>
                 <div className="text-sm">
-                  <Link
-                    href={`/author/${author.slug}`}
-                    className="font-semibold hover:text-accent"
-                  >
-                    {author.name}
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    <Link
+                      href={`/author/${author.slug}`}
+                      className="font-semibold hover:text-accent"
+                    >
+                      {author.name}
+                    </Link>
+                    <WidgetBoundary>
+                      <AuthorSubscribe
+                        authorSlug={author.slug}
+                        authorName={author.name}
+                        subscriberCount={subscriberCount}
+                        showCount={false}
+                        compact
+                      />
+                    </WidgetBoundary>
+                  </div>
                   <p className="text-muted">
                     <time dateTime={article.publishedAt}>
                       {formatDate(article.publishedAt)}
@@ -207,6 +221,12 @@ export default async function ArticlePage({
                       <> &middot; {formatViews(article.viewCount!)} views</>
                     )}
                   </p>
+                  <a
+                    href="#comments"
+                    className="mt-1 inline-block text-xs text-muted transition-colors hover:text-accent hover:underline"
+                  >
+                    Jump to comments
+                  </a>
                 </div>
               </>
             )}

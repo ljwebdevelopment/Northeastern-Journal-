@@ -71,7 +71,7 @@ export default async function CategoryPage({
   // Ties the category back to the people who cover it — a beat page reads
   // as a hub for both the stories and the bylines behind them.
   const contributors = authors.filter(
-    (a) => a.relatedTopics.includes(slug as CategorySlug) || articles.some((art) => art.authorSlug === a.slug)
+    (a) => a.relatedTopics.includes(slug as CategorySlug) || articles.some((art) => art.authorSlug === a.slug || art.coAuthorSlugs?.includes(a.slug))
   );
 
   return (

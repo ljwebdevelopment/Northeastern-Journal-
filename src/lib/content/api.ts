@@ -147,8 +147,23 @@ export async function getArticlesByCategory(category: CategorySlug): Promise<Art
   return resolved((await allArticlesMerged()).filter((a) => a.category === category));
 }
 
+/** Every byline on an article, lead first. */
+export function bylineSlugs(article: Article): string[] {
+  return [article.authorSlug, ...(article.coAuthorSlugs ?? [])].filter(Boolean);
+}
+
+/** Articles the author wrote, including pieces they co-wrote. */
 export async function getArticlesByAuthor(authorSlug: string): Promise<Article[]> {
-  return resolved((await allArticlesMerged()).filter((a) => a.authorSlug === authorSlug));
+  return resolved(
+    (await allArticlesMerged()).filter((a) => bylineSlugs(a).includes(authorSlug))
+  );
+}
+
+/** Articles that tag the author as a featured contributor. */
+export async function getArticlesFeaturingAuthor(authorSlug: string): Promise<Article[]> {
+  return resolved(
+    (await allArticlesMerged()).filter((a) => a.featuredAuthorSlugs?.includes(authorSlug))
+  );
 }
 
 export async function getArticlesByRegion(
@@ -329,6 +344,15 @@ export async function getAuthorBySlug(slug: string): Promise<Author | undefined>
   // /author/name both reach the profile.
   const handle = slug.replace(/^@/, "").toLowerCase();
   return authors.find((a) => a.username?.toLowerCase() === handle);
+}
+
+/** Profiles for a list of slugs, in the same order, skipping unknown ones. */
+export async function getAuthorsBySlugs(slugs: string[]): Promise<Author[]> {
+  if (slugs.length === 0) return [];
+  const authors = await allAuthorsMerged();
+  return slugs
+    .map((slug) => authors.find((a) => a.slug === slug))
+    .filter((a): a is Author => Boolean(a));
 }
 
 /** Confirmed subscribers following this journalist. */

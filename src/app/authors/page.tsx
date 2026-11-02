@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getArticles, getAuthors } from "@/lib/content/api";
+import { bylineSlugs, getArticles, getAuthors } from "@/lib/content/api";
 import { fetchAuthorSubscriberCounts } from "@/lib/content/supabase-source";
 import { siteConfig } from "@/lib/site-config";
 import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/jsonld";
@@ -21,7 +21,7 @@ export default async function AuthorsPage() {
     fetchAuthorSubscriberCounts(),
   ]);
 
-  const countFor = (slug: string) => articles.filter((a) => a.authorSlug === slug).length;
+  const countFor = (slug: string) => articles.filter((a) => bylineSlugs(a).includes(slug)).length;
 
   // Founders first, then whoever has published most.
   const ordered = [...authors].sort((a, b) => {

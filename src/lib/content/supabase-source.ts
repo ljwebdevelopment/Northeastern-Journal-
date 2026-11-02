@@ -140,6 +140,59 @@ export function mapCategory(row: CategoryRow): Category {
   };
 }
 
+/**
+ * Co-authors and tagged ("featuring") contributors, keyed by article id.
+ *
+ * Read in their own queries rather than joined into ARTICLE_SELECT: these
+ * tables arrive with migration 0018, and requesting a missing relation fails
+ * the whole article query — which would empty the site. Here a missing table
+ * just means single bylines and no tags. RLS limits the public to rows on
+ * published articles, and both tables are small, so they are read whole.
+ */
+async function fetchBylineExtras(): Promise<{
+  coAuthors: Map<string, string[]>;
+  featured: Map<string, string[]>;
+}> {
+  const coAuthors = new Map<string, string[]>();
+  const featured = new Map<string, string[]>();
+  const supabase = createPublicSupabase();
+  if (!supabase) return { coAuthors, featured };
+
+  type Row = { article_id: string; position: number; author: { slug: string } | null };
+  const load = async (table: "article_coauthors" | "article_mentions", into: Map<string, string[]>) => {
+    const { data, error } = await supabase
+      .from(table)
+      .select("article_id, position, author:authors(slug)")
+      .order("position");
+    if (error || !data) {
+      if (error) console.warn(`[content] ${table} unavailable — run migration 0018.`, error.message);
+      return;
+    }
+    for (const row of data as unknown as Row[]) {
+      if (!row.author?.slug) continue;
+      const list = into.get(row.article_id) ?? [];
+      list.push(row.author.slug);
+      into.set(row.article_id, list);
+    }
+  };
+
+  await Promise.all([load("article_coauthors", coAuthors), load("article_mentions", featured)]);
+  return { coAuthors, featured };
+}
+
+/** Attaches co-authors and tagged contributors to mapped articles. */
+async function withBylineExtras(articles: Article[]): Promise<Article[]> {
+  if (articles.length === 0) return articles;
+  const { coAuthors, featured } = await fetchBylineExtras();
+  return articles.map((a) => {
+    if (!a.id) return a;
+    const co = (coAuthors.get(a.id) ?? []).filter((slug) => slug !== a.authorSlug);
+    const byline = new Set([a.authorSlug, ...co]);
+    const tagged = (featured.get(a.id) ?? []).filter((slug) => !byline.has(slug));
+    return { ...a, coAuthorSlugs: co, featuredAuthorSlugs: tagged };
+  });
+}
+
 /** Every live article, newest first. Empty array if Supabase is unavailable. */
 export async function fetchPublishedArticles(): Promise<Article[]> {
   const supabase = createPublicSupabase();
@@ -169,7 +222,7 @@ export async function fetchPublishedArticles(): Promise<Article[]> {
     markContentDegraded();
     return [];
   }
-  return (data as unknown as ArticleWithRelations[]).map(mapArticle);
+  return withBylineExtras((data as unknown as ArticleWithRelations[]).map(mapArticle));
 }
 
 /**
@@ -223,7 +276,7 @@ export async function fetchArticleSearch(query: string, limit = 200): Promise<Ar
     const { data, error } = await run(select, ranked);
 
     if (!error && data) {
-      return (data as unknown as ArticleWithRelations[]).map(mapArticle);
+      return withBylineExtras((data as unknown as ArticleWithRelations[]).map(mapArticle));
     }
     if (!error) return [];
 

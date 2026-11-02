@@ -125,7 +125,12 @@ export interface Article {
   /** Paragraph-split plain text. Kept for feeds, search, and word counts. */
   body: string[];
   category: CategorySlug;
+  /** Lead byline. */
   authorSlug: string;
+  /** Further bylines, in order, for co-written pieces. */
+  coAuthorSlugs?: string[];
+  /** Contributors tagged on the piece ("Featuring"), who are not its authors. */
+  featuredAuthorSlugs?: string[];
   publishedAt: string; // ISO
   updatedAt?: string;
   image: string;

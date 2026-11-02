@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowUpRight, Award, Globe, Mail, MapPin, Mic } from "lucide-react";
 import {
   getArticlesByAuthor,
+  getArticlesFeaturingAuthor,
   getAuthorBySlug,
   getAuthorSubscriberCount,
   getAuthors,
@@ -116,8 +117,9 @@ export default async function AuthorPage({
   // Reached via the author's handle — send them to the canonical URL.
   if (author.slug !== slug) redirect(`/author/${author.slug}`);
 
-  const [articles, categories, subscriberCount] = await Promise.all([
+  const [articles, taggedIn, categories, subscriberCount] = await Promise.all([
     getArticlesByAuthor(author.slug),
+    getArticlesFeaturingAuthor(author.slug),
     getCategories(),
     getAuthorSubscriberCount(author.slug),
   ]);
@@ -350,6 +352,18 @@ export default async function AuthorPage({
             </p>
           )}
         </section>
+
+        {/* Pieces that tag this contributor without being theirs */}
+        {taggedIn.length > 0 && (
+          <section className="border-t border-border py-12">
+            <h2 className="rule-red font-serif text-2xl font-bold">Featured In</h2>
+            <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {taggedIn.slice(0, 6).map((a) => (
+                <ArticleCard key={a.slug} article={a} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Substack */}
         {substackUrl && (

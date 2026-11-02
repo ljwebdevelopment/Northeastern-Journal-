@@ -425,6 +425,10 @@ export interface Database {
       tags: Table<TagRow>;
       articles: Table<ArticleRow>;
       article_tags: Table<{ article_id: string; tag_id: string }>;
+      /** Bylines after the lead author (migration 0018). */
+      article_coauthors: Table<{ article_id: string; author_id: string; position: number }>;
+      /** Contributors tagged on an article, "Featuring" (migration 0018). */
+      article_mentions: Table<{ article_id: string; author_id: string; position: number }>;
       article_comments: Table<ArticleCommentRow>;
       media: Table<MediaRow>;
       settings: Table<SettingRow>;

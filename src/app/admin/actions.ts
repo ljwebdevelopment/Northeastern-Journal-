@@ -255,6 +255,19 @@ export async function saveArticle(
 
   await syncTags(supabase, articleId, str(formData, "tags"));
 
+  // Co-authors and tagged contributors. Only when the editor sent the fields,
+  // so a form that doesn't show them can't wipe them by omission. The article
+  // itself is already saved by now, so a problem here is reported, not fatal.
+  let bylineNote = "";
+  if (formData.has("bylines_present")) {
+    const coAuthors = uniqueSlugs(formData.getAll("coauthors"), [authorSlug]);
+    const featuring = uniqueSlugs(formData.getAll("featuring"), [authorSlug, ...coAuthors]);
+    const problem =
+      (await syncAuthorLinks(supabase, "article_coauthors", articleId, coAuthors)) ??
+      (await syncAuthorLinks(supabase, "article_mentions", articleId, featuring));
+    if (problem) bylineNote = ` ${problem}`;
+  }
+
   /*
    * Snapshot the prose on every save. Cheap (a few kilobytes of text), and it
    * is the difference between "I pasted over three paragraphs" being an
@@ -292,7 +305,11 @@ export async function saveArticle(
 
   if (!id) {
     // First save of a new article: move to its permanent edit URL.
-    redirect(`/admin/articles/${articleId}?saved=1`);
+    redirect(
+      `/admin/articles/${articleId}?saved=1${
+        bylineNote ? `&notice=${encodeURIComponent(`Saved.${bylineNote}`)}` : ""
+      }`
+    );
   }
 
   const verb =
@@ -308,7 +325,7 @@ export async function saveArticle(
               ? "Moved to drafts"
               : "Saved";
 
-  return ok(`${verb}.${emailNote}`, { articleId });
+  return ok(`${verb}.${emailNote}${bylineNote}`, { articleId });
 }
 
 // ---------------------------------------------------------------------------
@@ -397,6 +414,20 @@ async function announceIfUnsent(articleId: string, userId: string) {
   const category = article.category as unknown as { slug: string; name: string } | null;
   const author = article.author as unknown as { name: string } | null;
 
+  // Co-written pieces credit everyone. A database without migration 0018
+  // returns an error here, which just leaves the single byline.
+  const { data: coRows } = await supabase
+    .from("article_coauthors")
+    .select("position, author:authors(name)")
+    .eq("article_id", articleId)
+    .order("position");
+  const names = [
+    author?.name,
+    ...((coRows ?? []) as unknown as { author: { name: string } | null }[]).map((r) => r.author?.name),
+  ].filter((n): n is string => Boolean(n));
+  const authorName =
+    names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0] ?? null;
+
   await supabase.from("articles").update({ notified_at: new Date().toISOString() }).eq("id", articleId);
 
   const result = await sendArticleAnnouncement({
@@ -407,7 +438,7 @@ async function announceIfUnsent(articleId: string, userId: string) {
     url: `${emailConfig.siteUrl}/article/${category?.slug ?? "local-news"}/${article.slug}`,
     imageUrl: article.featured_image_url,
     imageAlt: article.featured_image_alt ?? article.title,
-    authorName: author?.name ?? null,
+    authorName,
     publishedAt: article.published_at ?? new Date().toISOString(),
     categoryName: category?.name ?? null,
     categorySlug: category?.slug ?? null,
@@ -901,6 +932,69 @@ async function syncTags(supabase: Supa, articleId: string, raw: string) {
   await supabase
     .from("article_tags")
     .insert(tags.map((t) => ({ article_id: articleId, tag_id: t.id })));
+}
+
+/** Distinct, non-empty slugs from a multi-value field, minus any excluded ones. */
+function uniqueSlugs(values: FormDataEntryValue[], exclude: string[]): string[] {
+  const skip = new Set(exclude.filter(Boolean));
+  return Array.from(
+    new Set(values.map((v) => String(v).trim()).filter((v) => v && !skip.has(v)))
+  ).slice(0, 10);
+}
+
+/**
+ * Replaces an article's co-authors or tagged contributors with `slugs`, in
+ * order. Returns a message when the database refuses, else null.
+ *
+ * Contributors may only change these on pieces they can edit; RLS enforces it
+ * (migration 0018). A database without that migration has no such tables:
+ * nothing is saved, and the editor is told why rather than failing silently.
+ */
+async function syncAuthorLinks(
+  supabase: Supa,
+  table: "article_coauthors" | "article_mentions",
+  articleId: string,
+  slugs: string[]
+): Promise<string | null> {
+  const found =
+    slugs.length === 0
+      ? []
+      : ((await supabase.from("authors").select("id, slug").in("slug", slugs)).data ?? []);
+  const idFor = new Map(found.map((a) => [a.slug, a.id]));
+  const rows = slugs
+    .map((slug, i) => ({ article_id: articleId, author_id: idFor.get(slug), position: i + 1 }))
+    .filter((row): row is { article_id: string; author_id: string; position: number } =>
+      Boolean(row.author_id)
+    );
+
+  /*
+   * Write the new set before removing the old one. A co-author's right to edit
+   * comes from their row in article_coauthors; deleting everything first would
+   * revoke it mid-save, and the re-insert would then be refused.
+   */
+  if (rows.length > 0) {
+    const { error } = await supabase
+      .from(table)
+      .upsert(rows, { onConflict: "article_id,author_id" });
+    if (error) return describeLinkError(error.message, slugs.length > 0);
+  }
+
+  let removal = supabase.from(table).delete().eq("article_id", articleId);
+  if (rows.length > 0) {
+    removal = removal.not("author_id", "in", `(${rows.map((r) => r.author_id).join(",")})`);
+  }
+  const { error } = await removal;
+  return error ? describeLinkError(error.message, slugs.length > 0) : null;
+}
+
+function describeLinkError(message: string, hadSelection: boolean): string | null {
+  if (/does not exist|schema cache/i.test(message)) {
+    // The 0018 migration hasn't run. Only worth mentioning if they picked someone.
+    return hadSelection
+      ? "Article saved, but co-authors and Featuring need the 0018 database update first."
+      : null;
+  }
+  return friendlyDbError(message);
 }
 
 /** Turns Postgres errors into something an editor can act on. */

@@ -69,8 +69,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (!latestByCategory.has(a.category) || date > latestByCategory.get(a.category)!) {
       latestByCategory.set(a.category, date);
     }
-    if (!latestByAuthor.has(a.authorSlug) || date > latestByAuthor.get(a.authorSlug)!) {
-      latestByAuthor.set(a.authorSlug, date);
+    for (const slug of [a.authorSlug, ...(a.coAuthorSlugs ?? [])]) {
+      if (!latestByAuthor.has(slug) || date > latestByAuthor.get(slug)!) {
+        latestByAuthor.set(slug, date);
+      }
     }
   }
 

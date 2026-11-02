@@ -33,7 +33,7 @@ export default async function ArticlesPage({
   let query = supabase
     .from("articles")
     .select(
-      "id, title, slug, status, published_at, scheduled_for, updated_at, notified_at, view_count, category:categories(slug, name), author:authors(name)"
+      "id, title, slug, status, published_at, scheduled_for, updated_at, notified_at, view_count, category:categories(slug, name), author:authors!articles_author_id_fkey(name)"
     )
     .order("updated_at", { ascending: false })
     .limit(200);

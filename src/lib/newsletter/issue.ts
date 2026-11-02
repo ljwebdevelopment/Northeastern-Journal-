@@ -36,7 +36,7 @@ const ARTICLE_SELECT = `
   id, slug, title, excerpt, published_at, created_at, reading_minutes, view_count,
   featured_image_url, featured_image_alt, is_featured, is_trending,
   category:categories(slug, name),
-  author:authors(name)
+  author:authors!articles_author_id_fkey(name)
 `;
 
 /** The shape the select above returns. Supabase types the joins loosely. */

@@ -35,7 +35,7 @@ const SELECT = `
   id, slug, title, subtitle, excerpt, body_html, status, published_at, scheduled_for, updated_at,
   featured_image_url, featured_image_alt, featured_image_caption, reading_minutes, word_count,
   category:categories(slug, name),
-  author:authors(slug, name, role, photo_url)
+  author:authors!articles_author_id_fkey(slug, name, role, photo_url)
 `;
 
 export default async function PreviewPage({

@@ -28,7 +28,7 @@ export default async function EditArticlePage({
   const { data: row } = await supabase
     .from("articles")
     .select(
-      `*, category:categories(slug), author:authors(slug), article_tags(tag:tags(slug, name))`
+      `*, category:categories(slug), author:authors!articles_author_id_fkey(slug), article_tags(tag:tags(slug, name))`
     )
     .eq("id", id)
     .maybeSingle();

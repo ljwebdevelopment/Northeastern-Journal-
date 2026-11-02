@@ -44,7 +44,7 @@ export default async function CalendarPage({
 
   const { data: articles } = await supabase
     .from("articles")
-    .select("id, title, status, published_at, scheduled_for, author:authors(name)")
+    .select("id, title, status, published_at, scheduled_for, author:authors!articles_author_id_fkey(name)")
     .or(
       `and(published_at.gte.${start.toISOString()},published_at.lt.${end.toISOString()}),` +
         `and(scheduled_for.gte.${start.toISOString()},scheduled_for.lt.${end.toISOString()})`

@@ -38,6 +38,10 @@ export interface EditorArticle {
   scheduledFor: string | null;
   categorySlug: string;
   authorSlug: string;
+  /** Further bylines, in order, for co-written pieces. */
+  coAuthorSlugs: string[];
+  /** Contributors tagged on the piece ("Featuring"). */
+  featuredSlugs: string[];
   featuredImageUrl: string;
   featuredImageAlt: string;
   featuredImageCaption: string;
@@ -112,6 +116,12 @@ export function ArticleEditor({
   const { upload, uploading, error: uploadError } = useImageUpload();
 
   const [subtitle, setSubtitle] = useState(article.subtitle);
+
+  // The lead byline can't also be a co-author or tagged, and a co-author
+  // can't also be tagged, so the lists below filter on each other.
+  const [leadSlug, setLeadSlug] = useState(article.authorSlug);
+  const [coAuthors, setCoAuthors] = useState<string[]>(article.coAuthorSlugs);
+  const [featuring, setFeaturing] = useState<string[]>(article.featuredSlugs);
 
   const stats = useMemo(() => {
     const text = htmlToText(bodyHtml);
@@ -451,7 +461,17 @@ export function ArticleEditor({
             </Field>
 
             <Field label="Author">
-              <select name="author" defaultValue={article.authorSlug} className={inputClass}>
+              <select
+                name="author"
+                value={leadSlug}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setLeadSlug(next);
+                  setCoAuthors((list) => list.filter((s) => s !== next));
+                  setFeaturing((list) => list.filter((s) => s !== next));
+                }}
+                className={inputClass}
+              >
                 <option value="">— none —</option>
                 {authors.map((a) => (
                   <option key={a.slug} value={a.slug}>
@@ -460,6 +480,32 @@ export function ArticleEditor({
                 ))}
               </select>
             </Field>
+
+            {/* Tells the save action these fields were on the form. */}
+            <input type="hidden" name="bylines_present" value="1" />
+
+            <AuthorPicker
+              name="coauthors"
+              label="Co-authors"
+              hint="Shared byline. Co-authors can edit this piece from their own account."
+              options={authors.filter((a) => a.slug !== leadSlug)}
+              selected={coAuthors}
+              onChange={(next) => {
+                setCoAuthors(next);
+                setFeaturing((list) => list.filter((s) => !next.includes(s)));
+              }}
+              disabled={!leadSlug}
+              disabledNote="Choose the lead author first."
+            />
+
+            <AuthorPicker
+              name="featuring"
+              label="Featuring"
+              hint="Tag contributors who appear in the piece. Listed under it and on their profiles."
+              options={authors.filter((a) => a.slug !== leadSlug && !coAuthors.includes(a.slug))}
+              selected={featuring}
+              onChange={setFeaturing}
+            />
 
             <Field label="Tags" hint="Comma separated.">
               <input
@@ -695,6 +741,71 @@ function Field({
       {children}
       {hint && <span className="mt-1 block break-words text-xs text-muted">{hint}</span>}
     </label>
+  );
+}
+
+/**
+ * Checkbox list of contributors. Order of selection is byline order, so the
+ * first co-author ticked is listed second on the article.
+ */
+function AuthorPicker({
+  name,
+  label,
+  hint,
+  options,
+  selected,
+  onChange,
+  disabled = false,
+  disabledNote,
+}: {
+  name: string;
+  label: string;
+  hint: string;
+  options: Option[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  disabled?: boolean;
+  disabledNote?: string;
+}) {
+  return (
+    <fieldset className="mt-3" disabled={disabled}>
+      <legend className="text-sm font-semibold">{label}</legend>
+      {selected.map((slug) => (
+        <input key={slug} type="hidden" name={name} value={slug} />
+      ))}
+      {disabled && disabledNote ? (
+        <p className="mt-1.5 text-xs text-muted">{disabledNote}</p>
+      ) : options.length === 0 ? (
+        <p className="mt-1.5 text-xs text-muted">No other contributors to choose.</p>
+      ) : (
+        <div className="mt-1.5 max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-border p-2.5">
+          {options.map((a) => {
+            const position = selected.indexOf(a.slug);
+            return (
+              <label key={a.slug} className="flex cursor-pointer items-center gap-2.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={position !== -1}
+                  onChange={(e) =>
+                    onChange(
+                      e.target.checked
+                        ? [...selected, a.slug]
+                        : selected.filter((s) => s !== a.slug)
+                    )
+                  }
+                  className="h-4 w-4 accent-[var(--brand)]"
+                />
+                <span className="flex-1">{a.name}</span>
+                {position !== -1 && selected.length > 1 && (
+                  <span className="text-xs text-muted">#{position + 1}</span>
+                )}
+              </label>
+            );
+          })}
+        </div>
+      )}
+      <span className="mt-1 block text-xs text-muted">{hint}</span>
+    </fieldset>
   );
 }
 

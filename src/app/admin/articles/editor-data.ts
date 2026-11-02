@@ -43,6 +43,8 @@ export const blankArticle = (authorSlug: string): EditorArticle => ({
   scheduledFor: null,
   categorySlug: "",
   authorSlug,
+  coAuthorSlugs: [],
+  featuredSlugs: [],
   featuredImageUrl: "",
   featuredImageAlt: "",
   featuredImageCaption: "",
@@ -56,3 +58,31 @@ export const blankArticle = (authorSlug: string): EditorArticle => ({
   notifySubscribers: false,
   notifiedAt: null,
 });
+
+/**
+ * An article's co-authors and tagged contributors, as slugs in byline order.
+ * Empty when migration 0018 hasn't run, so the editor still opens.
+ */
+export async function loadArticleBylines(articleId: string) {
+  const supabase = await createServerSupabase();
+  if (!supabase) return { coAuthorSlugs: [], featuredSlugs: [] };
+
+  type Row = { author: { slug: string } | null };
+  const slugsFrom = (data: unknown) =>
+    ((data ?? []) as Row[]).map((r) => r.author?.slug).filter((s): s is string => Boolean(s));
+
+  const [co, featured] = await Promise.all([
+    supabase
+      .from("article_coauthors")
+      .select("position, author:authors(slug)")
+      .eq("article_id", articleId)
+      .order("position"),
+    supabase
+      .from("article_mentions")
+      .select("position, author:authors(slug)")
+      .eq("article_id", articleId)
+      .order("position"),
+  ]);
+
+  return { coAuthorSlugs: slugsFrom(co.data), featuredSlugs: slugsFrom(featured.data) };
+}

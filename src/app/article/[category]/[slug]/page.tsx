@@ -6,7 +6,8 @@ import {
   getArticleBySlug,
   getArticleComments,
   getArticles,
-  getAuthorBySlug,
+  bylineSlugs,
+  getAuthorsBySlugs,
   getAuthorSubscriberCount,
   getCategory,
   getRelatedArticles,
@@ -53,7 +54,8 @@ export async function generateMetadata({
   const article = await getArticleBySlug(slug);
   if (!article) return {};
 
-  const author = await getAuthorBySlug(article.authorSlug);
+  const bylines = await getAuthorsBySlugs(bylineSlugs(article));
+  const author = bylines[0];
   const url = article.canonicalUrl
     ?? `${siteConfig.url}/article/${article.category}/${article.slug}`;
   const noindex = Boolean(article.isDemo) && !demoContentConfig.indexable;
@@ -69,7 +71,9 @@ export async function generateMetadata({
   return {
     title,
     description,
-    authors: author ? [{ name: author.name, url: `${siteConfig.url}/author/${author.slug}` }] : undefined,
+    authors: bylines.length
+      ? bylines.map((a) => ({ name: a.name, url: `${siteConfig.url}/author/${a.slug}` }))
+      : undefined,
     keywords: article.tags,
     alternates: { canonical: url },
     robots: noindex ? { index: false, follow: true } : undefined,
@@ -82,7 +86,7 @@ export async function generateMetadata({
       images: [image],
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt ?? article.publishedAt,
-      authors: author ? [author.name] : undefined,
+      authors: bylines.length ? bylines.map((a) => a.name) : undefined,
       section: article.category,
       tags: article.tags,
     },
@@ -105,8 +109,10 @@ export default async function ArticlePage({
   if (!article && isContentDegraded()) return <ServiceNotice />;
   if (!article || article.category !== categorySlug) notFound();
 
-  const [author, category, related, comments, subscriberCount] = await Promise.all([
-    getAuthorBySlug(article.authorSlug),
+  const [bylines, featured, category, related, comments, subscriberCount] = await Promise.all([
+    // Lead author first, then co-authors in byline order.
+    getAuthorsBySlugs(bylineSlugs(article)),
+    getAuthorsBySlugs(article.featuredAuthorSlugs ?? []),
     getCategory(article.category),
     getRelatedArticles(article, 3),
     // Placeholder archive entries have no Supabase row, so this is empty for
@@ -115,6 +121,7 @@ export default async function ArticlePage({
     getAuthorSubscriberCount(article.authorSlug),
   ]);
 
+  const author = bylines[0];
   const url = `${siteConfig.url}/article/${article.category}/${article.slug}`;
   const minutes =
     article.readingMinutes ?? readingTime(article.body.join(" ").split(/\s+/).length);
@@ -146,7 +153,7 @@ export default async function ArticlePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify([
-            articleJsonLd(article, author, comments.filter((c) => !c.is_deleted).length),
+            articleJsonLd(article, bylines, comments.filter((c) => !c.is_deleted).length),
             breadcrumbJsonLd([
               { name: "Home", url: siteConfig.url },
               ...(category
@@ -184,23 +191,35 @@ export default async function ArticlePage({
           <div className="flex items-start gap-3">
             {author && (
               <>
-                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-surface-muted">
-                  <Image
-                    src={author.photo}
-                    alt=""
-                    fill
-                    sizes="44px"
-                    className="object-cover"
-                  />
+                {/* Co-written pieces stack their portraits, lead author on top. */}
+                <div className="flex shrink-0 -space-x-3">
+                  {bylines.map((a, i) => (
+                    <div
+                      key={a.slug}
+                      className="relative h-11 w-11 overflow-hidden rounded-full bg-surface-muted ring-2 ring-background"
+                      style={{ zIndex: bylines.length - i }}
+                    >
+                      <Image src={a.photo} alt="" fill sizes="44px" className="object-cover" />
+                    </div>
+                  ))}
                 </div>
                 <div className="text-sm">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                    <Link
-                      href={`/author/${author.slug}`}
-                      className="font-semibold hover:text-accent"
-                    >
-                      {author.name}
-                    </Link>
+                    <span className="font-semibold">
+                      {bylines.length > 1 && <span className="font-normal text-muted">By </span>}
+                      {bylines.map((a, i) => (
+                        <span key={a.slug}>
+                          {i > 0 && (
+                            <span className="font-normal text-muted">
+                              {i === bylines.length - 1 ? " and " : ", "}
+                            </span>
+                          )}
+                          <Link href={`/author/${a.slug}`} className="hover:text-accent">
+                            {a.name}
+                          </Link>
+                        </span>
+                      ))}
+                    </span>
                     <WidgetBoundary>
                       <AuthorSubscribe
                         authorSlug={author.slug}
@@ -310,6 +329,30 @@ export default async function ArticlePage({
         </div>
       )}
 
+      {/* ---------------------------------------------------------------- */}
+      {/* Featuring: contributors tagged on the piece                       */}
+      {/* ---------------------------------------------------------------- */}
+      {featured.length > 0 && (
+        <div className="mx-auto mt-8 max-w-[38rem]">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Featuring</p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {featured.map((a) => (
+              <li key={a.slug}>
+                <Link
+                  href={`/author/${a.slug}`}
+                  className="flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-3 text-sm font-medium transition-colors hover:border-brand hover:text-brand"
+                >
+                  <span className="relative h-7 w-7 overflow-hidden rounded-full bg-surface-muted">
+                    <Image src={a.photo} alt="" fill sizes="28px" className="object-cover" />
+                  </span>
+                  {a.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* The heart lives up in the header now; the foot of the story keeps
           share and the letters link, plus a route into the discussion. */}
       <div className="mx-auto mt-8 flex max-w-[38rem] flex-wrap items-center justify-center gap-4 border-t border-border pt-8">
@@ -330,8 +373,14 @@ export default async function ArticlePage({
       {/* ---------------------------------------------------------------- */}
       {/* Author card                                                       */}
       {/* ---------------------------------------------------------------- */}
-      {author && (
-        <aside className="mx-auto mt-12 max-w-[38rem] rounded-2xl border border-border bg-surface p-6">
+      {bylines.map((author, i) => (
+        <aside
+          key={author.slug}
+          className={cn(
+            "mx-auto max-w-[38rem] rounded-2xl border border-border bg-surface p-6",
+            i === 0 ? "mt-12" : "mt-4"
+          )}
+        >
           <div className="flex items-start gap-4">
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-surface-muted">
               <Image src={author.photo} alt="" fill sizes="64px" className="object-cover" />
@@ -353,7 +402,7 @@ export default async function ArticlePage({
             </div>
           </div>
         </aside>
-      )}
+      ))}
 
       {/* ---------------------------------------------------------------- */}
       {/* Related                                                           */}

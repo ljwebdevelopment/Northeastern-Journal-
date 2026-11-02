@@ -4,7 +4,7 @@ import { requireNewsroomUser, canPublish } from "@/lib/auth/roles";
 import { ArticleEditor, type EditorArticle } from "@/components/admin/article-editor";
 import { ReviewThread } from "@/components/admin/review-thread";
 import { RevisionHistory } from "@/components/admin/revision-history";
-import { loadEditorContext } from "../editor-data";
+import { loadArticleBylines, loadEditorContext } from "../editor-data";
 
 export const metadata = { title: "Edit Article" };
 
@@ -41,6 +41,8 @@ export default async function EditArticlePage({
     tag: { slug: string; name: string } | null;
   }[];
 
+  const bylines = await loadArticleBylines(row.id);
+
   const article: EditorArticle = {
     id: row.id,
     slug: row.slug,
@@ -54,6 +56,8 @@ export default async function EditArticlePage({
     scheduledFor: row.scheduled_for,
     categorySlug: category?.slug ?? "",
     authorSlug: author?.slug ?? "",
+    coAuthorSlugs: bylines.coAuthorSlugs,
+    featuredSlugs: bylines.featuredSlugs,
     featuredImageUrl: row.featured_image_url ?? "",
     featuredImageAlt: row.featured_image_alt ?? "",
     featuredImageCaption: row.featured_image_caption ?? "",

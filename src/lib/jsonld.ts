@@ -88,7 +88,16 @@ export function personJsonLd(author: Author, topics: string[] = []) {
   };
 }
 
-export function articleJsonLd(article: Article, author?: Author, commentCount = 0) {
+export function articleJsonLd(
+  article: Article,
+  authors?: Author | Author[],
+  commentCount = 0
+) {
+  const bylines = (Array.isArray(authors) ? authors : authors ? [authors] : []).map((a) => ({
+    "@type": "Person",
+    name: a.name,
+    url: `${siteConfig.url}/author/${a.slug}`,
+  }));
   /**
    * Likes and comments as `interactionStatistic`. Google reads these as
    * engagement signals on an article, and they cost nothing to emit since
@@ -129,9 +138,13 @@ export function articleJsonLd(article: Article, author?: Author, commentCount = 
     wordCount: article.wordCount,
     inLanguage: "en-US",
     isAccessibleForFree: true,
-    author: author
-      ? { "@type": "Person", name: author.name, url: `${siteConfig.url}/author/${author.slug}` }
-      : { "@type": "Organization", name: siteConfig.name },
+    // One byline as an object, several as an array — both are valid schema.org.
+    author:
+      bylines.length === 0
+        ? { "@type": "Organization", name: siteConfig.name }
+        : bylines.length === 1
+          ? bylines[0]
+          : bylines,
     publisher: {
       "@type": "NewsMediaOrganization",
       name: siteConfig.name,

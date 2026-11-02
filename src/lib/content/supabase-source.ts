@@ -52,7 +52,7 @@ const ARTICLE_SELECT_BASE = `
   reading_minutes, word_count, region, view_count,
   is_featured, is_breaking, is_trending,
   category:categories(slug, name),
-  author:authors(slug, name, role, photo_url, bio),
+  author:authors!articles_author_id_fkey(slug, name, role, photo_url, bio),
   article_tags(tag:tags(slug, name))
 `;
 

@@ -41,7 +41,7 @@ export default async function ReviewQueuePage({
   const { data: queue } = await supabase
     .from("articles")
     .select(
-      "id, title, slug, updated_at, word_count, reading_minutes, preview_token, category:categories(name), author:authors(name)"
+      "id, title, slug, updated_at, word_count, reading_minutes, preview_token, category:categories(name), author:authors!articles_author_id_fkey(name)"
     )
     .eq("status", "in_review")
     .order("updated_at", { ascending: true })

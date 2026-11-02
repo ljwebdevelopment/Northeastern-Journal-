@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
     const { data: joined } = await supabase
       .from("articles")
-      .select("category:categories(slug, name), author:authors(name)")
+      .select("category:categories(slug, name), author:authors!articles_author_id_fkey(name)")
       .eq("id", article.id)
       .maybeSingle();
 

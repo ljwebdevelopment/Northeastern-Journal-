@@ -401,7 +401,7 @@ async function announceIfUnsent(articleId: string, userId: string) {
       `id, slug, title, excerpt, published_at, notified_at, reading_minutes,
        featured_image_url, featured_image_alt,
        category:categories(slug, name),
-       author:authors(name)`
+       author:authors!articles_author_id_fkey(name)`
     )
     .eq("id", articleId)
     .single();

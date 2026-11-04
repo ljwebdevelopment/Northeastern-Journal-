@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Facebook } from "lucide-react";
+import { Facebook, Instagram } from "lucide-react";
 import {
   BlueskyIcon,
   SubstackIcon,
@@ -28,6 +28,7 @@ export function Footer({
               { href: siteConfig.links.substack, icon: SubstackIcon, label: "Substack" },
               { href: siteConfig.links.bluesky, icon: BlueskyIcon, label: "Bluesky" },
               { href: siteConfig.links.facebook, icon: Facebook, label: "Facebook" },
+              { href: siteConfig.links.instagram, icon: Instagram, label: "Instagram" },
               { href: siteConfig.links.x, icon: XIcon, label: "X" },
             ].map(({ href, icon: Icon, label }) => (
               <a

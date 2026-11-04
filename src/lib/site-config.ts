@@ -25,6 +25,7 @@ export const siteConfig = {
     substack: "https://open.substack.com/pub/northeasternjournal",
     bluesky: "https://bsky.app/profile/northeasternj.bsky.social",
     facebook: "https://www.facebook.com/share/19GKdQA5Q5/?mibextid=wwXIfr",
+    instagram: "https://www.instagram.com/northeasternjournaloffical",
     x: "https://x.com/northeastjou",
   },
   /**

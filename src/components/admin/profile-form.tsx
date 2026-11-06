@@ -41,7 +41,7 @@ const LINK_KINDS = [
  * signed-in user; only the resulting URL is posted with the form, so the save
  * action keeps taking a single `photo` field.
  */
-function PhotoField({ initialUrl, error }: { initialUrl: string; error?: string }) {
+export function PhotoField({ initialUrl, error }: { initialUrl: string; error?: string }) {
   const [url, setUrl] = useState(initialUrl);
   const { upload, uploading, error: uploadError } = useImageUpload();
 
@@ -118,83 +118,21 @@ function PhotoField({ initialUrl, error }: { initialUrl: string; error?: string 
   );
 }
 
-function SaveBar({ slug }: { slug: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface/95 px-5 py-4 backdrop-blur card-shadow">
-      <p className="text-sm text-muted">Changes go live as soon as you save.</p>
-      <div className="flex items-center gap-3">
-        <Link
-          href={`/author/${slug}`}
-          target="_blank"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition-colors hover:text-brand"
-        >
-          Preview <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-        </Link>
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-70"
-        >
-          {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          {pending ? "Saving…" : "Save profile"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export function ProfileForm({
+/**
+ * Everything below Identity: biography, social links, subscribers, the
+ * repeatable sections, and media. Shared by Edit Profile and the Authors
+ * section so both editors write the same fields the same way.
+ */
+export function ProfileDetailSections({
   author,
-  authorId,
-  photoUrl,
+  errors,
 }: {
   author: Author;
-  authorId: string;
-  /** The stored photo, empty when unset — `author.photo` falls back to the logo. */
-  photoUrl: string;
+  errors: Record<string, string>;
 }) {
-  const [state, formAction] = useActionState(saveProfileAction, initialProfileFormState);
-  const errors = state.errors;
   const social = author.social as Record<string, string | undefined>;
-
   return (
-    <form action={formAction} className="space-y-6">
-      <input type="hidden" name="authorId" value={authorId} />
-
-      {state.status === "saved" && (
-        <div role="status" className="flex items-start gap-3 rounded-xl border border-border bg-surface px-5 py-4">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
-          <div>
-            <p className="text-sm font-semibold">{state.message}</p>
-            <p className="mt-1 text-sm text-muted">
-              <Link href={`/author/${author.slug}`} target="_blank" className="text-brand hover:underline">
-                View your public profile
-              </Link>
-            </p>
-          </div>
-        </div>
-      )}
-
-      {state.status === "error" && (
-        <p role="alert" className="rounded-xl bg-brand/10 px-5 py-4 text-sm font-medium text-brand">
-          {state.message}
-        </p>
-      )}
-
-      <FieldGroup title="Identity" description="How your name and title appear on your profile and bylines.">
-        <PhotoField initialUrl={photoUrl} error={errors.photo} />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextField label="Full name" name="name" required defaultValue={author.name} error={errors.name} />
-          <TextField label="Job title" name="role" required defaultValue={author.role} placeholder="Reporter, Editor, Columnist…" error={errors.role} />
-          <TextField label="Username (optional)" name="username" defaultValue={author.username ?? ""} placeholder="yourhandle" hint="Shown as @handle; your profile also answers at /author/<handle>." error={errors.username} />
-          <TextField label="Founding role (optional)" name="foundingRole" defaultValue={author.foundingRole ?? ""} placeholder="Co-Founder" hint="A badge beside your job title. Leave blank if it doesn't apply." error={errors.foundingRole} />
-          <TextField label="Location" name="location" defaultValue={author.location ?? ""} placeholder="Tahlequah, OK" error={errors.location} />
-          <TextField label="Personal website" name="website" inputMode="url" defaultValue={author.website ?? ""} placeholder="yourname.com" hint="A bare domain works — we'll add https:// for you." error={errors.website} />
-          <TextField label="Contact email (optional)" name="email" type="email" defaultValue={author.email ?? ""} hint="Shown publicly as a Contact button. Blank hides it." error={errors.email} />
-        </div>
-      </FieldGroup>
-
+    <>
       <FieldGroup title="Biography" description="The short bio runs under bylines; the full one anchors “About the Author”.">
         <TextAreaField label="Short bio" name="bio" required rows={3} maxLength={320} defaultValue={author.bio} hint="One or two sentences." error={errors.bio} />
         <TextAreaField label="Full biography" name="longBio" rows={10} maxLength={8000} defaultValue={author.longBio} hint="Leave a blank line between paragraphs." error={errors.longBio} />
@@ -309,6 +247,87 @@ export function ProfileForm({
         <TextField label="Video playlist name" name="videoPlaylist" defaultValue={author.videoPlaylist ?? ""} hint="Videos tagged with this playlist appear on your profile." error={errors.videoPlaylist} />
         <TextAreaField label="Speaking & bookings" name="speaking" rows={4} maxLength={1200} defaultValue={author.speaking ?? ""} hint="A short invitation for speaking or interview requests. Blank hides the section." error={errors.speaking} />
       </FieldGroup>
+    </>
+  );
+}
+
+function SaveBar({ slug }: { slug: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface/95 px-5 py-4 backdrop-blur card-shadow">
+      <p className="text-sm text-muted">Changes go live as soon as you save.</p>
+      <div className="flex items-center gap-3">
+        <Link
+          href={`/author/${slug}`}
+          target="_blank"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition-colors hover:text-brand"
+        >
+          Preview <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 disabled:opacity-70"
+        >
+          {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+          {pending ? "Saving…" : "Save profile"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function ProfileForm({
+  author,
+  authorId,
+  photoUrl,
+}: {
+  author: Author;
+  authorId: string;
+  /** The stored photo, empty when unset — `author.photo` falls back to the logo. */
+  photoUrl: string;
+}) {
+  const [state, formAction] = useActionState(saveProfileAction, initialProfileFormState);
+  const errors = state.errors;
+
+  return (
+    <form action={formAction} className="space-y-6">
+      <input type="hidden" name="authorId" value={authorId} />
+
+      {state.status === "saved" && (
+        <div role="status" className="flex items-start gap-3 rounded-xl border border-border bg-surface px-5 py-4">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
+          <div>
+            <p className="text-sm font-semibold">{state.message}</p>
+            <p className="mt-1 text-sm text-muted">
+              <Link href={`/author/${author.slug}`} target="_blank" className="text-brand hover:underline">
+                View your public profile
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {state.status === "error" && (
+        <p role="alert" className="rounded-xl bg-brand/10 px-5 py-4 text-sm font-medium text-brand">
+          {state.message}
+        </p>
+      )}
+
+      <FieldGroup title="Identity" description="How your name and title appear on your profile and bylines.">
+        <PhotoField initialUrl={photoUrl} error={errors.photo} />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <TextField label="Full name" name="name" required defaultValue={author.name} error={errors.name} />
+          <TextField label="Job title" name="role" required defaultValue={author.role} placeholder="Reporter, Editor, Columnist…" error={errors.role} />
+          <TextField label="Username (optional)" name="username" defaultValue={author.username ?? ""} placeholder="yourhandle" hint="Shown as @handle; your profile also answers at /author/<handle>." error={errors.username} />
+          <TextField label="Founding role (optional)" name="foundingRole" defaultValue={author.foundingRole ?? ""} placeholder="Co-Founder" hint="A badge beside your job title. Leave blank if it doesn't apply." error={errors.foundingRole} />
+          <TextField label="Location" name="location" defaultValue={author.location ?? ""} placeholder="Tahlequah, OK" error={errors.location} />
+          <TextField label="Personal website" name="website" inputMode="url" defaultValue={author.website ?? ""} placeholder="yourname.com" hint="A bare domain works — we'll add https:// for you." error={errors.website} />
+          <TextField label="Contact email (optional)" name="email" type="email" defaultValue={author.email ?? ""} hint="Shown publicly as a Contact button. Blank hides it." error={errors.email} />
+        </div>
+      </FieldGroup>
+
+      <ProfileDetailSections author={author} errors={errors} />
 
       <SaveBar slug={author.slug} />
     </form>

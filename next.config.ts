@@ -15,6 +15,25 @@ const supabaseHostname = (() => {
   }
 })();
 
+/**
+ * Local development against `supabase start`, which serves Storage over plain
+ * http on 127.0.0.1. Only then: allow that host over http and let the image
+ * optimizer fetch from a loopback address (Next refuses local IPs by default).
+ * Never true in production, where Storage is the project's https host.
+ */
+const localSupabase = (() => {
+  if (process.env.NODE_ENV !== "development") return null;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const isLocal = ["127.0.0.1", "localhost"].includes(parsed.hostname);
+    return isLocal && parsed.protocol === "http:" ? parsed : null;
+  } catch {
+    return null;
+  }
+})();
+
 const nextConfig: NextConfig = {
   // Pin the workspace root. Without it Turbopack walks up and can pick a
   // lockfile outside the project.
@@ -33,6 +52,16 @@ const nextConfig: NextConfig = {
             },
           ]
         : []),
+      ...(localSupabase
+        ? [
+            {
+              protocol: "http" as const,
+              hostname: localSupabase.hostname,
+              port: localSupabase.port,
+              pathname: "/storage/v1/object/public/**",
+            },
+          ]
+        : []),
       // Placeholder archive imagery, retired once the CMS is populated.
       { protocol: "https" as const, hostname: "picsum.photos" },
       { protocol: "https" as const, hostname: "img.youtube.com" },
@@ -42,6 +71,7 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [40, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 30,
+    ...(localSupabase ? { dangerouslyAllowLocalIP: true } : {}),
   },
 
   poweredByHeader: false,

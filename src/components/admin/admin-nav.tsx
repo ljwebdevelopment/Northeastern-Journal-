@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   CalendarDays,
+  Contact,
   FileText,
   Images,
   Inbox,
@@ -45,6 +46,7 @@ const items: {
   { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, exact: false },
   { href: "/admin/collections", label: "Collections", icon: Library, exact: false },
   { href: "/admin/media", label: "Media", icon: Images, exact: false },
+  { href: "/admin/authors", label: "Authors", icon: Contact, exact: false, staffOnly: true },
   { href: "/admin/letters", label: "Letters", icon: MessageSquareQuote, exact: false, staffOnly: true },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3, exact: false, staffOnly: true },
   { href: "/admin/newsletter", label: "Newsletter", icon: Newspaper, exact: false, staffOnly: true },

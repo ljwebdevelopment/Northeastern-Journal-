@@ -1,7 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
-import { canWrite } from "./roles-shared";
+import { canWrite, isStaff as isStaffRole } from "./roles-shared";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { ProfileRow, UserRole } from "@/lib/supabase/types";
 
@@ -75,6 +75,17 @@ export async function requireNewsroomUser(
   const user = await getSessionUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(returnTo)}`);
   if (!canWrite(user.profile.role)) redirect("/login/no-access");
+  return user;
+}
+
+/**
+ * Gate for editor-level routes (author management). Admins and editors pass;
+ * contributors are sent back to the dashboard. Matches the "authors staff
+ * write" RLS policy, which is what actually refuses the write.
+ */
+export async function requireStaff(returnTo = "/admin"): Promise<SessionUser> {
+  const user = await requireNewsroomUser(returnTo);
+  if (!isStaffRole(user.profile.role)) redirect("/admin?error=staff-only");
   return user;
 }
 

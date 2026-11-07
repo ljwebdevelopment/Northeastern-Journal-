@@ -27,6 +27,7 @@ import {
 } from "./data";
 import { resolveContent } from "./demo-config";
 import {
+  fetchArticleAudio,
   fetchArticleComments,
   fetchArticleSearch,
   fetchAuthorSubscriberCount,
@@ -368,6 +369,12 @@ export async function getAuthorSubscriberCount(slug: string): Promise<number> {
  */
 export async function getArticleComments(slug: string): Promise<PublicCommentRow[]> {
   return fetchArticleComments(slug);
+}
+
+/** The "Listen" recording for an article, or null if none has been made yet. */
+export async function getArticleAudio(article: Article) {
+  if (article.isDemo || !article.id) return null;
+  return fetchArticleAudio(article.id);
 }
 
 // --- Books, videos, conversations, newsletter --------------------------------

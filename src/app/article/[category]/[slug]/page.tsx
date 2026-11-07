@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getArticleBySlug,
+  getArticleAudio,
   getArticleComments,
   getArticles,
   bylineSlugs,
@@ -110,7 +111,7 @@ export default async function ArticlePage({
   if (!article && isContentDegraded()) return <ServiceNotice />;
   if (!article || article.category !== categorySlug) notFound();
 
-  const [bylines, featured, category, related, comments, subscriberCount] = await Promise.all([
+  const [bylines, featured, category, related, comments, subscriberCount, audio] = await Promise.all([
     // Lead author first, then co-authors in byline order.
     getAuthorsBySlugs(bylineSlugs(article)),
     getAuthorsBySlugs(article.featuredAuthorSlugs ?? []),
@@ -120,6 +121,8 @@ export default async function ArticlePage({
     // them and the section renders its "be the first" state.
     getArticleComments(article.slug),
     getAuthorSubscriberCount(article.authorSlug),
+    // Narration recorded by the "Article audio" GitHub Action; null until then.
+    getArticleAudio(article),
   ]);
 
   const author = bylines[0];
@@ -263,13 +266,11 @@ export default async function ArticlePage({
                 compact
               />
             </WidgetBoundary>
-            <WidgetBoundary>
-              <ListenButton
-                title={article.title}
-                subtitle={article.subtitle}
-                minutes={minutes}
-              />
-            </WidgetBoundary>
+            {audio && (
+              <WidgetBoundary>
+                <ListenButton audio={audio} title={article.title} />
+              </WidgetBoundary>
+            )}
             <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
             <WidgetBoundary>
               <ReaderControls />

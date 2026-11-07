@@ -1,17 +1,21 @@
 # Records the "Listen" narration for published articles.
 #
-# Uses Kokoro, a free, open-source voice model, with the "Bella" voice. Runs
-# every 30 minutes and records only articles that are new or have changed
-# since their last recording, so most runs finish in under a minute.
-# Run it by hand from the Actions tab ("Run workflow") after publishing if you
-# don't want to wait, or with "force" to re-record everything.
+# Uses Kokoro, a free, open-source voice model, with the "Bella" voice.
+# No accounts, keys or secrets: it reads the public site (sitemap + article
+# pages), records only articles that are new or changed, and commits the MP3s
+# to public/audio/ plus a manifest the article page reads. Vercel redeploys
+# on that commit and the Listen button appears.
 #
-# Needs two repository secrets (Settings → Secrets and variables → Actions):
-#   SUPABASE_URL                the same value as NEXT_PUBLIC_SUPABASE_URL
-#   SUPABASE_SERVICE_ROLE_KEY   the service-role key from Supabase
+# Runs on every push to main (so merging starts it), every 30 minutes (to pick
+# up articles published in the CMS), and by hand from the Actions tab.
 name: Article audio
 
 on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "public/audio/**"
+      - "src/lib/content/article-audio.json"
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
@@ -26,16 +30,22 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   record:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     env:
       MODEL_RELEASE: https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
     steps:
       - uses: actions/checkout@v4
+
+      # A push to main also redeploys the site; give Vercel a head start so
+      # the pages read below are the current ones.
+      - name: Wait for deploy
+        if: github.event_name == 'push'
+        run: sleep 150
 
       - uses: actions/setup-python@v5
         with:
@@ -61,11 +71,23 @@ jobs:
 
       - name: Record new and updated articles
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           KOKORO_MODEL: models/kokoro-v1.0.onnx
           KOKORO_VOICES: models/voices-v1.0.bin
           AUDIO_VOICE: af_bella
           AUDIO_SPEED: "1.0"
           FORCE: ${{ inputs.force && '1' || '0' }}
         run: python scripts/audio/generate_article_audio.py
+
+      - name: Commit recordings
+        if: always()
+        run: |
+          git add public/audio src/lib/content/article-audio.json
+          if git diff --cached --quiet; then
+            echo "No new recordings."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Article audio: update recordings"
+          git pull --rebase origin main
+          git push

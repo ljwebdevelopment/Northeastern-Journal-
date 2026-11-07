@@ -16,6 +16,7 @@
  * archive is fully populated the placeholders disappear on their own.
  */
 import { cache } from "react";
+import articleAudio from "./article-audio.json";
 import {
   articles as placeholderArticles,
   authors as placeholderAuthors,
@@ -27,7 +28,6 @@ import {
 } from "./data";
 import { resolveContent } from "./demo-config";
 import {
-  fetchArticleAudio,
   fetchArticleComments,
   fetchArticleSearch,
   fetchAuthorSubscriberCount,
@@ -40,6 +40,12 @@ import {
   fetchVideos,
 } from "./supabase-source";
 import type { PublicCommentRow } from "@/lib/supabase/types";
+
+type ArticleAudioEntry = {
+  file: string;
+  duration: number;
+  segments: { block: number; start: number }[];
+};
 import type {
   Article,
   Author,
@@ -371,10 +377,19 @@ export async function getArticleComments(slug: string): Promise<PublicCommentRow
   return fetchArticleComments(slug);
 }
 
-/** The "Listen" recording for an article, or null if none has been made yet. */
+/**
+ * The "Listen" recording for an article, or null if none has been made yet.
+ * Recorded by the "Article audio" GitHub Action into public/audio/, with the
+ * manifest below committed alongside — see docs/article-audio.md.
+ */
 export async function getArticleAudio(article: Article) {
-  if (article.isDemo || !article.id) return null;
-  return fetchArticleAudio(article.id);
+  const entry = (articleAudio as Record<string, ArticleAudioEntry>)[article.slug];
+  if (!entry) return null;
+  return {
+    audio_url: `/audio/${entry.file}`,
+    duration_seconds: entry.duration,
+    segments: entry.segments,
+  };
 }
 
 // --- Books, videos, conversations, newsletter --------------------------------

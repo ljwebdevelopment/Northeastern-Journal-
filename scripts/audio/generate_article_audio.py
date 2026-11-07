@@ -1,22 +1,21 @@
 """
-Narrate published articles with the free, open-source Kokoro voice model and
-publish the recordings for the article page's Listen button.
+Narrate published articles with the free, open-source Kokoro voice model
+("Bella") for the article page's Listen button.
 
-Run by .github/workflows/article-audio.yml. For each published article it
-builds the text a reader would hear (headline, subtitle, body), hashes it, and
-records a new MP3 only when that hash differs from the one on file, so an
-unchanged story is never re-recorded and an edited one always is.
+Run by .github/workflows/article-audio.yml. Reads the live site's sitemap and
+article pages (no accounts or keys), records an MP3 only for articles that are
+new or whose text changed, and saves them to public/audio/ with a timing
+manifest at src/lib/content/article-audio.json.
 
-Environment:
-  SUPABASE_URL                 project URL
-  SUPABASE_SERVICE_ROLE_KEY    service-role key (writes storage + table)
+Environment (all optional):
+  SITE_URL       default https://www.northeasternjournal.com
+  AUDIO_VOICE    Kokoro voice id (default af_bella)
+  AUDIO_SPEED    speaking rate (default 1.0)
+  MAX_ARTICLES   cap per run (default 40)
+  FORCE          "1" to re-record everything
   KOKORO_MODEL, KOKORO_VOICES  paths to the model files
-  AUDIO_VOICE                  Kokoro voice id (default af_bella)
-  AUDIO_SPEED                  speaking rate (default 1.0)
-  MAX_ARTICLES                 cap per run (default 25)
-  FORCE                        "1" to re-record everything
 
-Local test without Supabase:
+Local test of one story:
   python generate_article_audio.py --html-file story.html --title "Headline" --out story.mp3
 """
 
@@ -28,9 +27,7 @@ import json
 import os
 import re
 import sys
-import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
 
 import numpy as np
 from bs4 import BeautifulSoup
@@ -38,7 +35,7 @@ from bs4 import BeautifulSoup
 VOICE = os.environ.get("AUDIO_VOICE", "af_bella")
 SPEED = float(os.environ.get("AUDIO_SPEED", "1.0"))
 SAMPLE_RATE = 24000
-BITRATE_KBPS = 64
+BITRATE_KBPS = 48
 
 # Must match the selector and "innermost only" rule in listen-button.tsx, so
 # that block N here is paragraph N on the page for follow-along highlighting.
@@ -152,106 +149,112 @@ def to_mp3(samples: np.ndarray) -> bytes:
     return enc.encode(pcm) + enc.flush()
 
 
-# --- Supabase (plain REST, no SDK) -------------------------------------------
+# --- Live site -> files in the repo -------------------------------------------
+#
+# No accounts or keys: the script reads the public site exactly as a reader
+# would (sitemap, then each article page), writes the MP3s to public/audio/
+# and the timing manifest to src/lib/content/article-audio.json. The workflow
+# commits both, and Vercel redeploys the site with the new recordings.
+
+SITE = os.environ.get("SITE_URL", "https://www.northeasternjournal.com").rstrip("/")
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+AUDIO_DIR = os.path.join(REPO, "public", "audio")
+MANIFEST = os.path.join(REPO, "src", "lib", "content", "article-audio.json")
+UA = "NortheasternJournal-AudioBot/1.0 (+https://www.northeasternjournal.com)"
 
 
-class Supabase:
-    def __init__(self, url: str, key: str):
-        self.url = url.rstrip("/")
-        self.key = key
-
-    def _req(self, method, path, body=None, headers=None):
-        h = {"apikey": self.key, "Authorization": f"Bearer {self.key}"}
-        h.update(headers or {})
-        req = urllib.request.Request(self.url + path, data=body, method=method, headers=h)
-        with urllib.request.urlopen(req, timeout=120) as res:
-            raw = res.read()
-            return json.loads(raw) if raw and "json" in res.headers.get("content-type", "") else raw
-
-    def select(self, table, query):
-        return self._req("GET", f"/rest/v1/{table}?{query}")
-
-    def upsert(self, table, row, conflict):
-        return self._req(
-            "POST",
-            f"/rest/v1/{table}?on_conflict={conflict}",
-            json.dumps(row).encode(),
-            {"Content-Type": "application/json", "Prefer": "resolution=merge-duplicates"},
-        )
-
-    def upload(self, bucket, path, data, content_type):
-        self._req(
-            "POST",
-            f"/storage/v1/object/{bucket}/{urllib.parse.quote(path)}",
-            data,
-            {"Content-Type": content_type, "x-upsert": "true", "cache-control": "31536000"},
-        )
-        return f"{self.url}/storage/v1/object/public/{bucket}/{urllib.parse.quote(path)}"
-
-    def remove(self, bucket, path):
-        try:
-            self._req("DELETE", f"/storage/v1/object/{bucket}/{urllib.parse.quote(path)}")
-        except Exception as e:  # an orphaned old file is harmless
-            print(f"  (could not remove old {path}: {e})")
+def get(url: str) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=60) as res:
+        return res.read().decode("utf-8", "replace")
 
 
-def run_supabase():
-    url = os.environ.get("SUPABASE_URL", "")
-    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-    if not url or not key:
-        sys.exit("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set (GitHub repository secrets).")
-    db = Supabase(url, key)
+def article_urls() -> list[str]:
+    xml = get(f"{SITE}/sitemap.xml")
+    locs = re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", xml)
+    return sorted({u for u in locs if re.search(r"/article/[^/]+/[^/]+/?$", u)})
+
+
+def read_article(url: str):
+    """(slug, title, body_html) from a live article page, or None."""
+    soup = BeautifulSoup(get(url), "html5lib")
+    body = soup.find(id="article-body")
+    h1 = soup.find("h1")
+    if not body or not h1:
+        return None
+    slug = url.rstrip("/").rsplit("/", 1)[-1]
+    return slug, h1.get_text(" ", strip=True), body.decode_contents()
+
+
+def run_site():
     force = os.environ.get("FORCE") == "1"
-    limit = int(os.environ.get("MAX_ARTICLES", "25"))
+    limit = int(os.environ.get("MAX_ARTICLES", "40"))
+    os.makedirs(AUDIO_DIR, exist_ok=True)
+    try:
+        manifest = json.load(open(MANIFEST, encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        manifest = {}
 
-    articles = db.select(
-        "articles",
-        "select=id,slug,title,subtitle,body_html&status=eq.published&order=published_at.desc",
-    )
-    existing = {
-        r["article_id"]: r
-        for r in db.select("article_audio", "select=article_id,text_hash,storage_path")
-    }
-    print(f"{len(articles)} published articles, {len(existing)} already recorded.")
+    urls = article_urls()
+    print(f"{len(urls)} articles in the sitemap, {len(manifest)} already recorded.")
+    if not urls:
+        sys.exit("Found no articles in the sitemap; leaving everything as it is.")
 
-    done = 0
-    for a in articles:
-        parts = script_for(a["title"], a.get("subtitle"), a.get("body_html") or "")
+    live, done = set(), 0
+    for url in urls:
+        try:
+            got = read_article(url)
+        except Exception as e:
+            print(f"  skip {url}: {e}")
+            # Keep any existing recording rather than delete it on a blip.
+            live.add(url.rstrip("/").rsplit("/", 1)[-1])
+            continue
+        if not got:
+            continue
+        slug, title, html = got
+        live.add(slug)
+        parts = script_for(title, None, html)
         h = narration_hash(parts)
-        old = existing.get(a["id"])
-        if old and old["text_hash"] == h and not force:
+        old = manifest.get(slug)
+        if old and old.get("hash") == h and not force:
             continue
         if done >= limit:
             print(f"Reached MAX_ARTICLES={limit}; the rest will be recorded on the next run.")
             break
 
-        print(f"Recording: {a['slug']} ({sum(len(t) for _, t, _ in parts)} chars)")
+        print(f"Recording: {slug} ({sum(len(t) for _, t, _ in parts)} chars)")
         samples, segments = synthesize(parts)
         mp3 = to_mp3(samples)
-        # A new file name per version, so browsers and the CDN never serve a
-        # stale recording of an edited story.
-        path = f"{a['slug']}-{h[:10]}.mp3"
-        public_url = db.upload("audio", path, mp3, "audio/mpeg")
-        db.upsert(
-            "article_audio",
-            {
-                "article_id": a["id"],
-                "slug": a["slug"],
-                "audio_url": public_url,
-                "storage_path": path,
-                "duration_seconds": round(len(samples) / SAMPLE_RATE, 2),
-                "voice": VOICE,
-                "text_hash": h,
-                "segments": segments,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            },
-            "article_id",
-        )
-        if old and old["storage_path"] != path:
-            db.remove("audio", old["storage_path"])
+        # A new file name per version, so no browser or CDN serves a stale
+        # recording of an edited story.
+        name = f"{slug}-{h[:10]}.mp3"
+        open(os.path.join(AUDIO_DIR, name), "wb").write(mp3)
+        if old and old.get("file") != name:
+            try:
+                os.remove(os.path.join(AUDIO_DIR, old["file"]))
+            except OSError:
+                pass
+        manifest[slug] = {
+            "file": name,
+            "duration": round(len(samples) / SAMPLE_RATE, 2),
+            "hash": h,
+            "segments": segments,
+        }
         print(f"  -> {len(samples) / SAMPLE_RATE / 60:.1f} min, {len(mp3) / 1e6:.1f} MB")
         done += 1
+        # Save as we go, so a timeout keeps the finished recordings.
+        json.dump(dict(sorted(manifest.items())), open(MANIFEST, "w"), indent=1)
 
+    # Unpublished or deleted stories: drop their recordings.
+    for slug in [s for s in manifest if s not in live]:
+        try:
+            os.remove(os.path.join(AUDIO_DIR, manifest[slug]["file"]))
+        except OSError:
+            pass
+        del manifest[slug]
+        print(f"Removed recording for {slug} (no longer published).")
+
+    json.dump(dict(sorted(manifest.items())), open(MANIFEST, "w"), indent=1)
     print(f"Done. Recorded {done} article(s).")
 
 
@@ -270,7 +273,7 @@ def main():
         open(args.out, "wb").write(to_mp3(samples))
         print(json.dumps({"seconds": round(len(samples) / SAMPLE_RATE, 1), "segments": segments}))
     else:
-        run_supabase()
+        run_site()
 
 
 if __name__ == "__main__":

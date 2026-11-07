@@ -407,6 +407,19 @@ export type SettingRow = {
   updated_at: string;
 }
 
+/** Narrated recording of an article (migration 0020). */
+export type ArticleAudioRow = {
+  article_id: string;
+  slug: string;
+  audio_url: string;
+  storage_path: string;
+  duration_seconds: number;
+  voice: string;
+  text_hash: string;
+  segments: { block: number; start: number }[];
+  updated_at: string;
+};
+
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
@@ -443,6 +456,7 @@ export interface Database {
       books: Table<BookRow>;
       videos: Table<VideoRow>;
       conversations: Table<ConversationRow>;
+      article_audio: Table<ArticleAudioRow>;
     };
     // `{ [_ in never]: never }` — an empty object type. `Record<string, never>`
     // would make every key resolve to `never` when supabase-js intersects

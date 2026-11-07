@@ -164,6 +164,20 @@ html[data-text-size="xl"] .prose :where(p, li) {
 }
 
 /* ---------------------------------------------------------------------------
+   Listen
+   ---------------------------------------------------------------------------
+   While ListenButton reads the article aloud, the passage being spoken carries
+   a data attribute so a reader can follow along. A soft wash, not a box: it
+   should guide the eye without making the page jump.                        */
+
+[data-listening] {
+  background-color: color-mix(in srgb, var(--brand) 9%, transparent);
+  border-radius: 0.375rem;
+  box-shadow: 0 0 0 0.35rem color-mix(in srgb, var(--brand) 9%, transparent);
+  transition: background-color 200ms ease, box-shadow 200ms ease;
+}
+
+/* ---------------------------------------------------------------------------
    Print
    ---------------------------------------------------------------------------
    Readers print articles to keep them, to mark them up, and to give them to

@@ -21,6 +21,7 @@ import { ShareButtons } from "@/components/article/share-buttons";
 import { ReadingProgress } from "@/components/article/reading-progress";
 import { ReaderControls } from "@/components/article/reader-controls";
 import { LikeButton } from "@/components/article/like-button";
+import { ListenButton } from "@/components/article/listen-button";
 import { AuthorSubscribe } from "@/components/shared/author-subscribe";
 import { CommentSection } from "@/components/article/comment-section";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
@@ -260,6 +261,13 @@ export default async function ArticlePage({
                 slug={article.slug}
                 initialCount={article.likeCount ?? 0}
                 compact
+              />
+            </WidgetBoundary>
+            <WidgetBoundary>
+              <ListenButton
+                title={article.title}
+                subtitle={article.subtitle}
+                minutes={minutes}
               />
             </WidgetBoundary>
             <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />

@@ -272,3 +272,8 @@ html[data-text-size="xl"] .prose :where(p, li) {
     animation: none;
   }
 }
+
+/* Article images open in the lightbox (components/article/image-lightbox.tsx). */
+[data-zoomable] img:not(a img) {
+  cursor: zoom-in;
+}

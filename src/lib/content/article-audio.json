@@ -1,1 +1,2163 @@
-{}
+{
+ "a-lambs-tale": {
+  "file": "a-lambs-tale-4e437e44cc.mp3",
+  "duration": 479.05,
+  "hash": "4e437e44cceee04aa681126bbef447283246416e01b75f1ca357d9f2075399bf",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 1.7
+   },
+   {
+    "block": 1,
+    "start": 18.85
+   },
+   {
+    "block": 2,
+    "start": 43.1
+   },
+   {
+    "block": 3,
+    "start": 57.62
+   },
+   {
+    "block": 4,
+    "start": 75.71
+   },
+   {
+    "block": 5,
+    "start": 78.43
+   },
+   {
+    "block": 6,
+    "start": 103.49
+   },
+   {
+    "block": 7,
+    "start": 125.27
+   },
+   {
+    "block": 8,
+    "start": 147.15
+   },
+   {
+    "block": 9,
+    "start": 180.53
+   },
+   {
+    "block": 10,
+    "start": 196.93
+   },
+   {
+    "block": 11,
+    "start": 223.06
+   },
+   {
+    "block": 12,
+    "start": 234.38
+   },
+   {
+    "block": 13,
+    "start": 252.29
+   },
+   {
+    "block": 14,
+    "start": 292.67
+   },
+   {
+    "block": 15,
+    "start": 326.7
+   },
+   {
+    "block": 16,
+    "start": 341.89
+   },
+   {
+    "block": 17,
+    "start": 358.39
+   },
+   {
+    "block": 18,
+    "start": 384.95
+   },
+   {
+    "block": 19,
+    "start": 404.8
+   },
+   {
+    "block": 20,
+    "start": 431.25
+   },
+   {
+    "block": 22,
+    "start": 450.92
+   },
+   {
+    "block": 23,
+    "start": 458.16
+   },
+   {
+    "block": 24,
+    "start": 460.42
+   },
+   {
+    "block": 25,
+    "start": 468.18
+   },
+   {
+    "block": 26,
+    "start": 474.87
+   }
+  ]
+ },
+ "a-week-at-yale": {
+  "file": "a-week-at-yale-16a6e8b29f.mp3",
+  "duration": 194.12,
+  "hash": "16a6e8b29ff314772eb372aba31871afd7daaffd92d56ad08a4ea95eb646d894",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 1.66
+   },
+   {
+    "block": 1,
+    "start": 21.39
+   },
+   {
+    "block": 2,
+    "start": 55.21
+   },
+   {
+    "block": 3,
+    "start": 86.41
+   },
+   {
+    "block": 4,
+    "start": 107.85
+   },
+   {
+    "block": 5,
+    "start": 126.53
+   },
+   {
+    "block": 6,
+    "start": 171.64
+   }
+  ]
+ },
+ "coming-of-age-during-a-war-nobody-declared": {
+  "file": "coming-of-age-during-a-war-nobody-declared-7c4da896c3.mp3",
+  "duration": 440.86,
+  "hash": "7c4da896c3de1bc7c3010a28d64a2a7f33e3ef97692a5315c82e47b4bd37169f",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 1.64
+   },
+   {
+    "block": 1,
+    "start": 60.86
+   },
+   {
+    "block": 2,
+    "start": 133.7
+   },
+   {
+    "block": 3,
+    "start": 197.06
+   },
+   {
+    "block": 4,
+    "start": 258.91
+   },
+   {
+    "block": 5,
+    "start": 346.34
+   },
+   {
+    "block": 6,
+    "start": 412.71
+   }
+  ]
+ },
+ "deadline-approaches-for-2027-northeastern-state-university-centurion-nominations": {
+  "file": "deadline-approaches-for-2027-northeastern-state-university-centurion-nominations-2541f4c2e7.mp3",
+  "duration": 125.33,
+  "hash": "2541f4c2e7308f9d01fc37bcf00bb2ca3e7e5b1654c66db93de59b7245e57195",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 7.68
+   },
+   {
+    "block": 1,
+    "start": 24.65
+   },
+   {
+    "block": 2,
+    "start": 42.2
+   },
+   {
+    "block": 3,
+    "start": 60.87
+   },
+   {
+    "block": 4,
+    "start": 74.41
+   },
+   {
+    "block": 5,
+    "start": 84.28
+   },
+   {
+    "block": 6,
+    "start": 106.89
+   },
+   {
+    "block": 7,
+    "start": 113.9
+   }
+  ]
+ },
+ "faith-and-community-making-room-for-every-voice": {
+  "file": "faith-and-community-making-room-for-every-voice-029a51df50.mp3",
+  "duration": 51.71,
+  "hash": "029a51df50a4c50bd214602068e3d8b0e8707bc3a2dac832a8a3c8f7cbee8e57",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 3.73
+   },
+   {
+    "block": 1,
+    "start": 12.04
+   },
+   {
+    "block": 2,
+    "start": 29.79
+   },
+   {
+    "block": 3,
+    "start": 40.85
+   }
+  ]
+ },
+ "five-brothers-answered-the-call": {
+  "file": "five-brothers-answered-the-call-c365fa43a5.mp3",
+  "duration": 353.74,
+  "hash": "c365fa43a5320171050822395da331d5ef8b567ad65e4f321862ed455a17bd8c",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.43
+   },
+   {
+    "block": 1,
+    "start": 20.88
+   },
+   {
+    "block": 2,
+    "start": 40.39
+   },
+   {
+    "block": 3,
+    "start": 67.56
+   },
+   {
+    "block": 4,
+    "start": 87.85
+   },
+   {
+    "block": 5,
+    "start": 119.96
+   },
+   {
+    "block": 6,
+    "start": 136.88
+   },
+   {
+    "block": 7,
+    "start": 144.66
+   },
+   {
+    "block": 8,
+    "start": 164.9
+   },
+   {
+    "block": 9,
+    "start": 173.4
+   },
+   {
+    "block": 10,
+    "start": 187.41
+   },
+   {
+    "block": 11,
+    "start": 198.5
+   },
+   {
+    "block": 12,
+    "start": 201.7
+   },
+   {
+    "block": 13,
+    "start": 209.71
+   },
+   {
+    "block": 14,
+    "start": 231.38
+   },
+   {
+    "block": 15,
+    "start": 237.09
+   },
+   {
+    "block": 16,
+    "start": 249.72
+   },
+   {
+    "block": 17,
+    "start": 286.98
+   },
+   {
+    "block": 18,
+    "start": 313.79
+   },
+   {
+    "block": 19,
+    "start": 324.26
+   },
+   {
+    "block": 20,
+    "start": 337.14
+   },
+   {
+    "block": 21,
+    "start": 351.72
+   }
+  ]
+ },
+ "grassroots-candidates-campaign-finance-election-integrity": {
+  "file": "grassroots-candidates-campaign-finance-election-integrity-c964dc46dd.mp3",
+  "duration": 187.29,
+  "hash": "c964dc46ddb950c921df1398dc7ae7628c1dc0c791c3d93c29191c4864051d23",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.24
+   },
+   {
+    "block": 1,
+    "start": 24.72
+   },
+   {
+    "block": 2,
+    "start": 39.79
+   },
+   {
+    "block": 3,
+    "start": 50.18
+   },
+   {
+    "block": 4,
+    "start": 73.25
+   },
+   {
+    "block": 5,
+    "start": 91.66
+   },
+   {
+    "block": 6,
+    "start": 124.16
+   },
+   {
+    "block": 7,
+    "start": 156.92
+   },
+   {
+    "block": 8,
+    "start": 182.26
+   }
+  ]
+ },
+ "healing-collective-trauma-in-a-fractured-society": {
+  "file": "healing-collective-trauma-in-a-fractured-society-93cd152d8b.mp3",
+  "duration": 323.22,
+  "hash": "93cd152d8bc58a7be4ff94e0b7e6b28a977b16ffa4ef851ebe988b5a440d38c4",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 3.58
+   },
+   {
+    "block": 1,
+    "start": 10.0
+   },
+   {
+    "block": 2,
+    "start": 22.51
+   },
+   {
+    "block": 3,
+    "start": 39.98
+   },
+   {
+    "block": 4,
+    "start": 57.96
+   },
+   {
+    "block": 5,
+    "start": 72.1
+   },
+   {
+    "block": 6,
+    "start": 95.9
+   },
+   {
+    "block": 7,
+    "start": 137.21
+   },
+   {
+    "block": 8,
+    "start": 158.48
+   },
+   {
+    "block": 9,
+    "start": 180.02
+   },
+   {
+    "block": 10,
+    "start": 189.97
+   },
+   {
+    "block": 11,
+    "start": 235.04
+   },
+   {
+    "block": 12,
+    "start": 242.82
+   },
+   {
+    "block": 13,
+    "start": 264.7
+   },
+   {
+    "block": 14,
+    "start": 272.57
+   },
+   {
+    "block": 15,
+    "start": 278.75
+   },
+   {
+    "block": 16,
+    "start": 305.75
+   }
+  ]
+ },
+ "if-youve-been-there-for-years-where-is-the-change": {
+  "file": "if-youve-been-there-for-years-where-is-the-change-dd2147d8a7.mp3",
+  "duration": 221.88,
+  "hash": "dd2147d8a7b00fefc14d68d651c0c1c90b0ce89fa98b2966a201dc57979a9b57",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 3.15
+   },
+   {
+    "block": 1,
+    "start": 25.57
+   },
+   {
+    "block": 2,
+    "start": 52.38
+   },
+   {
+    "block": 3,
+    "start": 72.15
+   },
+   {
+    "block": 4,
+    "start": 108.26
+   },
+   {
+    "block": 5,
+    "start": 137.86
+   },
+   {
+    "block": 6,
+    "start": 162.02
+   },
+   {
+    "block": 7,
+    "start": 192.82
+   },
+   {
+    "block": 8,
+    "start": 214.93
+   }
+  ]
+ },
+ "inherited-certainty": {
+  "file": "inherited-certainty-efa3bf2a1f.mp3",
+  "duration": 314.89,
+  "hash": "efa3bf2a1fc91402160870961e7c646d2285d2cbd3a4ba2020444220f700658c",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 1.89
+   },
+   {
+    "block": 1,
+    "start": 49.99
+   },
+   {
+    "block": 2,
+    "start": 91.13
+   },
+   {
+    "block": 3,
+    "start": 106.81
+   },
+   {
+    "block": 4,
+    "start": 165.11
+   },
+   {
+    "block": 5,
+    "start": 199.85
+   },
+   {
+    "block": 6,
+    "start": 273.37
+   },
+   {
+    "block": 7,
+    "start": 313.33
+   }
+  ]
+ },
+ "leave-one-chair-for-the-person-who-has-not-spoken": {
+  "file": "leave-one-chair-for-the-person-who-has-not-spoken-230f85b9c9.mp3",
+  "duration": 136.81,
+  "hash": "230f85b9c99989e56d4d37d3dc36f38c1e6ba27ff7a35f159cc4114e63770eea",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 3.37
+   },
+   {
+    "block": 1,
+    "start": 22.2
+   },
+   {
+    "block": 2,
+    "start": 44.34
+   },
+   {
+    "block": 3,
+    "start": 62.15
+   },
+   {
+    "block": 4,
+    "start": 86.37
+   },
+   {
+    "block": 5,
+    "start": 101.71
+   },
+   {
+    "block": 6,
+    "start": 119.15
+   },
+   {
+    "block": 7,
+    "start": 130.43
+   }
+  ]
+ },
+ "nobodys-asking-us": {
+  "file": "nobodys-asking-us-0b292372cc.mp3",
+  "duration": 213.12,
+  "hash": "0b292372cc8a92fd2099820a5cf573969d35832a1897ad6a2e27812cc026a2bf",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 1.98
+   },
+   {
+    "block": 1,
+    "start": 27.21
+   },
+   {
+    "block": 2,
+    "start": 53.57
+   },
+   {
+    "block": 3,
+    "start": 90.3
+   },
+   {
+    "block": 4,
+    "start": 115.19
+   },
+   {
+    "block": 5,
+    "start": 132.14
+   },
+   {
+    "block": 6,
+    "start": 154.9
+   },
+   {
+    "block": 7,
+    "start": 175.87
+   },
+   {
+    "block": 8,
+    "start": 207.49
+   }
+  ]
+ },
+ "northeastern-state-university-to-share-news-with-northeastern-journal-readers": {
+  "file": "northeastern-state-university-to-share-news-with-northeastern-journal-readers-dbce2eb97b.mp3",
+  "duration": 48.12,
+  "hash": "dbce2eb97b29913a65bf6e8d249639d5c590f954ffbe61243a8192e60af3a401",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 5.41
+   },
+   {
+    "block": 1,
+    "start": 14.37
+   },
+   {
+    "block": 2,
+    "start": 29.94
+   },
+   {
+    "block": 3,
+    "start": 39.57
+   }
+  ]
+ },
+ "nsu-broken-arrow-to-host-gazebo-glow-holiday-festival-dec-3": {
+  "file": "nsu-broken-arrow-to-host-gazebo-glow-holiday-festival-dec-3-fbc2def953.mp3",
+  "duration": 145.16,
+  "hash": "fbc2def95332e69c1a3bd6a28d1fec16ef89f2f115b2d05d6320e9cc0164e7ab",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 6.31
+   },
+   {
+    "block": 1,
+    "start": 24.25
+   },
+   {
+    "block": 2,
+    "start": 51.25
+   },
+   {
+    "block": 3,
+    "start": 59.97
+   },
+   {
+    "block": 4,
+    "start": 77.18
+   },
+   {
+    "block": 5,
+    "start": 97.33
+   },
+   {
+    "block": 6,
+    "start": 103.28
+   },
+   {
+    "block": 7,
+    "start": 125.46
+   },
+   {
+    "block": 8,
+    "start": 133.67
+   }
+  ]
+ },
+ "nsu-honored-as-a-purple-heart-university-on-veterans-day": {
+  "file": "nsu-honored-as-a-purple-heart-university-on-veterans-day-fbc4f5f891.mp3",
+  "duration": 188.01,
+  "hash": "fbc4f5f891b344988b392a61f1cb9c89e2a5e36a99ec1a0698eb4f7319de6992",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 4.92
+   },
+   {
+    "block": 1,
+    "start": 23.01
+   },
+   {
+    "block": 2,
+    "start": 34.87
+   },
+   {
+    "block": 3,
+    "start": 53.25
+   },
+   {
+    "block": 4,
+    "start": 68.45
+   },
+   {
+    "block": 5,
+    "start": 82.66
+   },
+   {
+    "block": 6,
+    "start": 95.56
+   },
+   {
+    "block": 7,
+    "start": 105.71
+   },
+   {
+    "block": 8,
+    "start": 127.04
+   },
+   {
+    "block": 9,
+    "start": 137.83
+   },
+   {
+    "block": 10,
+    "start": 155.8
+   },
+   {
+    "block": 11,
+    "start": 180.46
+   }
+  ]
+ },
+ "nsu-to-kick-off-holiday-season-with-lights-on-ceremony-dec-1": {
+  "file": "nsu-to-kick-off-holiday-season-with-lights-on-ceremony-dec-1-d1a25db1d6.mp3",
+  "duration": 135.59,
+  "hash": "d1a25db1d69c81452a23f905bfa9e2adb8da235c04a31327edd75cff25840feb",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 5.5
+   },
+   {
+    "block": 1,
+    "start": 20.36
+   },
+   {
+    "block": 2,
+    "start": 36.02
+   },
+   {
+    "block": 3,
+    "start": 46.42
+   },
+   {
+    "block": 4,
+    "start": 69.18
+   },
+   {
+    "block": 5,
+    "start": 80.01
+   },
+   {
+    "block": 6,
+    "start": 106.44
+   },
+   {
+    "block": 7,
+    "start": 113.81
+   },
+   {
+    "block": 8,
+    "start": 130.77
+   }
+  ]
+ },
+ "oklahomas-ai-workforce-plan-needs-a-front-desk-test": {
+  "file": "oklahomas-ai-workforce-plan-needs-a-front-desk-test-1e17056a55.mp3",
+  "duration": 297.92,
+  "hash": "1e17056a55a2f5aab1244fc647f48a490d55493dd747c4470fbb741a33eacaf1",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 4.2
+   },
+   {
+    "block": 1,
+    "start": 30.43
+   },
+   {
+    "block": 2,
+    "start": 53.47
+   },
+   {
+    "block": 3,
+    "start": 85.8
+   },
+   {
+    "block": 4,
+    "start": 117.4
+   },
+   {
+    "block": 5,
+    "start": 142.53
+   },
+   {
+    "block": 6,
+    "start": 171.92
+   },
+   {
+    "block": 7,
+    "start": 198.24
+   },
+   {
+    "block": 8,
+    "start": 228.07
+   },
+   {
+    "block": 9,
+    "start": 252.88
+   },
+   {
+    "block": 10,
+    "start": 276.32
+   }
+  ]
+ },
+ "on-being-someones-twin": {
+  "file": "on-being-someones-twin-5548401737.mp3",
+  "duration": 227.17,
+  "hash": "55484017372d767e72edc3de3308ff64faf438b449cc0c0ed48062ee297a8e16",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.11
+   },
+   {
+    "block": 1,
+    "start": 24.91
+   },
+   {
+    "block": 2,
+    "start": 62.46
+   },
+   {
+    "block": 3,
+    "start": 92.45
+   },
+   {
+    "block": 4,
+    "start": 120.75
+   },
+   {
+    "block": 5,
+    "start": 160.95
+   },
+   {
+    "block": 6,
+    "start": 202.2
+   }
+  ]
+ },
+ "one-state-two-states-red-state-blue-state": {
+  "file": "one-state-two-states-red-state-blue-state-8c4dcf3629.mp3",
+  "duration": 502.6,
+  "hash": "8c4dcf3629b9a5a41ee32fc22ce1b27f75e33c60d9699ccbc5e42a40c08778d9",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 3.43
+   },
+   {
+    "block": 1,
+    "start": 27.0
+   },
+   {
+    "block": 2,
+    "start": 41.5
+   },
+   {
+    "block": 3,
+    "start": 45.87
+   },
+   {
+    "block": 4,
+    "start": 48.61
+   },
+   {
+    "block": 5,
+    "start": 71.99
+   },
+   {
+    "block": 6,
+    "start": 87.05
+   },
+   {
+    "block": 7,
+    "start": 88.92
+   },
+   {
+    "block": 8,
+    "start": 104.12
+   },
+   {
+    "block": 9,
+    "start": 107.7
+   },
+   {
+    "block": 10,
+    "start": 137.39
+   },
+   {
+    "block": 11,
+    "start": 148.39
+   },
+   {
+    "block": 12,
+    "start": 151.18
+   },
+   {
+    "block": 13,
+    "start": 155.7
+   },
+   {
+    "block": 14,
+    "start": 178.65
+   },
+   {
+    "block": 15,
+    "start": 190.03
+   },
+   {
+    "block": 16,
+    "start": 192.95
+   },
+   {
+    "block": 17,
+    "start": 199.3
+   },
+   {
+    "block": 18,
+    "start": 203.84
+   },
+   {
+    "block": 19,
+    "start": 206.76
+   },
+   {
+    "block": 20,
+    "start": 214.79
+   },
+   {
+    "block": 21,
+    "start": 223.47
+   },
+   {
+    "block": 22,
+    "start": 232.43
+   },
+   {
+    "block": 23,
+    "start": 246.03
+   },
+   {
+    "block": 24,
+    "start": 256.82
+   },
+   {
+    "block": 25,
+    "start": 258.78
+   },
+   {
+    "block": 26,
+    "start": 271.68
+   },
+   {
+    "block": 27,
+    "start": 280.81
+   },
+   {
+    "block": 28,
+    "start": 291.81
+   },
+   {
+    "block": 29,
+    "start": 301.81
+   },
+   {
+    "block": 30,
+    "start": 307.37
+   },
+   {
+    "block": 31,
+    "start": 309.5
+   },
+   {
+    "block": 32,
+    "start": 324.0
+   },
+   {
+    "block": 33,
+    "start": 326.13
+   },
+   {
+    "block": 34,
+    "start": 336.96
+   },
+   {
+    "block": 35,
+    "start": 355.37
+   },
+   {
+    "block": 36,
+    "start": 373.09
+   },
+   {
+    "block": 37,
+    "start": 394.52
+   },
+   {
+    "block": 38,
+    "start": 398.74
+   },
+   {
+    "block": 39,
+    "start": 401.32
+   },
+   {
+    "block": 40,
+    "start": 407.88
+   },
+   {
+    "block": 41,
+    "start": 415.22
+   },
+   {
+    "block": 42,
+    "start": 419.46
+   },
+   {
+    "block": 43,
+    "start": 421.97
+   },
+   {
+    "block": 44,
+    "start": 426.57
+   },
+   {
+    "block": 45,
+    "start": 429.19
+   },
+   {
+    "block": 46,
+    "start": 432.21
+   },
+   {
+    "block": 47,
+    "start": 434.45
+   },
+   {
+    "block": 48,
+    "start": 460.19
+   },
+   {
+    "block": 49,
+    "start": 463.3
+   },
+   {
+    "block": 50,
+    "start": 472.09
+   },
+   {
+    "block": 51,
+    "start": 486.52
+   },
+   {
+    "block": 52,
+    "start": 496.2
+   }
+  ]
+ },
+ "rsu-presidents-leadership-class-receives-hands-of-hope-award": {
+  "file": "rsu-presidents-leadership-class-receives-hands-of-hope-award-1809bbe363.mp3",
+  "duration": 130.2,
+  "hash": "1809bbe363881a0f4c079d5aae04da75d359af1ac8cdd15139c63d8ae570fcc8",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 4.84
+   },
+   {
+    "block": 1,
+    "start": 17.95
+   },
+   {
+    "block": 2,
+    "start": 35.19
+   },
+   {
+    "block": 3,
+    "start": 59.29
+   },
+   {
+    "block": 4,
+    "start": 78.99
+   },
+   {
+    "block": 5,
+    "start": 103.71
+   },
+   {
+    "block": 6,
+    "start": 110.79
+   }
+  ]
+ },
+ "rsu-student-theatre-organization-to-stage-greater-tuna-nov-12-14": {
+  "file": "rsu-student-theatre-organization-to-stage-greater-tuna-nov-12-14-c66e34dd8a.mp3",
+  "duration": 116.48,
+  "hash": "c66e34dd8a509f46c1b6e924bd0a425b647fb8f0f3818cbf384dad695be27c5a",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 6.89
+   },
+   {
+    "block": 1,
+    "start": 20.53
+   },
+   {
+    "block": 2,
+    "start": 38.56
+   },
+   {
+    "block": 3,
+    "start": 51.12
+   },
+   {
+    "block": 4,
+    "start": 60.58
+   },
+   {
+    "block": 5,
+    "start": 80.01
+   },
+   {
+    "block": 6,
+    "start": 107.14
+   }
+  ]
+ },
+ "rural-young-and-politically-homeless": {
+  "file": "rural-young-and-politically-homeless-6fca30d350.mp3",
+  "duration": 221.4,
+  "hash": "6fca30d35077a9f7afe530e99b504d1a2cc0a3dc02585639759b5e7c5895581e",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 3.11
+   },
+   {
+    "block": 1,
+    "start": 21.96
+   },
+   {
+    "block": 2,
+    "start": 38.3
+   },
+   {
+    "block": 3,
+    "start": 65.32
+   },
+   {
+    "block": 4,
+    "start": 91.6
+   },
+   {
+    "block": 5,
+    "start": 111.59
+   },
+   {
+    "block": 6,
+    "start": 127.47
+   },
+   {
+    "block": 7,
+    "start": 149.38
+   },
+   {
+    "block": 8,
+    "start": 171.22
+   },
+   {
+    "block": 9,
+    "start": 192.74
+   },
+   {
+    "block": 10,
+    "start": 215.69
+   }
+  ]
+ },
+ "shame-on-you-cornell": {
+  "file": "shame-on-you-cornell-8f316878fa.mp3",
+  "duration": 263.01,
+  "hash": "8f316878faf1b538ada834f3d8aa3348ab6ffd0ab046381520f811c6d8ac5e00",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 1.94
+   },
+   {
+    "block": 1,
+    "start": 8.55
+   },
+   {
+    "block": 2,
+    "start": 47.0
+   },
+   {
+    "block": 3,
+    "start": 61.22
+   },
+   {
+    "block": 4,
+    "start": 93.55
+   },
+   {
+    "block": 5,
+    "start": 108.69
+   },
+   {
+    "block": 6,
+    "start": 148.64
+   },
+   {
+    "block": 7,
+    "start": 168.62
+   },
+   {
+    "block": 8,
+    "start": 195.2
+   },
+   {
+    "block": 9,
+    "start": 223.18
+   },
+   {
+    "block": 10,
+    "start": 239.86
+   },
+   {
+    "block": 11,
+    "start": 250.37
+   },
+   {
+    "block": 12,
+    "start": 261.46
+   }
+  ]
+ },
+ "six-cameras-zero-warrants": {
+  "file": "six-cameras-zero-warrants-30d24cf41a.mp3",
+  "duration": 336.74,
+  "hash": "30d24cf41a29bb241de4cad1983dc504d0659d8ba8ee51b5b17515f7da06f036",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.62
+   },
+   {
+    "block": 1,
+    "start": 23.09
+   },
+   {
+    "block": 2,
+    "start": 40.33
+   },
+   {
+    "block": 3,
+    "start": 80.14
+   },
+   {
+    "block": 4,
+    "start": 94.52
+   },
+   {
+    "block": 5,
+    "start": 147.79
+   },
+   {
+    "block": 6,
+    "start": 211.9
+   },
+   {
+    "block": 7,
+    "start": 250.4
+   },
+   {
+    "block": 8,
+    "start": 288.4
+   },
+   {
+    "block": 9,
+    "start": 317.72
+   },
+   {
+    "block": 10,
+    "start": 332.01
+   }
+  ]
+ },
+ "text": {
+  "file": "text-58a74aba99.mp3",
+  "duration": 483.57,
+  "hash": "58a74aba99f32a3f7f9cecc86cbb6fd45ada4b85e4fc7b98eeee5886f07ec196",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 1.79
+   },
+   {
+    "block": 1,
+    "start": 14.54
+   },
+   {
+    "block": 2,
+    "start": 16.97
+   },
+   {
+    "block": 3,
+    "start": 34.65
+   },
+   {
+    "block": 4,
+    "start": 39.25
+   },
+   {
+    "block": 5,
+    "start": 46.95
+   },
+   {
+    "block": 6,
+    "start": 70.68
+   },
+   {
+    "block": 7,
+    "start": 91.22
+   },
+   {
+    "block": 8,
+    "start": 95.21
+   },
+   {
+    "block": 9,
+    "start": 107.7
+   },
+   {
+    "block": 10,
+    "start": 144.04
+   },
+   {
+    "block": 11,
+    "start": 160.64
+   },
+   {
+    "block": 12,
+    "start": 185.78
+   },
+   {
+    "block": 13,
+    "start": 199.98
+   },
+   {
+    "block": 14,
+    "start": 210.39
+   },
+   {
+    "block": 15,
+    "start": 220.65
+   },
+   {
+    "block": 16,
+    "start": 239.76
+   },
+   {
+    "block": 17,
+    "start": 242.08
+   },
+   {
+    "block": 18,
+    "start": 262.06
+   },
+   {
+    "block": 19,
+    "start": 268.99
+   },
+   {
+    "block": 20,
+    "start": 279.73
+   },
+   {
+    "block": 21,
+    "start": 294.15
+   },
+   {
+    "block": 22,
+    "start": 307.9
+   },
+   {
+    "block": 23,
+    "start": 325.67
+   },
+   {
+    "block": 24,
+    "start": 342.18
+   },
+   {
+    "block": 25,
+    "start": 359.98
+   },
+   {
+    "block": 26,
+    "start": 374.53
+   },
+   {
+    "block": 27,
+    "start": 394.28
+   },
+   {
+    "block": 28,
+    "start": 402.64
+   },
+   {
+    "block": 29,
+    "start": 423.17
+   },
+   {
+    "block": 30,
+    "start": 433.52
+   },
+   {
+    "block": 31,
+    "start": 454.35
+   },
+   {
+    "block": 32,
+    "start": 472.16
+   }
+  ]
+ },
+ "the-future-feels-different-now": {
+  "file": "the-future-feels-different-now-821a215fd1.mp3",
+  "duration": 273.31,
+  "hash": "821a215fd16fcd55d6f100579cdab4dbd7891515190c3126b26ceb73ed7c6ec1",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.26
+   },
+   {
+    "block": 1,
+    "start": 52.04
+   },
+   {
+    "block": 2,
+    "start": 91.37
+   },
+   {
+    "block": 3,
+    "start": 127.19
+   },
+   {
+    "block": 4,
+    "start": 179.02
+   },
+   {
+    "block": 5,
+    "start": 210.65
+   },
+   {
+    "block": 6,
+    "start": 236.97
+   }
+  ]
+ },
+ "the-social-security-question-congress-doesnt-have-to-answer": {
+  "file": "the-social-security-question-congress-doesnt-have-to-answer-3332bb050e.mp3",
+  "duration": 279.45,
+  "hash": "3332bb050e8ac51a1129f8c8c8255d91373053bf0544c5e108c4229299ea907f",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 4.24
+   },
+   {
+    "block": 1,
+    "start": 20.56
+   },
+   {
+    "block": 2,
+    "start": 36.91
+   },
+   {
+    "block": 3,
+    "start": 60.72
+   },
+   {
+    "block": 4,
+    "start": 95.26
+   },
+   {
+    "block": 5,
+    "start": 102.77
+   },
+   {
+    "block": 6,
+    "start": 108.97
+   },
+   {
+    "block": 7,
+    "start": 110.72
+   },
+   {
+    "block": 8,
+    "start": 125.69
+   },
+   {
+    "block": 9,
+    "start": 138.76
+   },
+   {
+    "block": 10,
+    "start": 145.75
+   },
+   {
+    "block": 11,
+    "start": 166.93
+   },
+   {
+    "block": 12,
+    "start": 189.22
+   },
+   {
+    "block": 13,
+    "start": 195.72
+   },
+   {
+    "block": 14,
+    "start": 214.08
+   },
+   {
+    "block": 15,
+    "start": 236.37
+   },
+   {
+    "block": 16,
+    "start": 247.39
+   },
+   {
+    "block": 17,
+    "start": 266.44
+   }
+  ]
+ },
+ "the-strange-experience-of-outgrowing-yourself": {
+  "file": "the-strange-experience-of-outgrowing-yourself-34ae1281d9.mp3",
+  "duration": 251.84,
+  "hash": "34ae1281d9298450a68d767f362d24572868d483b80ec5af6a5b623fe6db2988",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 3.13
+   },
+   {
+    "block": 1,
+    "start": 31.3
+   },
+   {
+    "block": 2,
+    "start": 51.58
+   },
+   {
+    "block": 3,
+    "start": 65.25
+   },
+   {
+    "block": 4,
+    "start": 85.84
+   },
+   {
+    "block": 5,
+    "start": 123.56
+   },
+   {
+    "block": 6,
+    "start": 137.15
+   },
+   {
+    "block": 7,
+    "start": 145.46
+   },
+   {
+    "block": 8,
+    "start": 184.3
+   },
+   {
+    "block": 9,
+    "start": 204.32
+   },
+   {
+    "block": 10,
+    "start": 227.3
+   }
+  ]
+ },
+ "they": {
+  "file": "they-91ce0f8022.mp3",
+  "duration": 168.3,
+  "hash": "91ce0f8022e948c81cdbb790bb26c7addb7b461e39696c75e74e098efb2f5012",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 1.25
+   },
+   {
+    "block": 1,
+    "start": 8.76
+   },
+   {
+    "block": 2,
+    "start": 14.21
+   },
+   {
+    "block": 3,
+    "start": 26.56
+   },
+   {
+    "block": 4,
+    "start": 43.67
+   },
+   {
+    "block": 5,
+    "start": 60.66
+   },
+   {
+    "block": 6,
+    "start": 86.98
+   },
+   {
+    "block": 7,
+    "start": 102.19
+   },
+   {
+    "block": 8,
+    "start": 123.0
+   },
+   {
+    "block": 9,
+    "start": 139.0
+   },
+   {
+    "block": 10,
+    "start": 150.04
+   }
+  ]
+ },
+ "two-people-one-beginning": {
+  "file": "two-people-one-beginning-fc5eb6af06.mp3",
+  "duration": 234.93,
+  "hash": "fc5eb6af06000559b85a885c0c71286f4c49df7e2bb60ad5b420f9f2b4576ee1",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.36
+   },
+   {
+    "block": 1,
+    "start": 6.5
+   },
+   {
+    "block": 2,
+    "start": 30.43
+   },
+   {
+    "block": 3,
+    "start": 35.71
+   },
+   {
+    "block": 4,
+    "start": 62.76
+   },
+   {
+    "block": 5,
+    "start": 82.1
+   },
+   {
+    "block": 6,
+    "start": 92.53
+   },
+   {
+    "block": 7,
+    "start": 108.03
+   },
+   {
+    "block": 8,
+    "start": 118.44
+   },
+   {
+    "block": 9,
+    "start": 131.7
+   },
+   {
+    "block": 10,
+    "start": 141.92
+   },
+   {
+    "block": 11,
+    "start": 162.18
+   },
+   {
+    "block": 12,
+    "start": 173.8
+   },
+   {
+    "block": 13,
+    "start": 188.79
+   },
+   {
+    "block": 14,
+    "start": 191.32
+   },
+   {
+    "block": 15,
+    "start": 210.09
+   },
+   {
+    "block": 16,
+    "start": 226.47
+   }
+  ]
+ },
+ "weve-forgotten-how-to-disagree": {
+  "file": "weve-forgotten-how-to-disagree-4a95aec530.mp3",
+  "duration": 149.11,
+  "hash": "4a95aec530c225db8287b958204371a543d6df2d554e23028eb235887cfb63c9",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.39
+   },
+   {
+    "block": 1,
+    "start": 28.79
+   },
+   {
+    "block": 2,
+    "start": 38.83
+   },
+   {
+    "block": 3,
+    "start": 75.73
+   },
+   {
+    "block": 4,
+    "start": 104.88
+   },
+   {
+    "block": 5,
+    "start": 129.24
+   },
+   {
+    "block": 6,
+    "start": 143.78
+   }
+  ]
+ },
+ "what-oklahoma-almost-had": {
+  "file": "what-oklahoma-almost-had-603c89a422.mp3",
+  "duration": 299.78,
+  "hash": "603c89a42282fecd2d2a9e7a1d8a0506cee3061404e71cdbe4bf121dcf56ee80",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.34
+   },
+   {
+    "block": 1,
+    "start": 28.17
+   },
+   {
+    "block": 2,
+    "start": 47.77
+   },
+   {
+    "block": 3,
+    "start": 49.71
+   },
+   {
+    "block": 4,
+    "start": 56.91
+   },
+   {
+    "block": 5,
+    "start": 78.33
+   },
+   {
+    "block": 6,
+    "start": 113.58
+   },
+   {
+    "block": 7,
+    "start": 127.72
+   },
+   {
+    "block": 8,
+    "start": 161.58
+   },
+   {
+    "block": 9,
+    "start": 163.18
+   },
+   {
+    "block": 10,
+    "start": 204.9
+   },
+   {
+    "block": 11,
+    "start": 206.34
+   },
+   {
+    "block": 12,
+    "start": 228.67
+   },
+   {
+    "block": 13,
+    "start": 230.44
+   },
+   {
+    "block": 14,
+    "start": 253.68
+   },
+   {
+    "block": 15,
+    "start": 266.5
+   },
+   {
+    "block": 16,
+    "start": 284.31
+   },
+   {
+    "block": 17,
+    "start": 293.54
+   },
+   {
+    "block": 18,
+    "start": 298.23
+   }
+  ]
+ },
+ "what-veterans-day-means-when-youre-fifteen": {
+  "file": "what-veterans-day-means-when-youre-fifteen-32407701a7.mp3",
+  "duration": 239.36,
+  "hash": "32407701a718fdb0534f0110dc4bcb182b1b0f0b969f10f1e5c695a892bdea2d",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 3.05
+   },
+   {
+    "block": 1,
+    "start": 23.71
+   },
+   {
+    "block": 2,
+    "start": 46.17
+   },
+   {
+    "block": 3,
+    "start": 78.01
+   },
+   {
+    "block": 4,
+    "start": 101.09
+   },
+   {
+    "block": 5,
+    "start": 137.56
+   },
+   {
+    "block": 6,
+    "start": 172.11
+   },
+   {
+    "block": 7,
+    "start": 200.87
+   },
+   {
+    "block": 8,
+    "start": 232.35
+   }
+  ]
+ },
+ "where-do-i-belong": {
+  "file": "where-do-i-belong-219d036e10.mp3",
+  "duration": 225.38,
+  "hash": "219d036e1076caa095b9a6c26c01f9fdab5a58a51e4b20169dfbbb76245e4758",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 1.79
+   },
+   {
+    "block": 1,
+    "start": 5.52
+   },
+   {
+    "block": 2,
+    "start": 22.66
+   },
+   {
+    "block": 3,
+    "start": 43.56
+   },
+   {
+    "block": 4,
+    "start": 64.29
+   },
+   {
+    "block": 5,
+    "start": 84.68
+   },
+   {
+    "block": 6,
+    "start": 99.72
+   },
+   {
+    "block": 7,
+    "start": 104.28
+   },
+   {
+    "block": 8,
+    "start": 105.38
+   },
+   {
+    "block": 9,
+    "start": 110.05
+   },
+   {
+    "block": 10,
+    "start": 114.63
+   },
+   {
+    "block": 11,
+    "start": 127.04
+   },
+   {
+    "block": 12,
+    "start": 154.85
+   },
+   {
+    "block": 13,
+    "start": 180.98
+   },
+   {
+    "block": 14,
+    "start": 184.5
+   },
+   {
+    "block": 15,
+    "start": 185.96
+   },
+   {
+    "block": 16,
+    "start": 212.5
+   }
+  ]
+ },
+ "who-what-when-where-why-and-how": {
+  "file": "who-what-when-where-why-and-how-84608ea0f3.mp3",
+  "duration": 103.94,
+  "hash": "84608ea0f30fccc6bec384f434731a10abacd44b4840763d2d2dcc27e765e680",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.81
+   },
+   {
+    "block": 1,
+    "start": 11.96
+   },
+   {
+    "block": 2,
+    "start": 22.71
+   },
+   {
+    "block": 3,
+    "start": 45.61
+   },
+   {
+    "block": 4,
+    "start": 58.26
+   },
+   {
+    "block": 5,
+    "start": 74.57
+   },
+   {
+    "block": 6,
+    "start": 92.74
+   }
+  ]
+ }
+}

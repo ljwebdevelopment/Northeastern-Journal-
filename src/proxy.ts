@@ -62,6 +62,6 @@ export const config = {
      * Everything except static assets and image files — the session cookie
      * only matters for rendered pages and route handlers.
      */
-    "/((?!_next/static|_next/image|favicon.ico|icon.svg|logo-mark.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon.svg|logo-mark.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|txt|xml|mp3)$).*)",
   ],
 };

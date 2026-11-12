@@ -23,6 +23,7 @@ import { ReadingProgress } from "@/components/article/reading-progress";
 import { ReaderControls } from "@/components/article/reader-controls";
 import { LikeButton } from "@/components/article/like-button";
 import { ListenButton } from "@/components/article/listen-button";
+import { ImageLightbox } from "@/components/article/image-lightbox";
 import { AuthorSubscribe } from "@/components/shared/author-subscribe";
 import { CommentSection } from "@/components/article/comment-section";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
@@ -140,6 +141,9 @@ export default async function ArticlePage({
     <article className="content-container py-8 sm:py-10">
       <WidgetBoundary>
         <ReadingProgress targetId="article-body" />
+      </WidgetBoundary>
+      <WidgetBoundary>
+        <ImageLightbox />
       </WidgetBoundary>
       {/* Placeholder archive entries have no row to count against. */}
       {!article.isDemo && (
@@ -292,7 +296,7 @@ export default async function ArticlePage({
       {/* ---------------------------------------------------------------- */}
       {/* Lead image                                                        */}
       {/* ---------------------------------------------------------------- */}
-      <figure className="mx-auto mt-8 max-w-4xl">
+      <figure data-zoomable className="mx-auto mt-8 max-w-4xl">
         <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-surface-muted">
           <Image
             src={article.image}
@@ -316,6 +320,7 @@ export default async function ArticlePage({
       {/* ---------------------------------------------------------------- */}
       <div
         id="article-body"
+        data-zoomable
         className={cn(ARTICLE_PROSE_CLASS, "mt-10")}
         // Sanitized on write in `sanitizeArticleHtml` — see lib/richtext.ts.
         dangerouslySetInnerHTML={{ __html: article.bodyHtml }}

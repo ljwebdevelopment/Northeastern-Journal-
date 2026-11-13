@@ -75,6 +75,17 @@ export async function GET(request: NextRequest) {
     const category = joined?.category as unknown as { slug: string; name: string } | null;
     const author = joined?.author as unknown as { name: string } | null;
 
+    // Only followers of the lead author or a co-author are emailed. A
+    // database without migration 0018 errors here and keeps the lead alone.
+    const { data: coRows } = await supabase
+      .from("article_coauthors")
+      .select("author_id")
+      .eq("article_id", article.id);
+    const authorIds = [
+      article.author_id,
+      ...((coRows ?? []) as { author_id: string }[]).map((r) => r.author_id),
+    ].filter((id): id is string => Boolean(id));
+
     // Stamp first so a retried cron run can't double-send.
     await supabase
       .from("articles")
@@ -83,6 +94,7 @@ export async function GET(request: NextRequest) {
 
     const result = await sendArticleAnnouncement({
       articleId: article.id,
+      authorIds,
       title: article.title,
       excerpt: article.excerpt,
       url: `${emailConfig.siteUrl}/article/${category?.slug ?? "local-news"}/${article.slug}`,

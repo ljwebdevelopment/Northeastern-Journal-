@@ -8,25 +8,37 @@ import type { EditorArticle } from "@/components/admin/article-editor";
 export async function loadEditorContext(isAdmin: boolean) {
   const supabase = await createServerSupabase();
   if (!supabase) {
-    return { categories: [], authors: [], subscriberCount: 0, emailReady: false };
+    return {
+      categories: [],
+      authors: [],
+      authorSubscriberCounts: {} as Record<string, number>,
+      emailReady: false,
+    };
   }
 
-  const [{ data: categories }, { data: authors }, subscriberCount] = await Promise.all([
+  const [{ data: categories }, { data: authors }, authorSubscriberCounts] = await Promise.all([
     supabase.from("categories").select("slug, name").order("sort_order"),
     supabase.from("authors").select("slug, name").eq("is_active", true).order("name"),
+    // Announcements go only to an author's followers, so the editor shows
+    // that number rather than the size of the whole list.
     isAdmin
       ? supabase
-          .from("subscribers")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "confirmed")
-          .then((r) => r.count ?? 0)
-      : Promise.resolve(0),
+          .rpc("author_subscriber_counts")
+          .then(({ data }) =>
+            Object.fromEntries(
+              ((data ?? []) as { author_slug: string; subscribers: number }[]).map((r) => [
+                r.author_slug,
+                r.subscribers,
+              ])
+            ) as Record<string, number>
+          )
+      : Promise.resolve({} as Record<string, number>),
   ]);
 
   return {
     categories: categories ?? [],
     authors: authors ?? [],
-    subscriberCount,
+    authorSubscriberCounts,
     emailReady: isResendConfigured,
   };
 }

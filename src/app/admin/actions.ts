@@ -398,7 +398,7 @@ async function announceIfUnsent(articleId: string, userId: string) {
   const { data: article } = await supabase
     .from("articles")
     .select(
-      `id, slug, title, excerpt, published_at, notified_at, reading_minutes,
+      `id, slug, title, excerpt, published_at, notified_at, reading_minutes, author_id,
        featured_image_url, featured_image_alt,
        category:categories(slug, name),
        author:authors!articles_author_id_fkey(name)`
@@ -418,13 +418,20 @@ async function announceIfUnsent(articleId: string, userId: string) {
   // returns an error here, which just leaves the single byline.
   const { data: coRows } = await supabase
     .from("article_coauthors")
-    .select("position, author:authors(name)")
+    .select("position, author_id, author:authors(name)")
     .eq("article_id", articleId)
     .order("position");
-  const names = [
-    author?.name,
-    ...((coRows ?? []) as unknown as { author: { name: string } | null }[]).map((r) => r.author?.name),
-  ].filter((n): n is string => Boolean(n));
+  const coAuthors = (coRows ?? []) as unknown as {
+    author_id: string;
+    author: { name: string } | null;
+  }[];
+  const names = [author?.name, ...coAuthors.map((r) => r.author?.name)].filter(
+    (n): n is string => Boolean(n)
+  );
+  // Only readers following someone on the byline are emailed.
+  const authorIds = [article.author_id, ...coAuthors.map((r) => r.author_id)].filter(
+    (id): id is string => Boolean(id)
+  );
   const authorName =
     names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0] ?? null;
 
@@ -433,6 +440,7 @@ async function announceIfUnsent(articleId: string, userId: string) {
   const result = await sendArticleAnnouncement({
     articleId: article.id,
     sentBy: userId,
+    authorIds,
     title: article.title,
     excerpt: article.excerpt,
     url: `${emailConfig.siteUrl}/article/${category?.slug ?? "local-news"}/${article.slug}`,

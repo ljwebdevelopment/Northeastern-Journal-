@@ -94,7 +94,9 @@ export async function GET(request: NextRequest) {
 
     const result = await sendArticleAnnouncement({
       articleId: article.id,
-      authorIds,
+      // "all" sends to everyone; anything else (including a database without
+      // migration 0020) keeps it to the byline's followers.
+      authorIds: (article as { notify_audience?: string }).notify_audience === "all" ? null : authorIds,
       title: article.title,
       excerpt: article.excerpt,
       url: `${emailConfig.siteUrl}/article/${category?.slug ?? "local-news"}/${article.slug}`,

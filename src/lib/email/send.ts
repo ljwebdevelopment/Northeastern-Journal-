@@ -323,16 +323,19 @@ async function broadcast(options: BroadcastOptions): Promise<SendResult> {
 }
 
 /**
- * Emails a published article to the confirmed subscribers who follow its
- * author or any co-author. Readers who only subscribed to the paper as a
- * whole get it in the newsletter instead.
+ * Emails a published article. With `authorIds` it goes only to readers who
+ * follow someone on the byline; with `null` it goes to every confirmed
+ * subscriber (still honouring section and frequency preferences).
  */
 export async function sendArticleAnnouncement(
   article: ArticleAnnouncement & {
     articleId?: string;
     sentBy?: string;
-    /** Lead author plus co-authors. Only their followers are emailed. */
-    authorIds: string[];
+    /**
+     * Lead author plus co-authors. When set, only their followers are
+     * emailed; `null` sends to every confirmed subscriber.
+     */
+    authorIds: string[] | null;
     /** Used to respect section follows. Omit and everyone eligible gets it. */
     categorySlug?: string | null;
   }
@@ -345,7 +348,7 @@ export async function sendArticleAnnouncement(
     noun: "Announcement",
     categorySlug: article.categorySlug ?? null,
     respectFrequency: true,
-    authorIds: article.authorIds,
+    authorIds: article.authorIds ?? undefined,
   });
 }
 

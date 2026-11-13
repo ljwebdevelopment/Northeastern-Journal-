@@ -12,11 +12,13 @@ export async function loadEditorContext(isAdmin: boolean) {
       categories: [],
       authors: [],
       authorSubscriberCounts: {} as Record<string, number>,
+      subscriberCount: 0,
       emailReady: false,
     };
   }
 
-  const [{ data: categories }, { data: authors }, authorSubscriberCounts] = await Promise.all([
+  const [{ data: categories }, { data: authors }, authorSubscriberCounts, subscriberCount] =
+    await Promise.all([
     supabase.from("categories").select("slug, name").order("sort_order"),
     supabase.from("authors").select("slug, name").eq("is_active", true).order("name"),
     // Announcements go only to an author's followers, so the editor shows
@@ -33,12 +35,21 @@ export async function loadEditorContext(isAdmin: boolean) {
             ) as Record<string, number>
           )
       : Promise.resolve({} as Record<string, number>),
+    // For the "All subscribers" option.
+    isAdmin
+      ? supabase
+          .from("subscribers")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "confirmed")
+          .then((r) => r.count ?? 0)
+      : Promise.resolve(0),
   ]);
 
   return {
     categories: categories ?? [],
     authors: authors ?? [],
     authorSubscriberCounts,
+    subscriberCount,
     emailReady: isResendConfigured,
   };
 }
@@ -68,6 +79,7 @@ export const blankArticle = (authorSlug: string): EditorArticle => ({
   isBreaking: false,
   isTrending: false,
   notifySubscribers: false,
+  notifyAudience: "author",
   notifiedAt: null,
 });
 

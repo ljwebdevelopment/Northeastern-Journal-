@@ -30,6 +30,7 @@ export default async function NewArticlePage() {
       authors={context.authors}
       canPublish={canPublish(user.profile.role)}
       authorSubscriberCounts={context.authorSubscriberCounts}
+        subscriberCount={context.subscriberCount}
       emailReady={context.emailReady}
     />
   );

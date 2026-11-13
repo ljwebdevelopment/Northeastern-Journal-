@@ -53,6 +53,8 @@ export interface EditorArticle {
   isBreaking: boolean;
   isTrending: boolean;
   notifySubscribers: boolean;
+  /** Byline followers only, or every confirmed subscriber. */
+  notifyAudience: "author" | "all";
   notifiedAt: string | null;
   updatedAt?: string | null;
   /** Powers the shareable /preview/<token> link. */
@@ -72,6 +74,7 @@ export function ArticleEditor({
   authors,
   canPublish,
   authorSubscriberCounts,
+  subscriberCount,
   emailReady,
 }: {
   article: EditorArticle;
@@ -80,6 +83,8 @@ export function ArticleEditor({
   canPublish: boolean;
   /** Confirmed followers per author slug. Announcements only reach these. */
   authorSubscriberCounts: Record<string, number>;
+  /** Every confirmed subscriber, for the "All subscribers" audience. */
+  subscriberCount: number;
   emailReady: boolean;
 }) {
   const [state, formAction, pending] = useActionState(saveArticle, initialState);
@@ -99,6 +104,7 @@ export function ArticleEditor({
   const [imageUrl, setImageUrl] = useState(article.featuredImageUrl);
   const [imageAlt, setImageAlt] = useState(article.featuredImageAlt);
   const [notify, setNotify] = useState(article.notifySubscribers);
+  const [audience, setAudience] = useState(article.notifyAudience);
   const [scheduledFor, setScheduledFor] = useState(
     article.scheduledFor ? toLocalInput(article.scheduledFor) : ""
   );
@@ -124,7 +130,7 @@ export function ArticleEditor({
   const [coAuthors, setCoAuthors] = useState<string[]>(article.coAuthorSlugs);
   // Followers can overlap across co-authors, so with a shared byline this is
   // an upper bound; the send itself de-duplicates.
-  const subscriberCount = [leadSlug, ...coAuthors].reduce(
+  const followerCount = [leadSlug, ...coAuthors].reduce(
     (sum, slug) => sum + (authorSubscriberCounts[slug] ?? 0),
     0
   );
@@ -636,16 +642,62 @@ export function ArticleEditor({
                 className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
               />
               <span className="text-sm">
-                <span className="font-semibold">Notify the author&rsquo;s subscribers</span>
+                <span className="font-semibold">Notify subscribers</span>
                 <span className="mt-0.5 block text-xs leading-relaxed text-muted">
                   {article.notifiedAt
                     ? `Announcement already sent ${new Date(article.notifiedAt).toLocaleString()}.`
-                    : subscriberCount > 0
-                      ? `Emails ${coAuthors.length > 0 ? "up to " : ""}${subscriberCount.toLocaleString()} reader${subscriberCount === 1 ? "" : "s"} who follow ${coAuthors.length > 0 ? "the byline" : "this author"}, when this publishes. Leave unchecked to publish silently.`
-                      : `${coAuthors.length > 0 ? "No one on the byline has" : "This author has no"} subscribers yet. Leave unchecked to publish silently.`}
+                    : "Emails readers when this publishes. Leave unchecked to publish silently."}
                 </span>
               </span>
             </label>
+
+            {!article.notifiedAt && (
+              // Never `disabled`: "Send announcement now" needs the choice
+              // submitted even when the checkbox is off.
+              <fieldset
+                className={`mt-3 space-y-2 border-l-2 border-border pl-4 ${notify ? "" : "opacity-60"}`}
+              >
+                <legend className="sr-only">Who gets the announcement</legend>
+                <label className="flex cursor-pointer items-start gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="notify_audience"
+                    value="author"
+                    checked={audience === "author"}
+                    onChange={() => setAudience("author")}
+                    className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
+                  />
+                  <span>
+                    <span className="font-semibold">
+                      {coAuthors.length > 0 ? "The byline\u2019s subscribers" : "The author\u2019s subscribers"}
+                    </span>
+                    <span className="block text-xs text-muted">
+                      {followerCount > 0
+                        ? `${coAuthors.length > 0 ? "Up to " : ""}${followerCount.toLocaleString()} reader${followerCount === 1 ? "" : "s"} who follow ${coAuthors.length > 0 ? "someone on the byline" : "this author"}.`
+                        : `${coAuthors.length > 0 ? "No one on the byline has" : "This author has no"} subscribers yet.`}
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="notify_audience"
+                    value="all"
+                    checked={audience === "all"}
+                    onChange={() => setAudience("all")}
+                    className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
+                  />
+                  <span>
+                    <span className="font-semibold">All subscribers</span>
+                    <span className="block text-xs text-muted">
+                      {subscriberCount > 0
+                        ? `Everyone on the list — ${subscriberCount.toLocaleString()} confirmed subscriber${subscriberCount === 1 ? "" : "s"}.`
+                        : "No confirmed subscribers yet."}
+                    </span>
+                  </span>
+                </label>
+              </fieldset>
+            )}
 
             {!emailReady && (
               <p className="mt-3 flex items-start gap-1.5 text-xs text-muted">

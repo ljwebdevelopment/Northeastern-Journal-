@@ -15,7 +15,7 @@ import {
 } from "@/lib/richtext";
 import { sendArticleAnnouncement } from "@/lib/email/send";
 import { emailConfig } from "@/lib/email/resend";
-import type { ArticleRow, ArticleStatus, UserRole } from "@/lib/supabase/types";
+import type { ArticleRow, ArticleStatus, NotifyAudience, UserRole } from "@/lib/supabase/types";
 
 export interface ActionState {
   ok: boolean;
@@ -297,10 +297,23 @@ export async function saveArticle(
   revalidatePath("/admin/articles");
   revalidatePath("/admin/review");
 
+  // Announcement audience lives in its own column (migration 0020). Saved
+  // apart from the article so a database without it still saves normally.
+  const audience = audienceFrom(formData);
+  if (audience) {
+    const { error: audienceError } = await supabase
+      .from("articles")
+      .update({ notify_audience: audience })
+      .eq("id", articleId);
+    if (audienceError && audience === "all") {
+      bylineNote += " Couldn't save \"All subscribers\" — run migration 0020. Announcements will go to the author's subscribers.";
+    }
+  }
+
   // --- Optional subscriber announcement ------------------------------------
   let emailNote = "";
   if (status === "published" && bool(formData, "notify_subscribers")) {
-    emailNote = " " + (await announceIfUnsent(articleId, user.id)).message;
+    emailNote = " " + (await announceIfUnsent(articleId, user.id, audience)).message;
   }
 
   if (!id) {
@@ -391,7 +404,17 @@ export async function deleteArticleForm(formData: FormData) {
  * `notified_at` is the guard — set it before the send so a double-submit or a
  * retried request can't produce two blasts.
  */
-async function announceIfUnsent(articleId: string, userId: string) {
+/** The audience radio from the editor, if the form sent one. */
+function audienceFrom(formData: FormData): NotifyAudience | null {
+  const value = formData.get("notify_audience");
+  return value === "all" || value === "author" ? value : null;
+}
+
+async function announceIfUnsent(
+  articleId: string,
+  userId: string,
+  audienceOverride: NotifyAudience | null = null
+) {
   const supabase = await createServerSupabase();
   if (!supabase) return { ok: false, message: "Supabase is not configured." };
 
@@ -435,12 +458,24 @@ async function announceIfUnsent(articleId: string, userId: string) {
   const authorName =
     names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0] ?? null;
 
+  // The form's choice wins; otherwise what was saved on the row. Defaults to
+  // the byline's followers, including before migration 0020 has run.
+  let audience = audienceOverride;
+  if (!audience) {
+    const { data: saved } = await supabase
+      .from("articles")
+      .select("notify_audience")
+      .eq("id", articleId)
+      .maybeSingle();
+    audience = (saved as { notify_audience?: NotifyAudience } | null)?.notify_audience ?? "author";
+  }
+
   await supabase.from("articles").update({ notified_at: new Date().toISOString() }).eq("id", articleId);
 
   const result = await sendArticleAnnouncement({
     articleId: article.id,
     sentBy: userId,
-    authorIds,
+    authorIds: audience === "all" ? null : authorIds,
     title: article.title,
     excerpt: article.excerpt,
     url: `${emailConfig.siteUrl}/article/${category?.slug ?? "local-news"}/${article.slug}`,
@@ -466,7 +501,7 @@ export async function sendAnnouncementForm(formData: FormData) {
   const user = await getSessionUser();
   if (!user || !canPublish(user.profile.role)) return;
   const id = String(formData.get("id"));
-  const result = await announceIfUnsent(id, user.id);
+  const result = await announceIfUnsent(id, user.id, audienceFrom(formData));
   redirect(`/admin/articles/${id}?notice=${encodeURIComponent(result.message)}`);
 }
 

@@ -147,6 +147,8 @@ export type ArticleRow = {
   is_trending: boolean;
 
   notify_subscribers: boolean;
+  /** Announcement audience (migration 0020). Absent before it runs. */
+  notify_audience?: NotifyAudience;
   notified_at: string | null;
 
   /** Unguessable id behind /preview/<token> (migration 0012). */
@@ -535,3 +537,6 @@ export interface Database {
     CompositeTypes: { [_ in never]: never };
   };
 }
+
+/** Who an article announcement goes to: the byline's followers, or everyone. */
+export type NotifyAudience = "author" | "all";

@@ -69,6 +69,7 @@ export default async function EditArticlePage({
     isBreaking: row.is_breaking,
     isTrending: row.is_trending,
     notifySubscribers: row.notify_subscribers,
+    notifyAudience: row.notify_audience ?? "author",
     notifiedAt: row.notified_at,
     updatedAt: row.updated_at,
     previewToken: row.preview_token,
@@ -89,6 +90,7 @@ export default async function EditArticlePage({
         authors={context.authors}
         canPublish={canPublish(user.profile.role)}
         authorSubscriberCounts={context.authorSubscriberCounts}
+        subscriberCount={context.subscriberCount}
         emailReady={context.emailReady}
       />
 

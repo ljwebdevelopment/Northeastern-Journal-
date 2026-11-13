@@ -19,6 +19,7 @@ import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import { ArticleCard } from "@/components/article/article-card";
 import { AuthorSocial } from "@/components/shared/author-social";
 import { AuthorSubscribe } from "@/components/shared/author-subscribe";
+import { ShareProfileButton } from "@/components/shared/share-profile-button";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { Pagination } from "@/components/shared/pagination";
 import { SubstackIcon } from "@/components/icons/brand-icons";
@@ -50,6 +51,13 @@ export async function generateMetadata({
   if (!author) return {};
   const title = `${author.name} — ${author.role}`;
   const url = `${siteConfig.url}/author/${author.slug}`;
+  // Search snippets and share cards truncate around 160 characters; cut on a
+  // word boundary so the preview never ends mid-word.
+  const description =
+    author.bio.length > 160
+      ? `${author.bio.slice(0, 157).replace(/\s+\S*$/, "")}…`
+      : author.bio;
+  const [firstName, ...rest] = author.name.trim().split(/\s+/);
   const portrait = socialImage(author.photo, `Portrait of ${author.name}`, {
     width: 800,
     height: 1000,
@@ -57,21 +65,24 @@ export async function generateMetadata({
 
   return {
     title,
-    description: author.bio,
+    description,
     keywords: author.relatedTopics,
     alternates: { canonical: url },
     openGraph: {
       type: "profile",
       siteName: siteConfig.name,
       title,
-      description: author.bio,
+      description,
       url,
       images: [portrait],
+      firstName,
+      ...(rest.length > 0 ? { lastName: rest.join(" ") } : {}),
+      ...(author.username ? { username: author.username } : {}),
     },
     twitter: {
       ...twitterMetadata({
         title,
-        description: author.bio,
+        description,
         image: portrait,
         creator: xHandle(author.social.twitter),
       }),
@@ -247,6 +258,11 @@ export default async function AuthorPage({
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <AuthorSocial author={author} inverted />
+              <ShareProfileButton
+                url={`${siteConfig.url}/author/${author.slug}`}
+                name={author.name}
+                inverted
+              />
               {author.website && (
                 <a
                   href={author.website}

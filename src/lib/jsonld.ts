@@ -70,9 +70,12 @@ export function personJsonLd(author: Author, topics: string[] = []) {
     alternateName: author.username,
     jobTitle: author.role,
     description: author.bio,
+    // Google requires an absolute URL here; stored photos are often
+    // site-relative (`/authors/…`).
     image: {
       "@type": "ImageObject",
-      url: author.photo,
+      url: new URL(author.photo, siteConfig.url).toString(),
+      caption: `Portrait of ${author.name}`,
     },
     url,
     mainEntityOfPage: { "@type": "ProfilePage", "@id": url },

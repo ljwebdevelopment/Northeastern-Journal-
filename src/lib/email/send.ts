@@ -127,6 +127,13 @@ interface BroadcastOptions {
    * issue *is* the digest, so it goes to everyone regardless.
    */
   respectFrequency?: boolean;
+  /**
+   * Limit the send to readers who follow at least one of these authors
+   * (`subscriber_authors`). Used for article announcements so a piece only
+   * reaches its own writers' followers, not the whole list. An empty array
+   * means nobody; omit it to send to everyone.
+   */
+  authorIds?: string[];
 }
 
 /**
@@ -179,7 +186,26 @@ async function broadcast(options: BroadcastOptions): Promise<SendResult> {
     ? allSubscribers.filter((s) => (s.frequency ?? "immediate") === "immediate")
     : allSubscribers;
 
-  if (options.categorySlug && subscribers.length > 0) {
+  if (options.authorIds) {
+    const ids = options.authorIds;
+    const { data: follows, error: followError } =
+      ids.length > 0 && subscribers.length > 0
+        ? await supabase.from("subscriber_authors").select("subscriber_id").in("author_id", ids)
+        : { data: [], error: null };
+    if (followError) {
+      return {
+        ok: false,
+        sent: 0,
+        failed: 0,
+        message: `Could not load the author's subscribers: ${followError.message}`,
+      };
+    }
+    const following = new Set((follows ?? []).map((f) => f.subscriber_id as string));
+    subscribers = subscribers.filter((s) => following.has(s.id));
+    if (subscribers.length === 0) {
+      return { ok: true, sent: 0, failed: 0, message: "This author has no subscribers to notify yet." };
+    }
+  } else if (options.categorySlug && subscribers.length > 0) {
     const { data: follows } = await supabase
       .from("subscriber_categories")
       .select("subscriber_id, category:categories(slug)")
@@ -296,11 +322,17 @@ async function broadcast(options: BroadcastOptions): Promise<SendResult> {
   };
 }
 
-/** Emails a published article to every confirmed subscriber. */
+/**
+ * Emails a published article to the confirmed subscribers who follow its
+ * author or any co-author. Readers who only subscribed to the paper as a
+ * whole get it in the newsletter instead.
+ */
 export async function sendArticleAnnouncement(
   article: ArticleAnnouncement & {
     articleId?: string;
     sentBy?: string;
+    /** Lead author plus co-authors. Only their followers are emailed. */
+    authorIds: string[];
     /** Used to respect section follows. Omit and everyone eligible gets it. */
     categorySlug?: string | null;
   }
@@ -313,6 +345,7 @@ export async function sendArticleAnnouncement(
     noun: "Announcement",
     categorySlug: article.categorySlug ?? null,
     respectFrequency: true,
+    authorIds: article.authorIds,
   });
 }
 

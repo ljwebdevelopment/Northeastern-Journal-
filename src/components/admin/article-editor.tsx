@@ -71,14 +71,15 @@ export function ArticleEditor({
   categories,
   authors,
   canPublish,
-  subscriberCount,
+  authorSubscriberCounts,
   emailReady,
 }: {
   article: EditorArticle;
   categories: Option[];
   authors: Option[];
   canPublish: boolean;
-  subscriberCount: number;
+  /** Confirmed followers per author slug. Announcements only reach these. */
+  authorSubscriberCounts: Record<string, number>;
   emailReady: boolean;
 }) {
   const [state, formAction, pending] = useActionState(saveArticle, initialState);
@@ -121,6 +122,12 @@ export function ArticleEditor({
   // can't also be tagged, so the lists below filter on each other.
   const [leadSlug, setLeadSlug] = useState(article.authorSlug);
   const [coAuthors, setCoAuthors] = useState<string[]>(article.coAuthorSlugs);
+  // Followers can overlap across co-authors, so with a shared byline this is
+  // an upper bound; the send itself de-duplicates.
+  const subscriberCount = [leadSlug, ...coAuthors].reduce(
+    (sum, slug) => sum + (authorSubscriberCounts[slug] ?? 0),
+    0
+  );
   const [featuring, setFeaturing] = useState<string[]>(article.featuredSlugs);
 
   const stats = useMemo(() => {
@@ -629,13 +636,13 @@ export function ArticleEditor({
                 className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
               />
               <span className="text-sm">
-                <span className="font-semibold">Notify subscribers</span>
+                <span className="font-semibold">Notify the author&rsquo;s subscribers</span>
                 <span className="mt-0.5 block text-xs leading-relaxed text-muted">
                   {article.notifiedAt
                     ? `Announcement already sent ${new Date(article.notifiedAt).toLocaleString()}.`
                     : subscriberCount > 0
-                      ? `Emails ${subscriberCount.toLocaleString()} confirmed subscriber${subscriberCount === 1 ? "" : "s"} when this publishes. Leave unchecked to publish silently.`
-                      : "No confirmed subscribers yet. Leave unchecked to publish silently."}
+                      ? `Emails ${coAuthors.length > 0 ? "up to " : ""}${subscriberCount.toLocaleString()} reader${subscriberCount === 1 ? "" : "s"} who follow ${coAuthors.length > 0 ? "the byline" : "this author"}, when this publishes. Leave unchecked to publish silently.`
+                      : `${coAuthors.length > 0 ? "No one on the byline has" : "This author has no"} subscribers yet. Leave unchecked to publish silently.`}
                 </span>
               </span>
             </label>

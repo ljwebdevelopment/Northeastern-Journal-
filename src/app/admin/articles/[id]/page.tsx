@@ -88,7 +88,7 @@ export default async function EditArticlePage({
         categories={context.categories}
         authors={context.authors}
         canPublish={canPublish(user.profile.role)}
-        subscriberCount={context.subscriberCount}
+        authorSubscriberCounts={context.authorSubscriberCounts}
         emailReady={context.emailReady}
       />
 

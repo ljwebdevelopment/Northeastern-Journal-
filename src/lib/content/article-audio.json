@@ -1,4 +1,71 @@
 {
+ "a-child-is-more-than-the-trouble-adults-can-see": {
+  "file": "a-child-is-more-than-the-trouble-adults-can-see-f454e65325.mp3",
+  "duration": 322.19,
+  "hash": "f454e6532587dcbf5561994a6c0a2d5fa730f802497a181722665bd1f352da02",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 3.47
+   },
+   {
+    "block": 1,
+    "start": 22.6
+   },
+   {
+    "block": 2,
+    "start": 56.41
+   },
+   {
+    "block": 3,
+    "start": 84.41
+   },
+   {
+    "block": 4,
+    "start": 110.8
+   },
+   {
+    "block": 5,
+    "start": 142.17
+   },
+   {
+    "block": 6,
+    "start": 168.46
+   },
+   {
+    "block": 7,
+    "start": 193.23
+   },
+   {
+    "block": 8,
+    "start": 219.08
+   },
+   {
+    "block": 9,
+    "start": 244.27
+   },
+   {
+    "block": 10,
+    "start": 268.94
+   },
+   {
+    "block": 11,
+    "start": 291.0
+   },
+   {
+    "block": 12,
+    "start": 316.49
+   },
+   {
+    "block": 13,
+    "start": 317.99
+   }
+  ]
+ },
  "a-lambs-tale": {
   "file": "a-lambs-tale-4e437e44cc.mp3",
   "duration": 479.05,

@@ -3,6 +3,8 @@ import { ArticleCard } from "@/components/article/article-card";
 import { LatestTicker } from "@/components/home/latest-ticker";
 import { SectionHeader } from "@/components/shared/section-header";
 import { siteConfig } from "@/lib/site-config";
+import { AdSlot } from "@/components/shared/ad-slot";
+import { AD_SLOTS } from "@/lib/ads";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { AuthorCard } from "@/components/shared/author-card";
 import { ConversationCard } from "@/components/shared/conversation-card";
@@ -133,6 +135,11 @@ export default async function HomePage() {
 
       {/* Hero */}
       <section className="content-container py-10 lg:py-14">
+        {/* The front page's visible headings are story headlines, so give
+            search engines the publication name as the page's one h1. */}
+        <h1 className="sr-only">
+          {siteConfig.name} — {siteConfig.tagline}
+        </h1>
         <p className="kicker rule-red mb-6">Today&apos;s Edition</p>
         <div className="grid gap-8 lg:grid-cols-[2fr_1fr] lg:gap-10">
           <ArticleCard article={hero} variant="hero" priority />
@@ -164,6 +171,10 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      <div className="content-container pb-10">
+        <AdSlot slot={AD_SLOTS.home} className="mx-auto max-w-4xl" />
+      </div>
 
       {/* Featured Opinions */}
       <section className="bg-surface py-10">

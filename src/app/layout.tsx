@@ -8,6 +8,7 @@ import { siteConfig } from "@/lib/site-config";
 import { socialImage, twitterMetadata } from "@/lib/social-image";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/jsonld";
 import { buildFooterColumns, buildNav } from "@/lib/navigation";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -89,6 +90,7 @@ export default async function RootLayout({
           </main>
           <Footer columns={footerColumns} />
         </ThemeProvider>
+        <Analytics />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

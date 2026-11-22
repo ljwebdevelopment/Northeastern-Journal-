@@ -64,8 +64,10 @@ export function ReadingProgress({ targetId }: { targetId: string }) {
   return (
     <div
       aria-hidden="true"
-      // Above the sticky site header (z-50); never intercepts taps.
-      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px] print:hidden"
+      // Above the sticky site header (z-50); never intercepts taps. The
+      // neutral track covers the header's own 3px red stripe, which sits in
+      // exactly this spot — without it the red fill is invisible against it.
+      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px] bg-border print:hidden"
     >
       <div
         ref={barRef}

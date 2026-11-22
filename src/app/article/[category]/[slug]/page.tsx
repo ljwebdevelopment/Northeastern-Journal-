@@ -28,6 +28,8 @@ import { AuthorSubscribe } from "@/components/shared/author-subscribe";
 import { CommentSection } from "@/components/article/comment-section";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { ARTICLE_PROSE_CLASS } from "@/components/article/prose";
+import { AdSlot } from "@/components/shared/ad-slot";
+import { AD_SLOTS } from "@/lib/ads";
 import { cn, formatDate, readingTime } from "@/lib/utils";
 import { formatViews } from "@/lib/format-views";
 import { ViewTracker } from "@/components/article/view-tracker";
@@ -318,13 +320,28 @@ export default async function ArticlePage({
       {/* ---------------------------------------------------------------- */}
       {/* Body                                                              */}
       {/* ---------------------------------------------------------------- */}
-      <div
-        id="article-body"
-        data-zoomable
-        className={cn(ARTICLE_PROSE_CLASS, "mt-10")}
-        // Sanitized on write in `sanitizeArticleHtml` — see lib/richtext.ts.
-        dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
-      />
+      {/* On wide screens the story column gets a skyscraper ad in each
+          margin, pinned as the reader scrolls. The margins are empty space at
+          that width anyway, so the reading column itself never shrinks. */}
+      <div className="mt-10 xl:grid xl:grid-cols-[1fr_38rem_1fr] xl:gap-8">
+        <div className="hidden xl:block">
+          <AdSlot slot={AD_SLOTS.articleRail} variant="rail" className="sticky top-24 ml-auto w-[160px]" />
+        </div>
+        <div
+          id="article-body"
+          data-zoomable
+          className={ARTICLE_PROSE_CLASS}
+          // Sanitized on write in `sanitizeArticleHtml` — see lib/richtext.ts.
+          dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
+        />
+        <div className="hidden xl:block">
+          <AdSlot slot={AD_SLOTS.articleRail} variant="rail" className="sticky top-24 w-[160px]" />
+        </div>
+      </div>
+
+      {/* After the story ends, before tags and author: the one unit phones and
+          tablets see, and a natural pause point on desktop too. */}
+      <AdSlot slot={AD_SLOTS.articleEnd} className="mx-auto mt-10 max-w-[38rem]" />
 
       {/* ---------------------------------------------------------------- */}
       {/* Tags + share                                                      */}

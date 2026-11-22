@@ -46,9 +46,9 @@ export default function PrivacyPage() {
         <h2>The short version</h2>
         <p>
           We collect an email address if you choose to subscribe to the
-          newsletter. That is it. We do not sell, rent, or share reader data
-          with advertisers or data brokers, and we do not run third-party
-          advertising trackers on this site.
+          newsletter. We do not sell, rent, or share subscriber data with
+          advertisers or data brokers. The site does show ads from Google,
+          which uses its own cookies — see Advertising below.
         </p>
 
         <h2>The newsletter</h2>
@@ -85,10 +85,31 @@ export default function PrivacyPage() {
           marketing.
         </p>
 
+        <h2>Advertising</h2>
+        <p>
+          The Journal is free to read and is supported in part by ads served
+          by <strong>Google AdSense</strong>. Google and its partners use
+          cookies to serve ads based on your visits to this site and other
+          sites on the internet. You can opt out of personalized advertising
+          at{" "}
+          <a href="https://adssettings.google.com" rel="noopener noreferrer">
+            Google Ads Settings
+          </a>{" "}
+          or{" "}
+          <a href="https://www.aboutads.info/choices" rel="noopener noreferrer">
+            aboutads.info
+          </a>
+          . Learn more in{" "}
+          <a href="https://policies.google.com/technologies/partner-sites" rel="noopener noreferrer">
+            how Google uses information from sites that use its services
+          </a>
+          . Advertisers have no say over what we report.
+        </p>
+
         <h2>Analytics</h2>
         <p>
-          We do not use cookie-based advertising analytics. Any traffic
-          measurement is aggregate and does not identify individual readers.
+          Our own traffic measurement is aggregate and does not identify
+          individual readers. Advertising cookies are described above.
         </p>
 
         <h2>Your rights</h2>

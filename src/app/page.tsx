@@ -3,6 +3,8 @@ import { ArticleCard } from "@/components/article/article-card";
 import { LatestTicker } from "@/components/home/latest-ticker";
 import { SectionHeader } from "@/components/shared/section-header";
 import { siteConfig } from "@/lib/site-config";
+import { AdSlot } from "@/components/shared/ad-slot";
+import { AD_SLOTS } from "@/lib/ads";
 import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { AuthorCard } from "@/components/shared/author-card";
 import { ConversationCard } from "@/components/shared/conversation-card";
@@ -169,6 +171,10 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      <div className="content-container pb-10">
+        <AdSlot slot={AD_SLOTS.home} className="mx-auto max-w-4xl" />
+      </div>
 
       {/* Featured Opinions */}
       <section className="bg-surface py-10">

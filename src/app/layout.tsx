@@ -8,6 +8,7 @@ import { siteConfig } from "@/lib/site-config";
 import { socialImage, twitterMetadata } from "@/lib/social-image";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/jsonld";
 import { buildFooterColumns, buildNav } from "@/lib/navigation";
+import { ADSENSE_CLIENT } from "@/lib/ads";
 import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
@@ -76,6 +77,15 @@ export default async function RootLayout({
       className={`${inter.variable} ${sourceSerif.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        {/* AdSense loader. A plain async tag (not next/script) so it is in the
+            server HTML, which is where AdSense's site verification looks. */}
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <a

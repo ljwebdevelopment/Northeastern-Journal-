@@ -1,5 +1,7 @@
 export const siteConfig = {
   name: "Northeastern Journal",
+  /** Other names readers search for; emitted as `alternateName` in JSON-LD. */
+  alternateNames: ["The Northeastern Journal", "Northeastern Journal Oklahoma", "The Journal"],
   tagline: "Independent News for Northeastern Oklahoma",
   shortTagline: "Independent Local Journalism",
   description:

@@ -9,7 +9,7 @@ export function organizationJsonLd() {
     // does not.
     "@type": "NewsMediaOrganization",
     name: siteConfig.name,
-    alternateName: "The Journal",
+    alternateName: siteConfig.alternateNames,
     url: siteConfig.url,
     logo: {
       "@type": "ImageObject",
@@ -33,7 +33,10 @@ export function websiteJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    // Google's site-name system reads name/alternateName from the homepage's
+    // WebSite markup; listing the "The …" form tells it both searches mean us.
     name: siteConfig.name,
+    alternateName: siteConfig.alternateNames,
     url: siteConfig.url,
     potentialAction: {
       "@type": "SearchAction",

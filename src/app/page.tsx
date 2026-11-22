@@ -133,6 +133,11 @@ export default async function HomePage() {
 
       {/* Hero */}
       <section className="content-container py-10 lg:py-14">
+        {/* The front page's visible headings are story headlines, so give
+            search engines the publication name as the page's one h1. */}
+        <h1 className="sr-only">
+          {siteConfig.name} — {siteConfig.tagline}
+        </h1>
         <p className="kicker rule-red mb-6">Today&apos;s Edition</p>
         <div className="grid gap-8 lg:grid-cols-[2fr_1fr] lg:gap-10">
           <ArticleCard article={hero} variant="hero" priority />

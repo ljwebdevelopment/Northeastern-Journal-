@@ -1,56 +1,76 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 /**
- * A hairline at the top of the window showing how far through the *body* the
- * reader is — not how far down the document, which would count the related
- * rail and the newsletter box and reach 60% before the first paragraph ends.
+ * A 3px line fixed to the top of the window showing how far through the
+ * *body* the reader is — not how far down the document, which would count the
+ * related rail, comments and footer and reach 60% before the first paragraph
+ * ends. 0% while the top of the body is still at or below the top of the
+ * viewport; 100% once its last line is on screen.
+ *
+ * Progress is written straight to the bar's transform rather than through
+ * React state, so scrolling never re-renders anything. The server and the
+ * first client render both emit `scaleX(0)`, so there is nothing to mismatch
+ * on hydration, and being `fixed` it takes no space in the layout.
  *
  * Hidden from assistive technology: it repeats information the scrollbar
  * already carries, and announcing a percentage on every scroll frame would be
  * hostile to a screen-reader user.
  */
 export function ReadingProgress({ targetId }: { targetId: string }) {
-  const [progress, setProgress] = useState(0);
+  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const target = document.getElementById(targetId);
-    if (!target) return;
+    const bar = barRef.current;
+    if (!target || !bar) return;
 
     let frame = 0;
     const measure = () => {
       frame = 0;
       const rect = target.getBoundingClientRect();
-      const total = rect.height - window.innerHeight;
-      // Shorter than the viewport: there is nothing to track.
-      if (total <= 0) return setProgress(rect.bottom <= window.innerHeight ? 1 : 0);
-      setProgress(Math.min(1, Math.max(0, -rect.top / total)));
+      const viewport = window.innerHeight;
+      const total = rect.height - viewport;
+      const progress =
+        total <= 0
+          ? // Shorter than the viewport: done once its end is on screen.
+            rect.bottom <= viewport ? 1 : 0
+          : Math.min(1, Math.max(0, -rect.top / total));
+      bar.style.transform = `scaleX(${progress})`;
     };
 
     // Coalesce to one measurement per frame; scroll fires far more often.
-    const onScroll = () => {
+    const schedule = () => {
       if (!frame) frame = requestAnimationFrame(measure);
     };
 
     measure();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    // Images and embeds in the body load after first paint and change its
+    // height without any scroll or resize event.
+    const observer = new ResizeObserver(schedule);
+    observer.observe(target);
+
     return () => {
       if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      observer.disconnect();
     };
   }, [targetId]);
 
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 print:hidden"
+      // Above the sticky site header (z-50); never intercepts taps.
+      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px] print:hidden"
     >
       <div
-        className="h-full bg-brand transition-[width] duration-75 ease-out"
-        style={{ width: `${progress * 100}%` }}
+        ref={barRef}
+        className="h-full origin-left bg-brand transition-transform duration-100 ease-out will-change-transform motion-reduce:transition-none"
+        style={{ transform: "scaleX(0)" }}
       />
     </div>
   );

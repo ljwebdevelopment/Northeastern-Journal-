@@ -52,8 +52,11 @@ export const metadata: Metadata = {
       "application/atom+xml": `${siteConfig.url}/atom.xml`,
     },
   },
+  // src/app/favicon.ico is picked up by Next automatically as the fallback
+  // for browsers without SVG favicon support (Safari, older Edge).
   icons: {
-    icon: "/icon.svg",
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

@@ -173,6 +173,41 @@ export async function getArticlesFeaturingAuthor(authorSlug: string): Promise<Ar
   );
 }
 
+/** Escapes a string for literal use inside a RegExp. */
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Articles that mention the author in their text without crediting or tagging
+ * them: their full name (or @handle) in the headline, dek, or body, or a link
+ * to their profile. Bylined and tagged pieces are excluded so each article
+ * shows on the profile once, under the strongest relationship.
+ */
+export async function getArticlesMentioningAuthor(author: Author): Promise<Article[]> {
+  const name = author.name.trim();
+  const patterns: RegExp[] = [];
+  // A one-word name ("Journal") would match far too much ordinary prose.
+  if (name.split(/\s+/).length > 1) {
+    patterns.push(new RegExp(`(^|[^\\p{L}])${escapeRegExp(name)}($|[^\\p{L}])`, "iu"));
+  }
+  if (author.username) {
+    patterns.push(new RegExp(`@${escapeRegExp(author.username)}\\b`, "i"));
+  }
+  const profileLink = `/author/${author.slug}`;
+
+  return resolved(
+    (await allArticlesMerged()).filter((a) => {
+      if (bylineSlugs(a).includes(author.slug)) return false;
+      if (a.featuredAuthorSlugs?.includes(author.slug)) return false;
+      if (a.bodyHtml?.includes(`${profileLink}"`) || a.bodyHtml?.includes(`${profileLink}'`)) {
+        return true;
+      }
+      if (patterns.length === 0) return false;
+      const text = [a.title, a.subtitle ?? "", a.excerpt, ...a.body].join("\n");
+      return patterns.some((re) => re.test(text));
+    })
+  );
+}
+
 export async function getArticlesByRegion(
   region: "local" | "national" | "world"
 ): Promise<Article[]> {
@@ -424,6 +459,11 @@ export async function getBookBySlug(slug: string): Promise<Book | undefined> {
   return (await allBooksMerged()).find((b) => b.slug === slug);
 }
 
+/** Books the author wrote, newest first. */
+export async function getBooksByAuthor(authorSlug: string): Promise<Book[]> {
+  return byDateDesc((await allBooksMerged()).filter((b) => b.authorSlug === authorSlug));
+}
+
 export async function getVideos(): Promise<Video[]> {
   return allVideosMerged();
 }
@@ -438,6 +478,13 @@ export async function getConversations(): Promise<Conversation[]> {
 
 export async function getConversationBySlug(slug: string): Promise<Conversation | undefined> {
   return (await allConversationsMerged()).find((c) => c.slug === slug);
+}
+
+/** Conversations the author took part in, newest first. */
+export async function getConversationsWithAuthor(authorSlug: string): Promise<Conversation[]> {
+  return byDateDesc(
+    (await allConversationsMerged()).filter((c) => c.participants.includes(authorSlug))
+  );
 }
 
 /**

@@ -14,6 +14,7 @@ export function Pagination({
   pageCount,
   basePath,
   params,
+  hash,
 }: {
   page: number;
   pageCount: number;
@@ -21,6 +22,8 @@ export function Pagination({
   basePath: string;
   /** Other query parameters to preserve, e.g. the search term. */
   params?: Record<string, string | undefined>;
+  /** Fragment to land on, so paging a section mid-page keeps the reader there. */
+  hash?: string;
 }) {
   if (pageCount <= 1) return null;
 
@@ -31,7 +34,7 @@ export function Pagination({
     }
     if (target > 1) query.set("page", String(target));
     const qs = query.toString();
-    return qs ? `${basePath}?${qs}` : basePath;
+    return `${qs ? `${basePath}?${qs}` : basePath}${hash ? `#${hash}` : ""}`;
   };
 
   return (

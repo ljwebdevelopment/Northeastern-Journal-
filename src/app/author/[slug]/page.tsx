@@ -6,7 +6,10 @@ import { ArrowUpRight, Award, Globe, Mail, MapPin, Mic } from "lucide-react";
 import {
   getArticlesByAuthor,
   getArticlesFeaturingAuthor,
+  getArticlesMentioningAuthor,
   getAuthorBySlug,
+  getBooksByAuthor,
+  getConversationsWithAuthor,
   getAuthorSubscriberCount,
   getAuthors,
   getCategories,
@@ -24,10 +27,18 @@ import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { Pagination } from "@/components/shared/pagination";
 import { SubstackIcon } from "@/components/icons/brand-icons";
 import { formatViews } from "@/lib/format-views";
-import { formatDate } from "@/lib/utils";
 import type { ProfessionalLinkKind } from "@/lib/content/types";
 import { isContentDegraded } from "@/lib/content/outage";
 import { ServiceNotice } from "@/components/shared/service-notice";
+import {
+  KIND_LABELS,
+  WorkFilters,
+  WorkList,
+  WorkTabs,
+  type WorkItem,
+  type WorkKind,
+} from "@/components/author/author-work";
+import type { Article, Author, Category } from "@/lib/content/types";
 
 // Pagination reads `searchParams`, which cannot be accessed while Next is
 // statically generating. Any slug not covered by `generateStaticParams`
@@ -101,6 +112,37 @@ const LINK_GROUPS: { kind: ProfessionalLinkKind; title: string; description: str
   { kind: "portfolio", title: "Portfolio", description: "Personal collections and long-form archives." },
 ];
 
+/** Sections that run as recurring columns rather than one-off articles. */
+const COLUMN_CATEGORIES = new Set(["opinion", "editorial"]);
+const WORK_PER_PAGE = 20;
+const KIND_ORDER: WorkKind[] = ["article", "column", "book", "conversation"];
+
+function articleItem(
+  a: Article,
+  author: Author,
+  categories: Category[],
+  role: WorkItem["role"]
+): WorkItem {
+  return {
+    key: `article:${a.slug}`,
+    kind: COLUMN_CATEGORIES.has(a.category) ? "column" : "article",
+    role:
+      role === "Byline" && a.authorSlug !== author.slug && a.coAuthorSlugs?.includes(author.slug)
+        ? "Co-author"
+        : role,
+    title: a.title,
+    href: `/article/${a.category}/${a.slug}`,
+    publishedAt: a.publishedAt,
+    excerpt: a.excerpt,
+    image: a.image,
+    imageAlt: a.imageAlt,
+    section: categories.find((c) => c.slug === a.category)?.name,
+  };
+}
+
+const byNewest = (a: WorkItem, b: WorkItem) =>
+  +new Date(b.publishedAt) - +new Date(a.publishedAt);
+
 function StatTile({ value, label }: { value: string | number; label: string }) {
   return (
     <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-center backdrop-blur-sm">
@@ -117,10 +159,10 @@ export default async function AuthorPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; tab?: string; type?: string }>;
 }) {
   const { slug } = await params;
-  const { page = "1" } = await searchParams;
+  const { page = "1", tab: tabParam, type: typeParam } = await searchParams;
   const author = await getAuthorBySlug(slug);
   if (!author && isContentDegraded()) return <ServiceNotice />;
   if (!author) notFound();
@@ -128,12 +170,16 @@ export default async function AuthorPage({
   // Reached via the author's handle — send them to the canonical URL.
   if (author.slug !== slug) redirect(`/author/${author.slug}`);
 
-  const [articles, taggedIn, categories, subscriberCount] = await Promise.all([
-    getArticlesByAuthor(author.slug),
-    getArticlesFeaturingAuthor(author.slug),
-    getCategories(),
-    getAuthorSubscriberCount(author.slug),
-  ]);
+  const [articles, taggedIn, mentionedIn, books, conversations, categories, subscriberCount] =
+    await Promise.all([
+      getArticlesByAuthor(author.slug),
+      getArticlesFeaturingAuthor(author.slug),
+      getArticlesMentioningAuthor(author),
+      getBooksByAuthor(author.slug),
+      getConversationsWithAuthor(author.slug),
+      getCategories(),
+      getAuthorSubscriberCount(author.slug),
+    ]);
   const showCount = author.showSubscriberCount ?? true;
 
   const beats = categories.filter(
@@ -141,9 +187,79 @@ export default async function AuthorPage({
   );
   const featured = articles.filter((a) => a.featured).slice(0, 3);
   const recent = articles.slice(0, 6);
-  // The archive below the fold is everything the cards above don't already
-  // show, paged so a prolific byline doesn't render four hundred rows.
-  const archive = paginate(articles.slice(recent.length), Number(page), 25);
+
+  /*
+   * The work section: everything on the Journal with this person's name on it,
+   * split into what they made (bylines, co-bylines, books, conversations) and
+   * what features them (tagged as a contributor, or mentioned in the text).
+   */
+  const publishedWork: WorkItem[] = [
+    ...articles.map((a) => articleItem(a, author, categories, "Byline")),
+    ...books.map(
+      (b): WorkItem => ({
+        key: `book:${b.slug}`,
+        kind: "book",
+        role: "Author",
+        title: b.title,
+        href: `/books/${b.slug}`,
+        publishedAt: b.publishedAt,
+        excerpt: b.synopsis,
+        image: b.cover,
+        imageAlt: `Cover of ${b.title}`,
+      })
+    ),
+    ...conversations.map(
+      (c): WorkItem => ({
+        key: `conversation:${c.slug}`,
+        kind: "conversation",
+        role: "Participant",
+        title: c.title,
+        href: `/conversations/${c.slug}`,
+        publishedAt: c.publishedAt,
+        excerpt: c.excerpt,
+        image: c.image,
+        imageAlt: c.title,
+      })
+    ),
+  ].sort(byNewest);
+  const featuringWork: WorkItem[] = [
+    ...taggedIn.map((a) => articleItem(a, author, categories, "Tagged")),
+    ...mentionedIn.map((a) => articleItem(a, author, categories, "Mentioned")),
+  ].sort(byNewest);
+
+  const tab = tabParam === "mentions" ? "mentions" : "published";
+  const tabItems = tab === "mentions" ? featuringWork : publishedWork;
+  const kindsPresent = KIND_ORDER.filter((k) => tabItems.some((i) => i.kind === k));
+  const kind = kindsPresent.includes(typeParam as WorkKind) ? (typeParam as WorkKind) : undefined;
+  const workPage = paginate(
+    kind ? tabItems.filter((i) => i.kind === kind) : tabItems,
+    Number(page),
+    WORK_PER_PAGE
+  );
+  const profilePath = `/author/${author.slug}`;
+  const workHref = (q: { tab?: string; type?: string }) => {
+    const query = new URLSearchParams();
+    if (q.tab && q.tab !== "published") query.set("tab", q.tab);
+    if (q.type) query.set("type", q.type);
+    const qs = query.toString();
+    return `${profilePath}${qs ? `?${qs}` : ""}#work`;
+  };
+  const workTabs = [
+    { label: "Published & Co-authored", key: "published", count: publishedWork.length },
+    { label: "Tagged & Mentioned", key: "mentions", count: featuringWork.length },
+  ].map((t) => ({ ...t, href: workHref({ tab: t.key }), active: tab === t.key }));
+  const workFilters =
+    kindsPresent.length > 1
+      ? [
+          { label: "All", count: tabItems.length, href: workHref({ tab }), active: !kind },
+          ...kindsPresent.map((k) => ({
+            label: KIND_LABELS[k].many,
+            count: tabItems.filter((i) => i.kind === k).length,
+            href: workHref({ tab, type: k }),
+            active: kind === k,
+          })),
+        ]
+      : [];
   const totalViews = articles.reduce((sum, a) => sum + (a.viewCount ?? 0), 0);
   const awards = (author.professionalLinks ?? []).filter((l) => l.kind === "award").length;
   const outsideWork = (author.professionalLinks ?? []).filter((l) => l.kind !== "award").length;
@@ -369,17 +485,33 @@ export default async function AuthorPage({
           )}
         </section>
 
-        {/* Pieces that tag this contributor without being theirs */}
-        {taggedIn.length > 0 && (
-          <section className="border-t border-border py-12">
-            <h2 className="rule-red font-serif text-2xl font-bold">Featured In</h2>
-            <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {taggedIn.slice(0, 6).map((a) => (
-                <ArticleCard key={a.slug} article={a} />
-              ))}
-            </div>
-          </section>
-        )}
+        {/* All work, by relationship */}
+        <section id="work" className="scroll-mt-24 border-t border-border py-12">
+          <h2 className="rule-red font-serif text-2xl font-bold">All Work on the Journal</h2>
+          <p className="mt-5 max-w-2xl text-sm text-muted">
+            Every article, column, book, and conversation carrying {author.name}&rsquo;s name —
+            and the pieces where they&rsquo;re tagged or mentioned.
+          </p>
+          <div className="mt-8">
+            <WorkTabs tabs={workTabs} />
+            {workFilters.length > 0 && <WorkFilters filters={workFilters} />}
+            <WorkList
+              items={workPage.items}
+              empty={
+                tab === "mentions"
+                  ? `${author.name} hasn’t been tagged or mentioned in any pieces yet.`
+                  : `${author.name} hasn’t published with the Journal yet.`
+              }
+            />
+            <Pagination
+              page={workPage.page}
+              pageCount={workPage.pageCount}
+              basePath={profilePath}
+              params={{ tab: tab === "mentions" ? tab : undefined, type: kind }}
+              hash="work"
+            />
+          </div>
+        </section>
 
         {/* Substack */}
         {substackUrl && (
@@ -573,33 +705,6 @@ export default async function AuthorPage({
                 Request a Speaking Engagement
               </a>
             )}
-          </section>
-        )}
-
-        {/* Archive */}
-        {articles.length > recent.length && (
-          <section className="border-t border-border py-12">
-            <h2 className="rule-red font-serif text-2xl font-bold">Full Archive</h2>
-            <ul className="mt-8 flex flex-col divide-y divide-border">
-              {archive.items.map((a) => (
-                <li key={a.slug} className="py-3.5">
-                  <Link
-                    href={`/article/${a.category}/${a.slug}`}
-                    className="flex flex-wrap items-baseline justify-between gap-3 transition-colors hover:text-brand"
-                  >
-                    <span className="font-serif text-base font-semibold">{a.title}</span>
-                    <time dateTime={a.publishedAt} className="text-xs text-muted">
-                      {formatDate(a.publishedAt)}
-                    </time>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Pagination
-              page={archive.page}
-              pageCount={archive.pageCount}
-              basePath={`/author/${author.slug}`}
-            />
           </section>
         )}
 

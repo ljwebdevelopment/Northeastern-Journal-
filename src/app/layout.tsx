@@ -61,10 +61,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf8f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#17110f" },
-  ],
+  // Matches the light default; the site no longer follows the OS setting.
+  themeColor: "#faf8f5",
 };
 
 export default async function RootLayout({
@@ -90,7 +88,9 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        {/* Light by default regardless of the device setting; dark only once a
+            reader picks it with the toggle (remembered in localStorage). */}
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <a
             href="#main-content"
             className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-foreground"

@@ -15,9 +15,11 @@ type AdSlotProps = {
   slot?: string;
   /**
    * `rail` is a fixed 160×600 skyscraper for the desktop side columns;
-   * `responsive` fills its container width and lets AdSense pick the size.
+   * `responsive` fills its container width and lets AdSense pick the size;
+   * `in-article` is AdSense's native "In-article" unit, styled to sit
+   * between paragraphs.
    */
-  variant?: "rail" | "responsive";
+  variant?: "rail" | "responsive" | "in-article";
   className?: string;
 };
 
@@ -58,7 +60,9 @@ export function AdSlot({ slot, variant = "responsive", className }: AdSlotProps)
   }
 
   return (
-    <aside data-print-hide aria-label="Advertisement" className={cn("text-center", className)}>
+    // `data-ad` keeps "Listen to this article" from treating the label as a
+    // paragraph; `not-prose` keeps article typography off it.
+    <aside data-print-hide data-ad aria-label="Advertisement" className={cn("not-prose text-center", className)}>
       <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">
         Advertisement
       </p>
@@ -68,6 +72,15 @@ export function AdSlot({ slot, variant = "responsive", className }: AdSlotProps)
           style={{ display: "inline-block", width: 160, height: 600 }}
           data-ad-client={ADSENSE_CLIENT}
           data-ad-slot={slot}
+        />
+      ) : variant === "in-article" ? (
+        <ins
+          className="adsbygoogle block w-full"
+          style={{ display: "block", textAlign: "center" }}
+          data-ad-client={ADSENSE_CLIENT}
+          data-ad-slot={slot}
+          data-ad-layout="in-article"
+          data-ad-format="fluid"
         />
       ) : (
         <ins

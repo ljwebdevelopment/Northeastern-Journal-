@@ -38,7 +38,10 @@ function formatTime(s: number) {
 function bodyBlocks(bodyId: string): Element[] {
   const body = document.getElementById(bodyId);
   if (!body) return [];
-  const nodes = Array.from(body.querySelectorAll(BLOCK_SELECTOR));
+  // Ads between paragraphs carry a text label; they aren't part of the story.
+  const nodes = Array.from(body.querySelectorAll(BLOCK_SELECTOR)).filter(
+    (n) => !n.closest("[data-ad]")
+  );
   return nodes.filter((n) => !nodes.some((m) => m !== n && n.contains(m)));
 }
 

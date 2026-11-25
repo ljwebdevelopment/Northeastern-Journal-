@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,6 +31,7 @@ import { NewsletterSignup } from "@/components/shared/newsletter-signup";
 import { ARTICLE_PROSE_CLASS } from "@/components/article/prose";
 import { AdSlot } from "@/components/shared/ad-slot";
 import { AD_SLOTS } from "@/lib/ads";
+import { splitForInArticleAds } from "@/lib/in-article-ads";
 import { cn, formatDate, readingTime } from "@/lib/utils";
 import { formatViews } from "@/lib/format-views";
 import { ViewTracker } from "@/components/article/view-tracker";
@@ -129,6 +131,10 @@ export default async function ArticlePage({
   ]);
 
   const author = bylines[0];
+  // No in-article unit configured → keep the body whole.
+  const bodyChunks = AD_SLOTS.inArticle
+    ? splitForInArticleAds(article.bodyHtml)
+    : [article.bodyHtml];
   const url = `${siteConfig.url}/article/${article.category}/${article.slug}`;
   const minutes =
     article.readingMinutes ?? readingTime(article.body.join(" ").split(/\s+/).length);
@@ -327,13 +333,28 @@ export default async function ArticlePage({
         <div className="hidden xl:block">
           <AdSlot slot={AD_SLOTS.articleRail} variant="rail" className="sticky top-24 ml-auto w-[160px]" />
         </div>
-        <div
-          id="article-body"
-          data-zoomable
-          className={ARTICLE_PROSE_CLASS}
-          // Sanitized on write in `sanitizeArticleHtml` — see lib/richtext.ts.
-          dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
-        />
+        {bodyChunks.length > 1 ? (
+          // Long story: an in-article ad between chunks of paragraphs.
+          <div id="article-body" data-zoomable className={ARTICLE_PROSE_CLASS}>
+            {bodyChunks.map((chunk, i) => (
+              <Fragment key={i}>
+                {i > 0 && (
+                  <AdSlot slot={AD_SLOTS.inArticle} variant="in-article" className="my-10" />
+                )}
+                {/* Sanitized on write in `sanitizeArticleHtml` — see lib/richtext.ts. */}
+                <div dangerouslySetInnerHTML={{ __html: chunk }} />
+              </Fragment>
+            ))}
+          </div>
+        ) : (
+          <div
+            id="article-body"
+            data-zoomable
+            className={ARTICLE_PROSE_CLASS}
+            // Sanitized on write in `sanitizeArticleHtml` — see lib/richtext.ts.
+            dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
+          />
+        )}
         <div className="hidden xl:block">
           <AdSlot slot={AD_SLOTS.articleRail} variant="rail" className="sticky top-24 w-[160px]" />
         </div>

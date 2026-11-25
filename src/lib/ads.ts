@@ -16,6 +16,12 @@ export const AD_SLOTS = {
   articleRail: process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_RAIL,
   /** Responsive unit directly under the article body. */
   articleEnd: process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_END,
+  /**
+   * AdSense "In-article" unit placed between paragraphs of long stories
+   * (rules in lib/in-article-ads.ts). Create it under By ad unit →
+   * In-article ads.
+   */
+  inArticle: process.env.NEXT_PUBLIC_ADSENSE_SLOT_IN_ARTICLE,
   /** Responsive banner between sections on the front page. */
   home: process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME,
 } as const;

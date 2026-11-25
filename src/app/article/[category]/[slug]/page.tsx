@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { notFound } from "next/navigation";
 import {
   getArticleBySlug,
@@ -127,6 +128,7 @@ export default async function ArticlePage({
     // Narration recorded by the "Article audio" GitHub Action; null until then.
     getArticleAudio(article),
   ]);
+  const commentCount = comments.filter((c) => !c.is_deleted).length;
 
   const author = bylines[0];
   const url = `${siteConfig.url}/article/${article.category}/${article.slug}`;
@@ -163,7 +165,7 @@ export default async function ArticlePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify([
-            articleJsonLd(article, bylines, comments.filter((c) => !c.is_deleted).length),
+            articleJsonLd(article, bylines, commentCount),
             breadcrumbJsonLd([
               { name: "Home", url: siteConfig.url },
               ...(category
@@ -272,6 +274,15 @@ export default async function ArticlePage({
                 compact
               />
             </WidgetBoundary>
+            <a
+              href="#comments"
+              aria-label={`Jump to comments (${commentCount})`}
+              title="Jump to comments"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-sm font-semibold text-muted transition-colors hover:border-brand/50 hover:text-brand"
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden />
+              <span className="tabular-nums">{formatViews(commentCount)}</span>
+            </a>
             {audio && (
               <WidgetBoundary>
                 <ListenButton audio={audio} title={article.title} />

@@ -625,6 +625,77 @@
    }
   ]
  },
+ "how-many-more-are-sitting-undiscovered": {
+  "file": "how-many-more-are-sitting-undiscovered-d480ebcd21.mp3",
+  "duration": 315.59,
+  "hash": "d480ebcd21b4f2b34751cc0e29e419f5cc594df333ac133e84ff42e615929b20",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.73
+   },
+   {
+    "block": 1,
+    "start": 25.89
+   },
+   {
+    "block": 2,
+    "start": 61.61
+   },
+   {
+    "block": 3,
+    "start": 83.79
+   },
+   {
+    "block": 4,
+    "start": 115.7
+   },
+   {
+    "block": 5,
+    "start": 125.42
+   },
+   {
+    "block": 6,
+    "start": 167.14
+   },
+   {
+    "block": 7,
+    "start": 180.55
+   },
+   {
+    "block": 8,
+    "start": 200.06
+   },
+   {
+    "block": 9,
+    "start": 207.2
+   },
+   {
+    "block": 10,
+    "start": 232.39
+   },
+   {
+    "block": 11,
+    "start": 252.89
+   },
+   {
+    "block": 12,
+    "start": 276.42
+   },
+   {
+    "block": 13,
+    "start": 294.44
+   },
+   {
+    "block": 14,
+    "start": 304.1
+   }
+  ]
+ },
  "if-youve-been-there-for-years-where-is-the-change": {
   "file": "if-youve-been-there-for-years-where-is-the-change-dd2147d8a7.mp3",
   "duration": 221.88,
@@ -802,6 +873,65 @@
    {
     "block": 8,
     "start": 207.49
+   }
+  ]
+ },
+ "northeastern-state-university-announces-new-bachelor-of-science-in-government-an": {
+  "file": "northeastern-state-university-announces-new-bachelor-of-science-in-government-an-53fd94dcf2.mp3",
+  "duration": 172.56,
+  "hash": "53fd94dcf27d21873bdbdadb6df4fb28068b75b9a74196e985be9ff78da235ef",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 6.82
+   },
+   {
+    "block": 1,
+    "start": 29.69
+   },
+   {
+    "block": 2,
+    "start": 38.71
+   },
+   {
+    "block": 3,
+    "start": 53.19
+   },
+   {
+    "block": 4,
+    "start": 68.65
+   },
+   {
+    "block": 5,
+    "start": 82.06
+   },
+   {
+    "block": 6,
+    "start": 89.31
+   },
+   {
+    "block": 7,
+    "start": 111.62
+   },
+   {
+    "block": 8,
+    "start": 120.66
+   },
+   {
+    "block": 9,
+    "start": 142.8
+   },
+   {
+    "block": 10,
+    "start": 149.75
+   },
+   {
+    "block": 11,
+    "start": 156.95
    }
   ]
  },

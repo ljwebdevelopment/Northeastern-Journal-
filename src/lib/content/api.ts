@@ -218,8 +218,36 @@ export async function getFeaturedArticles(): Promise<Article[]> {
   return resolved((await allArticlesMerged()).filter((a) => a.featured));
 }
 
-export async function getTrendingArticles(): Promise<Article[]> {
-  return resolved((await allArticlesMerged()).filter((a) => a.trending));
+/** How far back the Trending rail looks. Older stories belong to Most Read. */
+export const TRENDING_WINDOW_DAYS = 7;
+
+/**
+ * What's trending right now: stories published in the last week, ranked by
+ * reads.
+ *
+ * This used to be the hand-set `is_trending` flag, which nothing ever cleared,
+ * so a month-old piece could sit in the rail indefinitely. Ranking within a
+ * rolling window means the rail turns over on its own: each day the oldest
+ * stories age out and today's take their place. Pages using it revalidate on
+ * a timer, so the window moves without a redeploy.
+ *
+ * Ties (including stories nobody has read yet) go to the newer story, and the
+ * editorial flag breaks ties between equally read stories of the same day.
+ */
+export async function getTrendingArticles(limit = 5): Promise<Article[]> {
+  const cutoff = Date.now() - TRENDING_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  const recent = resolved(await allArticlesMerged()).filter(
+    (a) => +new Date(a.publishedAt) >= cutoff
+  );
+  return recent
+    // `recent` is newest-first and sort is stable, so equal counts stay in
+    // recency order.
+    .sort(
+      (a, b) =>
+        (b.viewCount ?? 0) - (a.viewCount ?? 0) ||
+        Number(!!b.trending) - Number(!!a.trending)
+    )
+    .slice(0, limit);
 }
 
 /**

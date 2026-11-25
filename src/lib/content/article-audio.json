@@ -1975,6 +1975,57 @@
    }
   ]
  },
+ "thankful-for-what-exactly": {
+  "file": "thankful-for-what-exactly-55e5afc4b0.mp3",
+  "duration": 412.73,
+  "hash": "55e5afc4b0e27b2238dea6dedfda630f3535ec4773f170c5b7c27f81a4ed4fc5",
+  "segments": [
+   {
+    "block": -1,
+    "start": 0.0
+   },
+   {
+    "block": 0,
+    "start": 2.32
+   },
+   {
+    "block": 1,
+    "start": 33.07
+   },
+   {
+    "block": 2,
+    "start": 67.94
+   },
+   {
+    "block": 3,
+    "start": 92.32
+   },
+   {
+    "block": 4,
+    "start": 126.74
+   },
+   {
+    "block": 5,
+    "start": 206.25
+   },
+   {
+    "block": 6,
+    "start": 274.82
+   },
+   {
+    "block": 7,
+    "start": 303.95
+   },
+   {
+    "block": 8,
+    "start": 356.3
+   },
+   {
+    "block": 9,
+    "start": 404.31
+   }
+  ]
+ },
  "the-first-invitation-to-claremores-new-science-building-should-come-before-it-op": {
   "file": "the-first-invitation-to-claremores-new-science-building-should-come-before-it-op-662ca8e353.mp3",
   "duration": 287.31,
